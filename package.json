@@ -7,7 +7,12 @@
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"typecheck": "bun --filter './packages/*' typecheck",
-		"test:unit": "bun --filter './packages/shared' --filter './packages/backend' test"
+		"test:unit": "bun --filter './packages/shared' --filter './packages/backend' test",
+		"docker:dev": "docker compose -f docker-compose.dev.yml up -d",
+		"docker:down": "docker compose -f docker-compose.dev.yml down",
+		"docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+		"db:generate": "bun --filter './packages/backend' db:generate",
+		"db:migrate": "bun --filter './packages/backend' db:migrate"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4"
