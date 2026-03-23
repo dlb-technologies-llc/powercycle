@@ -116,12 +116,17 @@ describe("generateWorkoutPlan", () => {
 		expect(plan.variation.category).toBe("deadlift_variation");
 	});
 
-	it("generates OHP day (day 4) workout", () => {
+	it("generates OHP day (day 4) workout with delt as variation", () => {
 		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 4);
 		expect(plan.mainLift).toBe("ohp");
 		// Day 4 has no formal variation — first delt exercise serves as variation
-		expect(plan.variation).toBeDefined();
-		expect(plan.accessories.length).toBeGreaterThan(0);
+		expect(plan.variation.category).toBe("delt");
+		// Remaining accessories: 2 more delts + bicep + tricep = 4
+		expect(plan.accessories).toHaveLength(4);
+		const accCategories = plan.accessories.map((a) => a.category);
+		expect(accCategories).toContain("delt");
+		expect(accCategories).toContain("bicep");
+		expect(accCategories).toContain("tricep");
 	});
 
 	it("throws RestDayError for day 5", () => {
@@ -158,6 +163,23 @@ describe("generateWorkoutPlan", () => {
 		);
 		expect(categories).toContain("chest");
 		expect(categories).toContain("tricep");
+	});
+
+	it("generates workout plan with kg unit (2.5 kg increment)", () => {
+		const kgLifts: UserLifts = {
+			squat: 140,
+			bench: 100,
+			deadlift: 180,
+			ohp: 60,
+			unit: "kg",
+		};
+		const plan = generateWorkoutPlan(kgLifts, 1, 1, 1);
+		expect(plan.mainLift).toBe("squat");
+		// 140 * 0.85 = 119 → rounds to 120 (nearest 2.5)
+		const topSet = plan.mainLiftSets[4];
+		expect(topSet.weight).toBe(120);
+		// 140 * 0.45 = 63 → rounds to 62.5 (nearest 2.5)
+		expect(plan.mainLiftSets[0].weight).toBe(62.5);
 	});
 
 	it("accessories have correct categories for pull day", () => {

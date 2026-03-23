@@ -155,7 +155,7 @@ export const getAccessorySlots = (
 				},
 				{
 					category: "chest",
-					defaultExercise: EXERCISE_OPTIONS.chest[3],
+					defaultExercise: "Chest Flies",
 					sets: standardAccessorySets(10, 15),
 				},
 				{
@@ -165,7 +165,7 @@ export const getAccessorySlots = (
 				},
 				{
 					category: "tricep",
-					defaultExercise: EXERCISE_OPTIONS.tricep[2],
+					defaultExercise: "Downward Extension (Pushdown)",
 					sets: standardAccessorySets(10, 15),
 				},
 			];
@@ -188,7 +188,7 @@ export const getAccessorySlots = (
 				},
 				{
 					category: "bicep",
-					defaultExercise: EXERCISE_OPTIONS.bicep[4],
+					defaultExercise: "High Side Cable Curls",
 					sets: standardAccessorySets(10, 15),
 				},
 			];
@@ -211,7 +211,7 @@ export const getAccessorySlots = (
 				},
 				{
 					category: "bicep",
-					defaultExercise: EXERCISE_OPTIONS.bicep[2],
+					defaultExercise: "Preacher Curls",
 					sets: day4ArmSets(),
 				},
 				{

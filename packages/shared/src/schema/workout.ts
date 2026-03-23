@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import type { MainLift } from "./lifts.js";
+import type { Round, TrainingDay } from "./program.js";
 
 export const ExerciseCategory = Schema.Literals([
 	"squat_variation",
@@ -89,8 +90,8 @@ export interface ExerciseSlot {
 }
 
 export interface WorkoutPlan {
-	readonly day: number;
-	readonly round: number;
+	readonly day: Exclude<TrainingDay, 5>;
+	readonly round: Round;
 	readonly cycle: number;
 	readonly mainLift: MainLift;
 	readonly mainLiftSets: readonly PrescribedSet[];
