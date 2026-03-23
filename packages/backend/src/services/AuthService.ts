@@ -22,13 +22,25 @@ const sign = async (payload: string, secret: string): Promise<string> => {
 		.join("");
 };
 
+const timingSafeEqual = (a: string, b: string): boolean => {
+	if (a.length !== b.length) return false;
+	const encoder = new TextEncoder();
+	const bufA = encoder.encode(a);
+	const bufB = encoder.encode(b);
+	let result = 0;
+	for (let i = 0; i < bufA.length; i++) {
+		result |= bufA[i] ^ bufB[i];
+	}
+	return result === 0;
+};
+
 const verify = async (
 	payload: string,
 	signature: string,
 	secret: string,
 ): Promise<boolean> => {
 	const expected = await sign(payload, secret);
-	return expected === signature;
+	return timingSafeEqual(expected, signature);
 };
 
 export class AuthService extends ServiceMap.Service<
@@ -63,6 +75,10 @@ export class AuthService extends ServiceMap.Service<
 					);
 					if (!valid) {
 						return yield* Effect.fail(new Error("Invalid session signature"));
+					}
+					const age = (Date.now() - Number(timestamp)) / 1000;
+					if (age > MAX_AGE) {
+						return yield* Effect.fail(new Error("Session expired"));
 					}
 					return userId;
 				}),

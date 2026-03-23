@@ -15,13 +15,6 @@ import { WorkoutService } from "./services/WorkoutService.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
-const ApiLive = HttpApiBuilder.layer(PowerCycleApi).pipe(
-	Layer.provide(HealthLive),
-	Layer.provide(AuthLive),
-	Layer.provide(CyclesLive),
-	Layer.provide(WorkoutsLive),
-);
-
 const ServiceLive = Layer.mergeAll(
 	AuthService.test,
 	UserService.test,
@@ -29,8 +22,19 @@ const ServiceLive = Layer.mergeAll(
 	WorkoutService.test,
 );
 
-const ServerLive = HttpRouter.serve(
-	ApiLive.pipe(Layer.provide(ServiceLive)),
-).pipe(Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })));
+const HandlerLive = Layer.mergeAll(
+	Layer.provide(AuthLive, ServiceLive),
+	Layer.provide(CyclesLive, ServiceLive),
+	Layer.provide(WorkoutsLive, ServiceLive),
+	HealthLive,
+);
+
+const ApiLive = HttpApiBuilder.layer(PowerCycleApi).pipe(
+	Layer.provide(HandlerLive),
+);
+
+const ServerLive = HttpRouter.serve(ApiLive).pipe(
+	Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })),
+);
 
 Layer.launch(ServerLive).pipe(NodeRuntime.runMain);

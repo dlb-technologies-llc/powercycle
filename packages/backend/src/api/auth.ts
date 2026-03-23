@@ -21,6 +21,11 @@ export const AuthLive = HttpApiBuilder.group(
 					return { success: true, token, userId: user.id };
 				}),
 			)
-			.handle("logout", () => Effect.succeed({ success: true }));
+			.handle("logout", () =>
+				Effect.gen(function* () {
+					yield* authService.createLogoutCookie();
+					return { success: true };
+				}),
+			);
 	}),
 );
