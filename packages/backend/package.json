@@ -6,7 +6,10 @@
 	"types": "src/index.ts",
 	"scripts": {
 		"test": "vitest run --passWithNoTests",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@powercycle/shared": "workspace:*",
