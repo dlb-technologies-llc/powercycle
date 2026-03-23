@@ -1,7 +1,15 @@
+import { existsSync } from "node:fs";
 import { createServer } from "node:http";
-import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
+import { resolve } from "node:path";
+import {
+	NodeFileSystem,
+	NodeHttpPlatform,
+	NodeHttpServer,
+	NodePath,
+	NodeRuntime,
+} from "@effect/platform-node";
 import { Layer } from "effect";
-import { HttpRouter } from "effect/unstable/http";
+import { HttpRouter, HttpStaticServer } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { AuthLive } from "./api/auth.js";
 import { CyclesLive } from "./api/cycles.js";
@@ -14,6 +22,12 @@ import { UserService } from "./services/UserService.js";
 import { WorkoutService } from "./services/WorkoutService.js";
 
 const PORT = Number(process.env.PORT) || 3000;
+const isProduction = process.env.NODE_ENV === "production";
+
+const DIST_DIR = resolve(
+	new URL(".", import.meta.url).pathname,
+	"../../../frontend/dist",
+);
 
 const ServiceLive = Layer.mergeAll(
 	AuthService.test,
@@ -33,7 +47,26 @@ const ApiLive = HttpApiBuilder.layer(PowerCycleApi).pipe(
 	Layer.provide(HandlerLive),
 );
 
-const ServerLive = HttpRouter.serve(ApiLive).pipe(
+const StaticFilesLive =
+	isProduction && existsSync(DIST_DIR)
+		? HttpStaticServer.layer({
+				root: DIST_DIR,
+				spa: true,
+				cacheControl: "public, max-age=3600",
+			}).pipe(
+				Layer.provide(
+					Layer.mergeAll(
+						NodePath.layer,
+						NodeFileSystem.layer,
+						NodeHttpPlatform.layer,
+					),
+				),
+			)
+		: Layer.empty;
+
+const AppLive = Layer.mergeAll(ApiLive, StaticFilesLive);
+
+const ServerLive = HttpRouter.serve(AppLive).pipe(
 	Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })),
 );
 
