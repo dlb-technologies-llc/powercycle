@@ -3,7 +3,7 @@ FROM oven/bun:1-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (copy package.json files first for caching)
 COPY package.json bun.lock ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/backend/package.json packages/backend/
@@ -21,16 +21,16 @@ FROM oven/bun:1-slim AS production
 
 WORKDIR /app
 
-# Copy everything needed to run
-COPY --from=builder /app/node_modules ./node_modules
+# Copy root workspace config + lockfile (needed for Bun workspace resolution)
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lock ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy all packages (backend needs shared at runtime)
 COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/packages/backend ./packages/backend
+COPY --from=builder /app/packages/frontend/package.json ./packages/frontend/
 COPY --from=builder /app/packages/frontend/dist ./packages/frontend/dist
-
-# Copy drizzle config and migrations for db:migrate
-COPY --from=builder /app/packages/backend/drizzle.config.ts ./packages/backend/
-COPY --from=builder /app/packages/backend/src/db ./packages/backend/src/db
 
 # Copy entrypoint
 COPY docker-entrypoint.sh ./
