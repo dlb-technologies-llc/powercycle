@@ -5,7 +5,9 @@
 	"scripts": {
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"format": "biome format --write ."
+		"format": "biome format --write .",
+		"typecheck": "bun --filter './packages/*' typecheck",
+		"test:unit": "bun --filter './packages/shared' --filter './packages/backend' test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4"

@@ -1,0 +1,23 @@
+{
+	"name": "@powercycle/backend",
+	"version": "0.0.1",
+	"type": "module",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"scripts": {
+		"test": "vitest run --passWithNoTests",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@powercycle/shared": "workspace:*",
+		"effect": "4.0.0-beta.31",
+		"drizzle-orm": "^0.45.1",
+		"postgres": "^3.4.7"
+	},
+	"devDependencies": {
+		"@effect/vitest": "4.0.0-beta.31",
+		"drizzle-kit": "^0.31.9",
+		"typescript": "^5.9.3",
+		"vitest": "^3.2.4"
+	}
+}
