@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.example
+*.md
+.worktrees
+packages/frontend/node_modules
+packages/backend/node_modules
+packages/shared/node_modules
+dist
