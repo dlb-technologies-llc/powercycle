@@ -87,6 +87,9 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 	) {}
 
 export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
+	HttpApiEndpoint.get("history", "/api/workouts/history", {
+		success: Schema.Any,
+	}),
 	HttpApiEndpoint.get("next", "/api/workouts/next", {
 		success: Schema.Any,
 	}),
