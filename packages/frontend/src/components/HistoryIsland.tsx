@@ -1,10 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useWorkoutHistory } from "../lib/queries";
-
-export const Route = createFileRoute("/history")({
-	component: HistoryPage,
-});
+import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -14,29 +9,43 @@ const DAY_NAMES: Record<number, string> = {
 	5: "Rest",
 };
 
-function HistoryPage() {
-	const { data: history, isLoading } = useWorkoutHistory();
+interface WorkoutSet {
+	exerciseName: string;
+	setNumber: number;
+	actualWeight: number | null;
+	actualReps: number | null;
+	rpe: number | null;
+	isMainLift: boolean;
+}
+
+interface Workout {
+	id: string;
+	round: number;
+	day: number;
+	startedAt: string;
+	completedAt: string | null;
+	sets: WorkoutSet[];
+}
+
+export default function HistoryIsland() {
+	const [workouts, setWorkouts] = useState<Workout[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
+
+	useEffect(() => {
+		apiFetch<Workout[]>("/api/workouts/history")
+			.then((data) => {
+				setWorkouts(data ?? []);
+				setIsLoading(false);
+			})
+			.catch(() => {
+				setIsLoading(false);
+			});
+	}, []);
 
 	if (isLoading) {
 		return <p className="text-zinc-400">Loading history...</p>;
 	}
-
-	const workouts = (history ?? []) as Array<{
-		id: string;
-		round: number;
-		day: number;
-		startedAt: string;
-		completedAt: string | null;
-		sets: Array<{
-			exerciseName: string;
-			setNumber: number;
-			actualWeight: number | null;
-			actualReps: number | null;
-			rpe: number | null;
-			isMainLift: boolean;
-		}>;
-	}>;
 
 	if (workouts.length === 0) {
 		return (
@@ -77,7 +86,7 @@ function HistoryPage() {
 									{workout.sets?.length ?? 0} sets
 								</span>
 								<span className="text-zinc-500">
-									{expandedId === workout.id ? "▲" : "▼"}
+									{expandedId === workout.id ? "\u25B2" : "\u25BC"}
 								</span>
 							</div>
 						</button>
@@ -85,7 +94,7 @@ function HistoryPage() {
 							<div className="border-t border-zinc-800 p-4 space-y-2">
 								{workout.sets.map((set, i) => (
 									<div
-										key={`${set.exerciseName}-${set.setNumber}-${i}`}
+										key={`${set.exerciseName}-${String(set.setNumber)}`}
 										className="flex items-center justify-between text-sm"
 									>
 										<span className="text-zinc-300">

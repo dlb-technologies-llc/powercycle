@@ -1,20 +1,14 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useCreateCycle } from "../lib/queries";
+import { apiFetch } from "../lib/api";
 
-export const Route = createFileRoute("/setup")({
-	component: SetupPage,
-});
-
-function SetupPage() {
+export default function SetupIsland() {
 	const [squat, setSquat] = useState("");
 	const [bench, setBench] = useState("");
 	const [deadlift, setDeadlift] = useState("");
 	const [ohp, setOhp] = useState("");
 	const [unit, setUnit] = useState<"lbs" | "kg">("lbs");
 	const [error, setError] = useState("");
-	const createCycle = useCreateCycle();
-	const navigate = useNavigate();
+	const [isPending, setIsPending] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -30,11 +24,16 @@ function SetupPage() {
 			setError("All weights must be greater than 0");
 			return;
 		}
+		setIsPending(true);
 		try {
-			await createCycle.mutateAsync(lifts);
-			navigate({ to: "/" });
+			await apiFetch("/api/cycles", {
+				method: "POST",
+				body: JSON.stringify(lifts),
+			});
+			window.location.href = "/";
 		} catch {
 			setError("Failed to create cycle");
+			setIsPending(false);
 		}
 	};
 
@@ -97,10 +96,10 @@ function SetupPage() {
 				{error && <p className="text-red-400 text-sm">{error}</p>}
 				<button
 					type="submit"
-					disabled={createCycle.isPending}
+					disabled={isPending}
 					className="w-full py-4 bg-zinc-100 text-zinc-900 font-bold text-lg rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 				>
-					{createCycle.isPending ? "Starting..." : "Start Program"}
+					{isPending ? "Starting..." : "Start Program"}
 				</button>
 			</form>
 		</div>

@@ -1,26 +1,30 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useLogin } from "../lib/queries";
+import { apiFetch, setToken } from "../lib/api";
 
-export const Route = createFileRoute("/login")({
-	component: LoginPage,
-});
-
-function LoginPage() {
+export default function LoginIsland() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
-	const login = useLogin();
-	const navigate = useNavigate();
+	const [isPending, setIsPending] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
+		setIsPending(true);
 		try {
-			await login.mutateAsync({ username, password });
-			navigate({ to: "/" });
+			const result = await apiFetch<{
+				success: boolean;
+				token: string;
+				userId: string;
+			}>("/api/auth/login", {
+				method: "POST",
+				body: JSON.stringify({ username, password }),
+			});
+			setToken(result.token);
+			window.location.href = "/";
 		} catch {
 			setError("Invalid username or password");
+			setIsPending(false);
 		}
 	};
 
@@ -65,10 +69,10 @@ function LoginPage() {
 				{error && <p className="text-red-400 text-sm">{error}</p>}
 				<button
 					type="submit"
-					disabled={login.isPending}
+					disabled={isPending}
 					className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 				>
-					{login.isPending ? "Logging in..." : "Log In"}
+					{isPending ? "Logging in..." : "Log In"}
 				</button>
 			</form>
 		</div>

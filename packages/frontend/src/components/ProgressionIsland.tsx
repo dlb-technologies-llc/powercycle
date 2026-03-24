@@ -1,12 +1,7 @@
 import type { CycleProgressionResult } from "@powercycle/shared";
 import { calculateCycleProgression } from "@powercycle/shared";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { useCurrentCycle, useStartNextCycle } from "../lib/queries";
-
-export const Route = createFileRoute("/progression")({
-	component: ProgressionPage,
-});
+import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api";
 
 interface CycleData {
 	id: string;
@@ -31,12 +26,9 @@ const LIFTS: Array<{
 	{ key: "ohp", label: "Overhead Press" },
 ];
 
-function ProgressionPage() {
-	const navigate = useNavigate();
-	const { data } = useCurrentCycle();
-	const startNext = useStartNextCycle();
-
-	const cycle = data as CycleData | undefined;
+export default function ProgressionIsland() {
+	const [cycle, setCycle] = useState<CycleData | null>(null);
+	const [isStarting, setIsStarting] = useState(false);
 
 	const [results, setResults] = useState({
 		squat: { weight: "", reps: "" },
@@ -47,6 +39,12 @@ function ProgressionPage() {
 	const [progression, setProgression] = useState<CycleProgressionResult | null>(
 		null,
 	);
+
+	useEffect(() => {
+		apiFetch<CycleData | null>("/api/cycles/current")
+			.then((data) => setCycle(data))
+			.catch(() => {});
+	}, []);
 
 	if (!cycle) {
 		return (
@@ -86,17 +84,22 @@ function ProgressionPage() {
 
 	const handleStartNext = async () => {
 		if (!progression) return;
+		setIsStarting(true);
 		try {
-			await startNext.mutateAsync({
-				squat: progression.squat.newMax,
-				bench: progression.bench.newMax,
-				deadlift: progression.deadlift.newMax,
-				ohp: progression.ohp.newMax,
-				unit: cycle.unit || "lbs",
+			await apiFetch("/api/cycles/next", {
+				method: "POST",
+				body: JSON.stringify({
+					squat: progression.squat.newMax,
+					bench: progression.bench.newMax,
+					deadlift: progression.deadlift.newMax,
+					ohp: progression.ohp.newMax,
+					unit: cycle.unit || "lbs",
+				}),
 			});
-			navigate({ to: "/" });
+			window.location.href = "/";
 		} catch (err) {
 			console.error("Failed to start next cycle", err);
+			setIsStarting(false);
 		}
 	};
 
@@ -184,10 +187,10 @@ function ProgressionPage() {
 					<button
 						type="button"
 						onClick={handleStartNext}
-						disabled={startNext.isPending}
+						disabled={isStarting}
 						className="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-500 disabled:opacity-50 transition-colors"
 					>
-						{startNext.isPending ? "Starting..." : "Start Next Cycle"}
+						{isStarting ? "Starting..." : "Start Next Cycle"}
 					</button>
 				</div>
 			)}

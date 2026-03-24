@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useLogSet } from "../lib/queries";
 import { SetCard } from "./SetCard";
 
 interface VariationSectionProps {
-	workoutId: string;
+	onLogSet: (data: Record<string, unknown>) => void;
 }
 
-export function VariationSection({ workoutId }: VariationSectionProps) {
-	const logSet = useLogSet();
+export function VariationSection({ onLogSet }: VariationSectionProps) {
 	const [completedCount, setCompletedCount] = useState(0);
 
 	// V1: placeholder RPE sets
@@ -37,8 +35,7 @@ export function VariationSection({ workoutId }: VariationSectionProps) {
 						repRange={`${set.repMin}-${set.repMax} reps`}
 						onComplete={(data) => {
 							setCompletedCount((c) => c + 1);
-							logSet.mutate({
-								workoutId,
+							onLogSet({
 								exerciseName: "Variation",
 								setNumber: set.setNumber,
 								actualWeight: data.actualWeight ?? null,

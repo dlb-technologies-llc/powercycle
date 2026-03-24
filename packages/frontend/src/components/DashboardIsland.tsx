@@ -1,11 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { getToken } from "../lib/api";
-import { useCurrentCycle, useStartWorkout } from "../lib/queries";
-
-export const Route = createFileRoute("/")({
-	component: DashboardPage,
-});
+import { useEffect, useState } from "react";
+import { apiFetch, getToken } from "../lib/api";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -30,26 +24,38 @@ interface CycleData {
 	completedAt: string | null;
 }
 
-function DashboardPage() {
-	const navigate = useNavigate();
-	const { data, isLoading, isError } = useCurrentCycle();
-	const startWorkout = useStartWorkout();
-
-	const cycle = data as CycleData | undefined;
+export default function DashboardIsland() {
+	const [cycle, setCycle] = useState<CycleData | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [isError, setIsError] = useState(false);
+	const [isStarting, setIsStarting] = useState(false);
 
 	// Auth guard
 	useEffect(() => {
 		if (!getToken()) {
-			navigate({ to: "/login" });
+			window.location.href = "/login";
 		}
-	}, [navigate]);
+	}, []);
+
+	// Fetch current cycle
+	useEffect(() => {
+		apiFetch<CycleData | null>("/api/cycles/current")
+			.then((data) => {
+				setCycle(data);
+				setIsLoading(false);
+			})
+			.catch(() => {
+				setIsError(true);
+				setIsLoading(false);
+			});
+	}, []);
 
 	// No cycle -> setup
 	useEffect(() => {
 		if (!isLoading && !isError && !cycle) {
-			navigate({ to: "/setup" });
+			window.location.href = "/setup";
 		}
-	}, [cycle, isLoading, isError, navigate]);
+	}, [cycle, isLoading, isError]);
 
 	if (isLoading) {
 		return (
@@ -61,7 +67,7 @@ function DashboardPage() {
 
 	if (!cycle) return null;
 
-	// Cycle complete — show progression link
+	// Cycle complete
 	if (cycle.completedAt) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -71,12 +77,12 @@ function DashboardPage() {
 				<p className="text-zinc-400 mb-8">
 					Time to calculate your new maxes and start the next cycle.
 				</p>
-				<Link
-					to="/progression"
+				<a
+					href="/progression"
 					className="w-full max-w-xs py-5 bg-green-600 text-white font-bold text-xl rounded-xl hover:bg-green-500 transition-colors text-center block"
 				>
 					View Progression
-				</Link>
+				</a>
 			</div>
 		);
 	}
@@ -86,15 +92,20 @@ function DashboardPage() {
 	const roundName = ROUND_NAMES[cycle.currentRound] ?? "Unknown";
 
 	const handleStart = async () => {
+		setIsStarting(true);
 		try {
-			const workout = (await startWorkout.mutateAsync({
-				cycleId: cycle.id,
-				round: cycle.currentRound,
-				day: cycle.currentDay,
-			})) as { id: string };
-			navigate({ to: "/workout/$id", params: { id: workout.id } });
+			const workout = await apiFetch<{ id: string }>("/api/workouts", {
+				method: "POST",
+				body: JSON.stringify({
+					cycleId: cycle.id,
+					round: cycle.currentRound,
+					day: cycle.currentDay,
+				}),
+			});
+			window.location.href = `/workout?id=${workout.id}`;
 		} catch (err) {
 			console.error("Failed to start workout", err);
+			setIsStarting(false);
 		}
 	};
 
@@ -123,10 +134,10 @@ function DashboardPage() {
 				<button
 					type="button"
 					onClick={handleStart}
-					disabled={startWorkout.isPending}
+					disabled={isStarting}
 					className="w-full py-5 bg-zinc-100 text-zinc-900 font-bold text-xl rounded-xl hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 				>
-					{startWorkout.isPending ? "Starting..." : "Start Workout"}
+					{isStarting ? "Starting..." : "Start Workout"}
 				</button>
 			</div>
 		</div>
