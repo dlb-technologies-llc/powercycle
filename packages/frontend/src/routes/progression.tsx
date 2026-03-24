@@ -1,5 +1,5 @@
-import { calculateCycleProgression } from "@powercycle/shared";
 import type { CycleProgressionResult } from "@powercycle/shared";
+import { calculateCycleProgression } from "@powercycle/shared";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCurrentCycle, useStartNextCycle } from "../lib/queries";
