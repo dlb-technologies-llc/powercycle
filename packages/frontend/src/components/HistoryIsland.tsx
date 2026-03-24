@@ -1,10 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useAtomValue } from "@effect/atom-react";
+import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
-import { useWorkoutHistory } from "../lib/queries";
-
-export const Route = createFileRoute("/history")({
-	component: HistoryPage,
-});
+import { workoutHistoryAtom } from "../atoms/workouts";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -14,29 +11,37 @@ const DAY_NAMES: Record<number, string> = {
 	5: "Rest",
 };
 
-function HistoryPage() {
-	const { data: history, isLoading } = useWorkoutHistory();
-	const [expandedId, setExpandedId] = useState<string | null>(null);
+interface WorkoutSet {
+	exerciseName: string;
+	setNumber: number;
+	actualWeight: number | null;
+	actualReps: number | null;
+	rpe: number | null;
+	isMainLift: boolean;
+}
 
-	if (isLoading) {
+interface Workout {
+	id: string;
+	round: number;
+	day: number;
+	startedAt: string;
+	completedAt: string | null;
+	sets: WorkoutSet[];
+}
+
+export default function HistoryIsland() {
+	const [expandedId, setExpandedId] = useState<string | null>(null);
+	const result = useAtomValue(workoutHistoryAtom);
+
+	if (AsyncResult.isInitial(result) || result.waiting) {
 		return <p className="text-zinc-400">Loading history...</p>;
 	}
 
-	const workouts = (history ?? []) as Array<{
-		id: string;
-		round: number;
-		day: number;
-		startedAt: string;
-		completedAt: string | null;
-		sets: Array<{
-			exerciseName: string;
-			setNumber: number;
-			actualWeight: number | null;
-			actualReps: number | null;
-			rpe: number | null;
-			isMainLift: boolean;
-		}>;
-	}>;
+	if (AsyncResult.isFailure(result)) {
+		return <p className="text-red-400">Failed to load workout history.</p>;
+	}
+
+	const workouts = (result.value ?? []) as Workout[];
 
 	if (workouts.length === 0) {
 		return (
@@ -77,15 +82,15 @@ function HistoryPage() {
 									{workout.sets?.length ?? 0} sets
 								</span>
 								<span className="text-zinc-500">
-									{expandedId === workout.id ? "▲" : "▼"}
+									{expandedId === workout.id ? "\u25B2" : "\u25BC"}
 								</span>
 							</div>
 						</button>
 						{expandedId === workout.id && workout.sets && (
 							<div className="border-t border-zinc-800 p-4 space-y-2">
-								{workout.sets.map((set, i) => (
+								{workout.sets.map((set) => (
 									<div
-										key={`${set.exerciseName}-${set.setNumber}-${i}`}
+										key={`${set.exerciseName}-${String(set.setNumber)}`}
 										className="flex items-center justify-between text-sm"
 									>
 										<span className="text-zinc-300">

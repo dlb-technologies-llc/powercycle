@@ -1,27 +1,31 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useAtomSet } from "@effect/atom-react";
+import { Exit } from "effect";
 import { useState } from "react";
-import { useLogin } from "../lib/queries";
+import { loginAtom, setToken } from "../atoms/auth";
 
-export const Route = createFileRoute("/login")({
-	component: LoginPage,
-});
-
-function LoginPage() {
+export default function LoginIsland() {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
-	const login = useLogin();
-	const navigate = useNavigate();
+	const [isPending, setIsPending] = useState(false);
+
+	const login = useAtomSet(loginAtom, { mode: "promiseExit" });
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
-		try {
-			await login.mutateAsync({ username, password });
-			navigate({ to: "/" });
-		} catch {
-			setError("Invalid username or password");
-		}
+		setIsPending(true);
+		const exit = await login({ payload: { username, password } });
+		Exit.match(exit, {
+			onFailure: () => {
+				setError("Invalid username or password");
+				setIsPending(false);
+			},
+			onSuccess: (result) => {
+				setToken(result.token);
+				window.location.href = "/";
+			},
+		});
 	};
 
 	return (
@@ -65,10 +69,10 @@ function LoginPage() {
 				{error && <p className="text-red-400 text-sm">{error}</p>}
 				<button
 					type="submit"
-					disabled={login.isPending}
+					disabled={isPending}
 					className="w-full py-3 bg-zinc-100 text-zinc-900 font-semibold rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 				>
-					{login.isPending ? "Logging in..." : "Log In"}
+					{isPending ? "Logging in..." : "Log In"}
 				</button>
 			</form>
 		</div>

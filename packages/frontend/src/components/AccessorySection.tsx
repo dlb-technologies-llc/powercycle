@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useLogSet } from "../lib/queries";
 import { SetCard } from "./SetCard";
 
 interface AccessorySectionProps {
-	workoutId: string;
+	onLogSet: (data: Record<string, unknown>) => void;
 }
 
-export function AccessorySection({ workoutId }: AccessorySectionProps) {
-	const logSet = useLogSet();
+export function AccessorySection({ onLogSet }: AccessorySectionProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [completedCount, setCompletedCount] = useState(0);
 
@@ -42,14 +40,13 @@ export function AccessorySection({ workoutId }: AccessorySectionProps) {
 							<div className="space-y-3">
 								{Array.from({ length: accessory.sets }, (_, i) => (
 									<SetCard
-										key={`${accessory.name}-${i}`}
+										key={`${accessory.name}-set-${String(i + 1)}`}
 										setNumber={i + 1}
 										rpeTarget="RPE 7-9"
 										repRange="8-12 reps"
 										onComplete={(data) => {
 											setCompletedCount((c) => c + 1);
-											logSet.mutate({
-												workoutId,
+											onLogSet({
 												exerciseName: accessory.name,
 												setNumber: i + 1,
 												actualWeight: data.actualWeight ?? null,

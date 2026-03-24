@@ -1,8 +1,12 @@
 {
 	"name": "powercycle",
 	"private": true,
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"scripts": {
+		"build": "bun run --filter @powercycle/frontend build",
+		"dev": "bun run --filter @powercycle/frontend dev & bun run --filter @powercycle/backend dev & wait",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
@@ -15,6 +19,6 @@
 		"db:migrate": "bun --filter './packages/backend' db:migrate"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4"
+		"@biomejs/biome": "^2.4.0"
 	}
 }

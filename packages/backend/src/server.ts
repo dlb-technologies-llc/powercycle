@@ -13,7 +13,7 @@ import { CycleService } from "./services/CycleService.js";
 import { UserService } from "./services/UserService.js";
 import { WorkoutService } from "./services/WorkoutService.js";
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.API_PORT) || 3000;
 
 const ServiceLive = Layer.mergeAll(
 	AuthService.test,

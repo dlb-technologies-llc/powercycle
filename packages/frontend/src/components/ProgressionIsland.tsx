@@ -1,12 +1,10 @@
-import { calculateCycleProgression } from "@powercycle/shared";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { CycleProgressionResult } from "@powercycle/shared";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { calculateCycleProgression } from "@powercycle/shared";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
-import { useCurrentCycle, useStartNextCycle } from "../lib/queries";
-
-export const Route = createFileRoute("/progression")({
-	component: ProgressionPage,
-});
+import { currentCycleAtom, startNextCycleAtom } from "../atoms/cycles";
 
 interface CycleData {
 	id: string;
@@ -31,13 +29,8 @@ const LIFTS: Array<{
 	{ key: "ohp", label: "Overhead Press" },
 ];
 
-function ProgressionPage() {
-	const navigate = useNavigate();
-	const { data } = useCurrentCycle();
-	const startNext = useStartNextCycle();
-
-	const cycle = data as CycleData | undefined;
-
+export default function ProgressionIsland() {
+	const [isStarting, setIsStarting] = useState(false);
 	const [results, setResults] = useState({
 		squat: { weight: "", reps: "" },
 		bench: { weight: "", reps: "" },
@@ -47,6 +40,29 @@ function ProgressionPage() {
 	const [progression, setProgression] = useState<CycleProgressionResult | null>(
 		null,
 	);
+
+	const result = useAtomValue(currentCycleAtom);
+	const startNextCycle = useAtomSet(startNextCycleAtom, {
+		mode: "promiseExit",
+	});
+
+	if (AsyncResult.isInitial(result) || result.waiting) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-zinc-400">Loading...</p>
+			</div>
+		);
+	}
+
+	if (AsyncResult.isFailure(result)) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-red-400">Failed to load cycle data.</p>
+			</div>
+		);
+	}
+
+	const cycle = result.value as CycleData | null;
 
 	if (!cycle) {
 		return (
@@ -86,18 +102,25 @@ function ProgressionPage() {
 
 	const handleStartNext = async () => {
 		if (!progression) return;
-		try {
-			await startNext.mutateAsync({
+		setIsStarting(true);
+		const exit = await startNextCycle({
+			payload: {
 				squat: progression.squat.newMax,
 				bench: progression.bench.newMax,
 				deadlift: progression.deadlift.newMax,
 				ohp: progression.ohp.newMax,
 				unit: cycle.unit || "lbs",
-			});
-			navigate({ to: "/" });
-		} catch (err) {
-			console.error("Failed to start next cycle", err);
-		}
+			},
+		});
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to start next cycle");
+				setIsStarting(false);
+			},
+			onSuccess: () => {
+				window.location.href = "/";
+			},
+		});
 	};
 
 	return (
@@ -184,10 +207,10 @@ function ProgressionPage() {
 					<button
 						type="button"
 						onClick={handleStartNext}
-						disabled={startNext.isPending}
+						disabled={isStarting}
 						className="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-500 disabled:opacity-50 transition-colors"
 					>
-						{startNext.isPending ? "Starting..." : "Start Next Cycle"}
+						{isStarting ? "Starting..." : "Start Next Cycle"}
 					</button>
 				</div>
 			)}

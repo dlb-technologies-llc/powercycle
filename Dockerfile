@@ -1,50 +1,47 @@
-# Stage 1: Build
-FROM oven/bun:1-slim AS builder
+FROM oven/bun:1-alpine AS deps
 
 WORKDIR /app
 
-# Install dependencies (copy package.json files first for caching)
 COPY package.json bun.lock ./
-COPY packages/shared/package.json packages/shared/
-COPY packages/backend/package.json packages/backend/
-COPY packages/frontend/package.json packages/frontend/
+COPY packages/backend/package.json ./packages/backend/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/frontend/package.json ./packages/frontend/
+
 RUN bun install --frozen-lockfile
 
-# Copy source
-COPY . .
-
-# Build frontend
-RUN cd packages/frontend && bun run build
-
-# Stage 2: Production
-FROM oven/bun:1-slim AS production
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Copy root workspace config + lockfile (needed for Bun workspace resolution)
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/bun.lock ./
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/backend/node_modules ./packages/backend/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=deps /app/packages/frontend/node_modules ./packages/frontend/node_modules
+COPY packages/frontend ./packages/frontend
+COPY packages/shared ./packages/shared
+COPY packages/backend/package.json ./packages/backend/
+COPY package.json bun.lock tsconfig.json ./
 
-# Copy all packages (backend needs shared at runtime)
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/packages/backend ./packages/backend
-COPY --from=builder /app/packages/frontend/package.json ./packages/frontend/
-COPY --from=builder /app/packages/frontend/dist ./packages/frontend/dist
+RUN bun run --filter @powercycle/frontend build
 
-# Copy entrypoint
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
+FROM oven/bun:1-alpine AS runner
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache caddy curl
 
-ENV PORT=3000
-ENV NODE_ENV=production
+WORKDIR /app
 
-EXPOSE 3000
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/backend/node_modules ./packages/backend/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=builder /app/packages/frontend/dist /srv
+COPY packages/backend ./packages/backend
+COPY packages/shared ./packages/shared
+COPY package.json bun.lock ./
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY start.sh /app/start.sh
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
-  CMD curl -f http://localhost:${PORT}/api/health || exit 1
+RUN chmod +x /app/start.sh
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+EXPOSE 80
+
+CMD ["/app/start.sh"]

@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useLogSet } from "../lib/queries";
 import { SetCard } from "./SetCard";
 
 interface MainLiftSectionProps {
-	workoutId: string;
+	onLogSet: (data: Record<string, unknown>) => void;
 }
 
-export function MainLiftSection({ workoutId }: MainLiftSectionProps) {
-	const logSet = useLogSet();
+export function MainLiftSection({ onLogSet }: MainLiftSectionProps) {
 	const [completedCount, setCompletedCount] = useState(0);
 
 	// V1: placeholder sets. In the real app, these come from the workout plan.
@@ -38,8 +36,7 @@ export function MainLiftSection({ workoutId }: MainLiftSectionProps) {
 						isAmrap={set.isAmrap}
 						onComplete={(data) => {
 							setCompletedCount((c) => c + 1);
-							logSet.mutate({
-								workoutId,
+							onLogSet({
 								exerciseName: "Squat",
 								setNumber: set.setNumber,
 								prescribedWeight: set.weight,

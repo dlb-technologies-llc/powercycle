@@ -1,10 +1,17 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-	"files": {
-		"ignore": ["**/routeTree.gen.ts", "**/dist/**"]
+	"$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
 	},
-	"organizeImports": {
-		"enabled": true
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**", "!**/routeTree.gen.ts", "!**/dist", "!**/.astro"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
 	},
 	"linter": {
 		"enabled": true,
@@ -12,8 +19,49 @@
 			"recommended": true
 		}
 	},
-	"formatter": {
+	"css": {
+		"parser": {
+			"cssModules": false,
+			"tailwindDirectives": true
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
 		"enabled": true,
-		"indentStyle": "tab"
-	}
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.astro"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useConst": "off",
+						"useImportType": "off"
+					},
+					"correctness": {
+						"noUnusedVariables": "off",
+						"noUnusedImports": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/components/ui/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		}
+	]
 }

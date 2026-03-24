@@ -1,11 +1,10 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { getToken } from "../lib/api";
-import { useCurrentCycle, useStartWorkout } from "../lib/queries";
-
-export const Route = createFileRoute("/")({
-	component: DashboardPage,
-});
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
+import { useState } from "react";
+import { getToken } from "../atoms/auth";
+import { currentCycleAtom } from "../atoms/cycles";
+import { startWorkoutAtom } from "../atoms/workouts";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -30,28 +29,20 @@ interface CycleData {
 	completedAt: string | null;
 }
 
-function DashboardPage() {
-	const navigate = useNavigate();
-	const { data, isLoading, isError } = useCurrentCycle();
-	const startWorkout = useStartWorkout();
-
-	const cycle = data as CycleData | undefined;
+export default function DashboardIsland() {
+	const [isStarting, setIsStarting] = useState(false);
+	const result = useAtomValue(currentCycleAtom);
+	const startWorkout = useAtomSet(startWorkoutAtom, {
+		mode: "promiseExit",
+	});
 
 	// Auth guard
-	useEffect(() => {
-		if (!getToken()) {
-			navigate({ to: "/login" });
-		}
-	}, [navigate]);
+	if (typeof window !== "undefined" && !getToken()) {
+		window.location.href = "/login";
+		return null;
+	}
 
-	// No cycle -> setup
-	useEffect(() => {
-		if (!isLoading && !isError && !cycle) {
-			navigate({ to: "/setup" });
-		}
-	}, [cycle, isLoading, isError, navigate]);
-
-	if (isLoading) {
+	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<p className="text-zinc-400">Loading...</p>
@@ -59,9 +50,25 @@ function DashboardPage() {
 		);
 	}
 
-	if (!cycle) return null;
+	if (AsyncResult.isFailure(result)) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-red-400">Failed to load cycle data.</p>
+			</div>
+		);
+	}
 
-	// Cycle complete — show progression link
+	const cycle = result.value as CycleData | null;
+
+	// No cycle -> setup
+	if (!cycle) {
+		if (typeof window !== "undefined") {
+			window.location.href = "/setup";
+		}
+		return null;
+	}
+
+	// Cycle complete
 	if (cycle.completedAt) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -71,12 +78,12 @@ function DashboardPage() {
 				<p className="text-zinc-400 mb-8">
 					Time to calculate your new maxes and start the next cycle.
 				</p>
-				<Link
-					to="/progression"
+				<a
+					href="/progression"
 					className="w-full max-w-xs py-5 bg-green-600 text-white font-bold text-xl rounded-xl hover:bg-green-500 transition-colors text-center block"
 				>
 					View Progression
-				</Link>
+				</a>
 			</div>
 		);
 	}
@@ -86,16 +93,23 @@ function DashboardPage() {
 	const roundName = ROUND_NAMES[cycle.currentRound] ?? "Unknown";
 
 	const handleStart = async () => {
-		try {
-			const workout = (await startWorkout.mutateAsync({
+		setIsStarting(true);
+		const exit = await startWorkout({
+			payload: {
 				cycleId: cycle.id,
 				round: cycle.currentRound,
 				day: cycle.currentDay,
-			})) as { id: string };
-			navigate({ to: "/workout/$id", params: { id: workout.id } });
-		} catch (err) {
-			console.error("Failed to start workout", err);
-		}
+			},
+		});
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to start workout");
+				setIsStarting(false);
+			},
+			onSuccess: (workout: { id: string }) => {
+				window.location.href = `/workout?id=${workout.id}`;
+			},
+		});
 	};
 
 	if (isRestDay) {
@@ -123,10 +137,10 @@ function DashboardPage() {
 				<button
 					type="button"
 					onClick={handleStart}
-					disabled={startWorkout.isPending}
+					disabled={isStarting}
 					className="w-full py-5 bg-zinc-100 text-zinc-900 font-bold text-xl rounded-xl hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 				>
-					{startWorkout.isPending ? "Starting..." : "Start Workout"}
+					{isStarting ? "Starting..." : "Start Workout"}
 				</button>
 			</div>
 		</div>

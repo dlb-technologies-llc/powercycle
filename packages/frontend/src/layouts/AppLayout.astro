@@ -1,0 +1,33 @@
+---
+import "../styles/global.css";
+
+interface Props {
+	title?: string;
+}
+const { title = "PowerCycle" } = Astro.props;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+	</head>
+	<body class="min-h-screen bg-zinc-950 text-zinc-100">
+		<header class="border-b border-zinc-800 px-6 py-4">
+			<div class="flex items-center justify-between max-w-2xl mx-auto">
+				<a href="/" class="text-xl font-bold">PowerCycle</a>
+				<nav class="flex gap-4">
+					<a
+						href="/history"
+						class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+						>History</a
+					>
+				</nav>
+			</div>
+		</header>
+		<main class="max-w-2xl mx-auto px-6 py-8">
+			<slot />
+		</main>
+	</body>
+</html>
