@@ -32,21 +32,59 @@ export class AuthGroup extends HttpApiGroup.make("auth").add(
 	}),
 ) {}
 
-export class CyclesGroup extends HttpApiGroup.make("cycles").add(
-	HttpApiEndpoint.get("current", "/api/cycles/current", {
-		success: Schema.Any,
-	}),
-	HttpApiEndpoint.post("create", "/api/cycles", {
-		payload: Schema.Struct({
-			squat: Schema.Number,
-			bench: Schema.Number,
-			deadlift: Schema.Number,
-			ohp: Schema.Number,
-			unit: Schema.String,
+export class CyclesGroup extends HttpApiGroup.make("cycles")
+	.add(
+		HttpApiEndpoint.get("current", "/api/cycles/current", {
+			success: Schema.Any,
 		}),
-		success: Schema.Any,
-	}),
-) {}
+	)
+	.add(
+		HttpApiEndpoint.post("create", "/api/cycles", {
+			payload: Schema.Struct({
+				squat: Schema.Number,
+				bench: Schema.Number,
+				deadlift: Schema.Number,
+				ohp: Schema.Number,
+				unit: Schema.String,
+			}),
+			success: Schema.Any,
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("progress", "/api/cycles/progress", {
+			payload: Schema.Struct({
+				squat: Schema.Struct({
+					weight: Schema.Number,
+					reps: Schema.Number,
+				}),
+				bench: Schema.Struct({
+					weight: Schema.Number,
+					reps: Schema.Number,
+				}),
+				deadlift: Schema.Struct({
+					weight: Schema.Number,
+					reps: Schema.Number,
+				}),
+				ohp: Schema.Struct({
+					weight: Schema.Number,
+					reps: Schema.Number,
+				}),
+			}),
+			success: Schema.Any,
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("next", "/api/cycles/next", {
+			payload: Schema.Struct({
+				squat: Schema.Number,
+				bench: Schema.Number,
+				deadlift: Schema.Number,
+				ohp: Schema.Number,
+				unit: Schema.String,
+			}),
+			success: Schema.Any,
+		}),
+	) {}
 
 export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 	HttpApiEndpoint.get("next", "/api/workouts/next", {
