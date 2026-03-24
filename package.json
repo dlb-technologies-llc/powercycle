@@ -5,6 +5,8 @@
 		"packages/*"
 	],
 	"scripts": {
+		"build": "bun run --filter @powercycle/frontend build",
+		"dev": "bun run --filter @powercycle/frontend dev & bun run --filter @powercycle/backend dev & wait",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
