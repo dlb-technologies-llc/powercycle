@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { getToken } from "../lib/api";
 import { useCurrentCycle, useStartWorkout } from "../lib/queries";
@@ -27,6 +27,7 @@ interface CycleData {
 	cycleNumber: number;
 	currentRound: number;
 	currentDay: number;
+	completedAt: string | null;
 }
 
 function DashboardPage() {
@@ -59,6 +60,26 @@ function DashboardPage() {
 	}
 
 	if (!cycle) return null;
+
+	// Cycle complete — show progression link
+	if (cycle.completedAt) {
+		return (
+			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+				<h1 className="text-4xl font-bold mb-4">
+					Cycle {cycle.cycleNumber} Complete
+				</h1>
+				<p className="text-zinc-400 mb-8">
+					Time to calculate your new maxes and start the next cycle.
+				</p>
+				<Link
+					to="/progression"
+					className="w-full max-w-xs py-5 bg-green-600 text-white font-bold text-xl rounded-xl hover:bg-green-500 transition-colors text-center block"
+				>
+					View Progression
+				</Link>
+			</div>
+		);
+	}
 
 	const isRestDay = cycle.currentDay === 5;
 	const dayName = DAY_NAMES[cycle.currentDay] ?? "Unknown";

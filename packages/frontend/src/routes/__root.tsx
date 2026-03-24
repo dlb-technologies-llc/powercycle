@@ -8,6 +8,14 @@ export const Route = createRootRoute({
 					<Link to="/" className="text-xl font-bold">
 						PowerCycle
 					</Link>
+					<nav className="flex gap-4">
+						<Link
+							to="/history"
+							className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+						>
+							History
+						</Link>
+					</nav>
 				</div>
 			</header>
 			<main className="max-w-2xl mx-auto px-6 py-8">

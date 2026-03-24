@@ -111,3 +111,46 @@ export const useCompleteWorkout = () => {
 		},
 	});
 };
+
+export const useWorkoutHistory = () =>
+	useQuery({
+		queryKey: ["workouts", "history"],
+		queryFn: () => apiFetch<unknown[]>("/api/workouts/history"),
+		retry: false,
+	});
+
+// Progression
+export const useCalculateProgression = () =>
+	useMutation({
+		mutationFn: (data: {
+			squat: { weight: number; reps: number };
+			bench: { weight: number; reps: number };
+			deadlift: { weight: number; reps: number };
+			ohp: { weight: number; reps: number };
+		}) =>
+			apiFetch<unknown>("/api/cycles/progress", {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
+	});
+
+export const useStartNextCycle = () => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (data: {
+			squat: number;
+			bench: number;
+			deadlift: number;
+			ohp: number;
+			unit: string;
+		}) =>
+			apiFetch<unknown>("/api/cycles/next", {
+				method: "POST",
+				body: JSON.stringify(data),
+			}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["cycles"] });
+			queryClient.invalidateQueries({ queryKey: ["workouts"] });
+		},
+	});
+};
