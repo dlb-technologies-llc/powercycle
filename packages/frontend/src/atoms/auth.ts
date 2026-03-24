@@ -1,22 +1,10 @@
+import { clearToken, getToken, setToken } from "../lib/api";
 import { ApiClient } from "./client";
 
-const TOKEN_KEY = "powercycle_token";
-
-// ── Token Management ──
-
-export const getToken = (): string | null =>
-	typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
-
-export const setToken = (token: string): void =>
-	localStorage.setItem(TOKEN_KEY, token);
-
-export const clearToken = (): void => localStorage.removeItem(TOKEN_KEY);
-
-// ── Mutation Atoms ──
+export { clearToken, getToken, setToken };
 
 /**
  * Login mutation atom.
- * Returns { success, token, userId } on success.
  * Consumer should call `setToken(result.token)` after successful login.
  */
 export const loginAtom = ApiClient.mutation("auth", "login");

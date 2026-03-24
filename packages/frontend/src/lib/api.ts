@@ -17,9 +17,12 @@ export async function apiFetch<T>(
 ): Promise<T> {
 	const token = getToken();
 	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
+		...((options?.headers as Record<string, string>) ?? {}),
 		...(token ? { Authorization: `Bearer ${token}` } : {}),
 	};
+	if (options?.body) {
+		headers["Content-Type"] = "application/json";
+	}
 	const res = await fetch(path, { ...options, headers });
 	if (!res.ok) {
 		throw new Error(`API error: ${res.status}`);

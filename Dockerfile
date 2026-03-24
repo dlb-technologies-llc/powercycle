@@ -46,7 +46,4 @@ RUN rm -rf /app/packages/backend/node_modules && \
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
-    CMD curl -f http://localhost:3001/api/health || exit 1
-
 CMD ["/app/start.sh"]
