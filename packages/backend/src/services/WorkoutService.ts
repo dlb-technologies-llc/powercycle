@@ -60,6 +60,9 @@ export class WorkoutService extends ServiceMap.Service<
 		readonly getWorkout: (
 			workoutId: string,
 		) => Effect.Effect<(WorkoutData & { sets: Array<SetData> }) | null>;
+		readonly getHistory: (
+			userId: string,
+		) => Effect.Effect<Array<WorkoutData & { sets: Array<SetData> }>>;
 	}
 >()("WorkoutService") {
 	static test = Layer.sync(this, () => {
@@ -129,6 +132,17 @@ export class WorkoutService extends ServiceMap.Service<
 					const workoutSets = sets.filter((s) => s.workoutId === workoutId);
 					return { ...workout, sets: workoutSets };
 				}),
+
+			getHistory: (userId: string) =>
+				Effect.sync(() =>
+					workouts
+						.filter((w) => w.userId === userId && w.completedAt !== null)
+						.map((w) => ({
+							...w,
+							sets: sets.filter((s) => s.workoutId === w.id),
+						}))
+						.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime()),
+				),
 		};
 	});
 }

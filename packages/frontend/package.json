@@ -17,6 +17,7 @@
 		"tailwindcss": "^4.2.1"
 	},
 	"devDependencies": {
+		"@tailwindcss/vite": "^4.2.1",
 		"@vitejs/plugin-react": "^4.6.0",
 		"@tanstack/router-plugin": "^1.120.6",
 		"vite": "^6.3.5",

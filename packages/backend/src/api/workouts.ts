@@ -12,6 +12,15 @@ export const WorkoutsLive = HttpApiBuilder.group(
 		const workoutService = yield* WorkoutService;
 		const authService = yield* AuthService;
 		return handlers
+			.handle("history", (ctx) =>
+				Effect.gen(function* () {
+					const userId = yield* getUserId(
+						ctx.request.headers.authorization,
+						authService,
+					);
+					return yield* workoutService.getHistory(userId);
+				}),
+			)
 			.handle("next", (ctx) =>
 				Effect.gen(function* () {
 					const userId = yield* getUserId(
