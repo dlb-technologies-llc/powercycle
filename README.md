@@ -65,3 +65,4 @@ packages/
 | `bun run docker:logs` | Tail dev Postgres logs |
 | `bun run db:generate` | Generate DB migrations |
 | `bun run db:migrate` | Apply DB migrations |
+
