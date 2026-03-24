@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { apiFetch } from "../lib/api";
+import { useAtomValue } from "@effect/atom-react";
+import { AsyncResult } from "effect/unstable/reactivity";
+import { useState } from "react";
+import { workoutHistoryAtom } from "../atoms/workouts";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -28,24 +30,18 @@ interface Workout {
 }
 
 export default function HistoryIsland() {
-	const [workouts, setWorkouts] = useState<Workout[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
+	const result = useAtomValue(workoutHistoryAtom);
 
-	useEffect(() => {
-		apiFetch<Workout[]>("/api/workouts/history")
-			.then((data) => {
-				setWorkouts(data ?? []);
-				setIsLoading(false);
-			})
-			.catch(() => {
-				setIsLoading(false);
-			});
-	}, []);
-
-	if (isLoading) {
+	if (AsyncResult.isInitial(result) || result.waiting) {
 		return <p className="text-zinc-400">Loading history...</p>;
 	}
+
+	if (AsyncResult.isFailure(result)) {
+		return <p className="text-red-400">Failed to load workout history.</p>;
+	}
+
+	const workouts = (result.value ?? []) as Workout[];
 
 	if (workouts.length === 0) {
 		return (
@@ -92,7 +88,7 @@ export default function HistoryIsland() {
 						</button>
 						{expandedId === workout.id && workout.sets && (
 							<div className="border-t border-zinc-800 p-4 space-y-2">
-								{workout.sets.map((set, i) => (
+								{workout.sets.map((set) => (
 									<div
 										key={`${set.exerciseName}-${String(set.setNumber)}`}
 										className="flex items-center justify-between text-sm"

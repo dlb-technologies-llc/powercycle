@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { apiFetch, getToken } from "../lib/api";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
+import { useState } from "react";
+import { getToken } from "../atoms/auth";
+import { currentCycleAtom } from "../atoms/cycles";
+import { startWorkoutAtom } from "../atoms/workouts";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -25,39 +30,19 @@ interface CycleData {
 }
 
 export default function DashboardIsland() {
-	const [cycle, setCycle] = useState<CycleData | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isError, setIsError] = useState(false);
 	const [isStarting, setIsStarting] = useState(false);
+	const result = useAtomValue(currentCycleAtom);
+	const startWorkout = useAtomSet(startWorkoutAtom, {
+		mode: "promiseExit",
+	});
 
 	// Auth guard
-	useEffect(() => {
-		if (!getToken()) {
-			window.location.href = "/login";
-		}
-	}, []);
+	if (typeof window !== "undefined" && !getToken()) {
+		window.location.href = "/login";
+		return null;
+	}
 
-	// Fetch current cycle
-	useEffect(() => {
-		apiFetch<CycleData | null>("/api/cycles/current")
-			.then((data) => {
-				setCycle(data);
-				setIsLoading(false);
-			})
-			.catch(() => {
-				setIsError(true);
-				setIsLoading(false);
-			});
-	}, []);
-
-	// No cycle -> setup
-	useEffect(() => {
-		if (!isLoading && !isError && !cycle) {
-			window.location.href = "/setup";
-		}
-	}, [cycle, isLoading, isError]);
-
-	if (isLoading) {
+	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<p className="text-zinc-400">Loading...</p>
@@ -65,7 +50,23 @@ export default function DashboardIsland() {
 		);
 	}
 
-	if (!cycle) return null;
+	if (AsyncResult.isFailure(result)) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-red-400">Failed to load cycle data.</p>
+			</div>
+		);
+	}
+
+	const cycle = result.value as CycleData | null;
+
+	// No cycle -> setup
+	if (!cycle) {
+		if (typeof window !== "undefined") {
+			window.location.href = "/setup";
+		}
+		return null;
+	}
 
 	// Cycle complete
 	if (cycle.completedAt) {
@@ -93,20 +94,22 @@ export default function DashboardIsland() {
 
 	const handleStart = async () => {
 		setIsStarting(true);
-		try {
-			const workout = await apiFetch<{ id: string }>("/api/workouts", {
-				method: "POST",
-				body: JSON.stringify({
-					cycleId: cycle.id,
-					round: cycle.currentRound,
-					day: cycle.currentDay,
-				}),
-			});
-			window.location.href = `/workout?id=${workout.id}`;
-		} catch (err) {
-			console.error("Failed to start workout", err);
-			setIsStarting(false);
-		}
+		const exit = await startWorkout({
+			payload: {
+				cycleId: cycle.id,
+				round: cycle.currentRound,
+				day: cycle.currentDay,
+			},
+		});
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to start workout");
+				setIsStarting(false);
+			},
+			onSuccess: (workout: { id: string }) => {
+				window.location.href = `/workout?id=${workout.id}`;
+			},
+		});
 	};
 
 	if (isRestDay) {

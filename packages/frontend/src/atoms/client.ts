@@ -5,7 +5,11 @@ import {
 	HttpClientRequest,
 } from "effect/unstable/http";
 import { AtomHttpApi } from "effect/unstable/reactivity";
-import { getToken } from "../lib/api";
+
+const TOKEN_KEY = "powercycle_token";
+
+const getTokenFromStorage = (): string | null =>
+	typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
 
 /**
  * Typed API client for PowerCycleApi with auth token injection.
@@ -23,7 +27,7 @@ export class ApiClient extends AtomHttpApi.Service<ApiClient>()(
 		transformClient: (client) =>
 			client.pipe(
 				HttpClient.mapRequest((req) => {
-					const token = getToken();
+					const token = getTokenFromStorage();
 					return token ? HttpClientRequest.bearerToken(req, token) : req;
 				}),
 			),

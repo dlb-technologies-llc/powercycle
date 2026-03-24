@@ -1,5 +1,7 @@
+import { useAtomSet } from "@effect/atom-react";
+import { Exit } from "effect";
 import { useState } from "react";
-import { apiFetch } from "../lib/api";
+import { createCycleAtom } from "../atoms/cycles";
 
 export default function SetupIsland() {
 	const [squat, setSquat] = useState("");
@@ -9,6 +11,8 @@ export default function SetupIsland() {
 	const [unit, setUnit] = useState<"lbs" | "kg">("lbs");
 	const [error, setError] = useState("");
 	const [isPending, setIsPending] = useState(false);
+
+	const createCycle = useAtomSet(createCycleAtom, { mode: "promiseExit" });
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -25,16 +29,16 @@ export default function SetupIsland() {
 			return;
 		}
 		setIsPending(true);
-		try {
-			await apiFetch("/api/cycles", {
-				method: "POST",
-				body: JSON.stringify(lifts),
-			});
-			window.location.href = "/";
-		} catch {
-			setError("Failed to create cycle");
-			setIsPending(false);
-		}
+		const exit = await createCycle({ payload: lifts });
+		Exit.match(exit, {
+			onFailure: () => {
+				setError("Failed to create cycle");
+				setIsPending(false);
+			},
+			onSuccess: () => {
+				window.location.href = "/";
+			},
+		});
 	};
 
 	const inputClass =

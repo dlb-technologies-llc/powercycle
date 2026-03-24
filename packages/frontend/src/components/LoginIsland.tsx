@@ -1,5 +1,7 @@
+import { useAtomSet } from "@effect/atom-react";
+import { Exit } from "effect";
 import { useState } from "react";
-import { apiFetch, setToken } from "../lib/api";
+import { loginAtom, setToken } from "../atoms/auth";
 
 export default function LoginIsland() {
 	const [username, setUsername] = useState("");
@@ -7,25 +9,23 @@ export default function LoginIsland() {
 	const [error, setError] = useState("");
 	const [isPending, setIsPending] = useState(false);
 
+	const login = useAtomSet(loginAtom, { mode: "promiseExit" });
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
 		setIsPending(true);
-		try {
-			const result = await apiFetch<{
-				success: boolean;
-				token: string;
-				userId: string;
-			}>("/api/auth/login", {
-				method: "POST",
-				body: JSON.stringify({ username, password }),
-			});
-			setToken(result.token);
-			window.location.href = "/";
-		} catch {
-			setError("Invalid username or password");
-			setIsPending(false);
-		}
+		const exit = await login({ payload: { username, password } });
+		Exit.match(exit, {
+			onFailure: () => {
+				setError("Invalid username or password");
+				setIsPending(false);
+			},
+			onSuccess: (result) => {
+				setToken(result.token);
+				window.location.href = "/";
+			},
+		});
 	};
 
 	return (

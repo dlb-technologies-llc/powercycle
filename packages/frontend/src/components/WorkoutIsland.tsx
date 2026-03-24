@@ -1,5 +1,7 @@
+import { useAtomSet } from "@effect/atom-react";
+import { Exit } from "effect";
 import { useState } from "react";
-import { apiFetch } from "../lib/api";
+import { completeWorkoutAtom, logSetAtom } from "../atoms/workouts";
 import { AccessorySection } from "./AccessorySection";
 import { MainLiftSection } from "./MainLiftSection";
 import { VariationSection } from "./VariationSection";
@@ -16,6 +18,11 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			: null);
 	const [isFinishing, setIsFinishing] = useState(false);
 
+	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
+	const completeWorkout = useAtomSet(completeWorkoutAtom, {
+		mode: "promiseExit",
+	});
+
 	if (!id) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
@@ -26,21 +33,32 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 
 	const handleFinish = async () => {
 		setIsFinishing(true);
-		try {
-			await apiFetch(`/api/workouts/${id}/complete`, {
-				method: "POST",
-			});
-			window.location.href = "/";
-		} catch (err) {
-			console.error("Failed to complete workout", err);
-			setIsFinishing(false);
-		}
+		const exit = await completeWorkout({ params: { id } });
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to complete workout");
+				setIsFinishing(false);
+			},
+			onSuccess: () => {
+				window.location.href = "/";
+			},
+		});
 	};
 
 	const handleLogSet = (data: Record<string, unknown>) => {
-		apiFetch(`/api/workouts/${id}/sets`, {
-			method: "POST",
-			body: JSON.stringify(data),
+		logSet({
+			params: { id },
+			payload: data as {
+				exerciseName: string;
+				setNumber: number;
+				prescribedWeight: number | null;
+				actualWeight: number | null;
+				prescribedReps: number | null;
+				actualReps: number | null;
+				rpe: number | null;
+				isMainLift: boolean;
+				isAmrap: boolean;
+			},
 		}).catch((err) => console.error("Failed to log set", err));
 	};
 

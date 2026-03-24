@@ -1,7 +1,10 @@
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { CycleProgressionResult } from "@powercycle/shared";
 import { calculateCycleProgression } from "@powercycle/shared";
-import { useEffect, useState } from "react";
-import { apiFetch } from "../lib/api";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
+import { useState } from "react";
+import { currentCycleAtom, startNextCycleAtom } from "../atoms/cycles";
 
 interface CycleData {
 	id: string;
@@ -27,9 +30,7 @@ const LIFTS: Array<{
 ];
 
 export default function ProgressionIsland() {
-	const [cycle, setCycle] = useState<CycleData | null>(null);
 	const [isStarting, setIsStarting] = useState(false);
-
 	const [results, setResults] = useState({
 		squat: { weight: "", reps: "" },
 		bench: { weight: "", reps: "" },
@@ -40,11 +41,28 @@ export default function ProgressionIsland() {
 		null,
 	);
 
-	useEffect(() => {
-		apiFetch<CycleData | null>("/api/cycles/current")
-			.then((data) => setCycle(data))
-			.catch(() => {});
-	}, []);
+	const result = useAtomValue(currentCycleAtom);
+	const startNextCycle = useAtomSet(startNextCycleAtom, {
+		mode: "promiseExit",
+	});
+
+	if (AsyncResult.isInitial(result) || result.waiting) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-zinc-400">Loading...</p>
+			</div>
+		);
+	}
+
+	if (AsyncResult.isFailure(result)) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-red-400">Failed to load cycle data.</p>
+			</div>
+		);
+	}
+
+	const cycle = result.value as CycleData | null;
 
 	if (!cycle) {
 		return (
@@ -85,22 +103,24 @@ export default function ProgressionIsland() {
 	const handleStartNext = async () => {
 		if (!progression) return;
 		setIsStarting(true);
-		try {
-			await apiFetch("/api/cycles/next", {
-				method: "POST",
-				body: JSON.stringify({
-					squat: progression.squat.newMax,
-					bench: progression.bench.newMax,
-					deadlift: progression.deadlift.newMax,
-					ohp: progression.ohp.newMax,
-					unit: cycle.unit || "lbs",
-				}),
-			});
-			window.location.href = "/";
-		} catch (err) {
-			console.error("Failed to start next cycle", err);
-			setIsStarting(false);
-		}
+		const exit = await startNextCycle({
+			payload: {
+				squat: progression.squat.newMax,
+				bench: progression.bench.newMax,
+				deadlift: progression.deadlift.newMax,
+				ohp: progression.ohp.newMax,
+				unit: cycle.unit || "lbs",
+			},
+		});
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to start next cycle");
+				setIsStarting(false);
+			},
+			onSuccess: () => {
+				window.location.href = "/";
+			},
+		});
 	};
 
 	return (
