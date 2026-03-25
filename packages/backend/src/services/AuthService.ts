@@ -1,4 +1,6 @@
-import { Effect, Layer, ServiceMap } from "effect";
+import { AuthError } from "@powercycle/shared/errors/index";
+import { Effect, Layer, Redacted, ServiceMap } from "effect";
+import { ConfigService } from "./ConfigService.js";
 
 const COOKIE_NAME = "powercycle_session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -47,7 +49,7 @@ export class AuthService extends ServiceMap.Service<
 	AuthService,
 	{
 		readonly createSession: (userId: string) => Effect.Effect<string>;
-		readonly verifySession: (token: string) => Effect.Effect<string, Error>;
+		readonly verifySession: (token: string) => Effect.Effect<string, AuthError>;
 		readonly createSessionCookie: (token: string) => Effect.Effect<string>;
 		readonly createLogoutCookie: () => Effect.Effect<string>;
 	}
@@ -66,7 +68,9 @@ export class AuthService extends ServiceMap.Service<
 				Effect.gen(function* () {
 					const parts = token.split(".");
 					if (parts.length !== 3) {
-						return yield* Effect.fail(new Error("Invalid session token"));
+						return yield* Effect.fail(
+							new AuthError({ message: "Invalid session token" }),
+						);
 					}
 					const [userId, timestamp, sig] = parts;
 					const payload = `${userId}.${timestamp}`;
@@ -74,11 +78,15 @@ export class AuthService extends ServiceMap.Service<
 						verify(payload, sig, secret),
 					);
 					if (!valid) {
-						return yield* Effect.fail(new Error("Invalid session signature"));
+						return yield* Effect.fail(
+							new AuthError({ message: "Invalid session signature" }),
+						);
 					}
 					const age = (Date.now() - Number(timestamp)) / 1000;
 					if (age > MAX_AGE) {
-						return yield* Effect.fail(new Error("Session expired"));
+						return yield* Effect.fail(
+							new AuthError({ message: "Session expired" }),
+						);
 					}
 					return userId;
 				}),
@@ -96,11 +104,18 @@ export class AuthService extends ServiceMap.Service<
 	}
 
 	static layer(secret: string) {
-		return Layer.succeed(AuthService, AuthService.make(secret));
+		return Layer.succeed(AuthService)(AuthService.make(secret));
 	}
 
-	static test = Layer.succeed(
-		AuthService,
+	static live = Layer.effect(AuthService)(
+		Effect.gen(function* () {
+			const config = yield* ConfigService;
+			const secret = Redacted.value(config.AUTH_SECRET);
+			return AuthService.make(secret);
+		}),
+	);
+
+	static test = Layer.succeed(AuthService)(
 		AuthService.make("test-secret-key-for-testing-only"),
 	);
 }

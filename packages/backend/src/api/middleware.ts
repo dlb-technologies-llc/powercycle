@@ -1,20 +1,20 @@
+import { AuthError } from "@powercycle/shared/errors/index";
 import { Effect } from "effect";
-import type { AuthService } from "../services/AuthService.js";
 
 type AuthServiceShape = {
-	readonly verifySession: (token: string) => Effect.Effect<string, Error>;
+	readonly verifySession: (token: string) => Effect.Effect<string, AuthError>;
 };
 
 export const getUserId = (
-	authHeader: string | undefined,
+	authorization: string | undefined,
 	authService: AuthServiceShape,
 ) =>
 	Effect.gen(function* () {
-		if (!authHeader?.startsWith("Bearer ")) {
-			return yield* Effect.die(
-				new Error("Missing or invalid Authorization header"),
+		if (!authorization?.startsWith("Bearer ")) {
+			return yield* Effect.fail(
+				new AuthError({ message: "Missing authorization header" }),
 			);
 		}
-		const token = authHeader.slice(7);
-		return yield* authService.verifySession(token).pipe(Effect.orDie);
+		const token = authorization.slice(7);
+		return yield* authService.verifySession(token);
 	});
