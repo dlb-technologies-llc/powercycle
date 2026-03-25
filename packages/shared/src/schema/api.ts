@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { MainLift } from "./lifts.js";
 
 export const LoginResponse = Schema.Struct({
 	success: Schema.Boolean,
@@ -58,6 +59,43 @@ export const WorkoutResponse = Schema.Struct({
 export const WorkoutWithSetsResponse = Schema.Struct({
 	...WorkoutResponse.fields,
 	sets: Schema.Array(SetResponse),
+});
+
+export const RegisterResponse = Schema.Struct({
+	success: Schema.Boolean,
+	userId: Schema.String,
+});
+
+export const PrescribedSetSchema = Schema.Struct({
+	setNumber: Schema.Number,
+	weight: Schema.Number,
+	reps: Schema.Number,
+	percentage: Schema.Number,
+	isAmrap: Schema.Boolean,
+});
+
+export const RpeSetSchema = Schema.Struct({
+	setNumber: Schema.Number,
+	rpeMin: Schema.Number,
+	rpeMax: Schema.Number,
+	repMin: Schema.Number,
+	repMax: Schema.Number,
+});
+
+export const ExerciseSlotSchema = Schema.Struct({
+	category: Schema.String,
+	defaultExercise: Schema.String,
+	sets: Schema.Array(RpeSetSchema),
+});
+
+export const WorkoutPlanResponse = Schema.Struct({
+	day: Schema.Number,
+	round: Schema.Number,
+	cycle: Schema.Number,
+	mainLift: MainLift,
+	mainLiftSets: Schema.Array(PrescribedSetSchema),
+	variation: ExerciseSlotSchema,
+	accessories: Schema.Array(ExerciseSlotSchema),
 });
 
 export const ProgressionResponse = Schema.Struct({

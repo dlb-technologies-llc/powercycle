@@ -5,14 +5,21 @@ import {
 	HttpApiGroup,
 	HttpApiSchema,
 } from "effect/unstable/httpapi";
-import { AuthError, InternalError, NotFoundError } from "../errors/index.js";
+import {
+	AuthError,
+	InternalError,
+	NotFoundError,
+	ValidationError,
+} from "../errors/index.js";
 import {
 	CycleResponse,
 	LoginResponse,
 	LogoutResponse,
 	NullableCycleResponse,
 	ProgressionResponse,
+	RegisterResponse,
 	SetResponse,
+	WorkoutPlanResponse,
 	WorkoutResponse,
 	WorkoutWithSetsResponse,
 } from "../schema/api.js";
@@ -25,23 +32,39 @@ export class HealthGroup extends HttpApiGroup.make("health").add(
 	}),
 ) {}
 
-export class AuthGroup extends HttpApiGroup.make("auth").add(
-	HttpApiEndpoint.post("login", "/api/auth/login", {
-		payload: Schema.Struct({
-			username: Schema.String,
-			password: Schema.String,
+export class AuthGroup extends HttpApiGroup.make("auth")
+	.add(
+		HttpApiEndpoint.post("login", "/api/auth/login", {
+			payload: Schema.Struct({
+				username: Schema.String,
+				password: Schema.String,
+			}),
+			success: LoginResponse,
+			error: [
+				AuthError.pipe(HttpApiSchema.status(401)),
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
 		}),
-		success: LoginResponse,
-		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
-			NotFoundError.pipe(HttpApiSchema.status(404)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
-	}),
-	HttpApiEndpoint.post("logout", "/api/auth/logout", {
-		success: LogoutResponse,
-	}),
-) {}
+	)
+	.add(
+		HttpApiEndpoint.post("register", "/api/auth/register", {
+			payload: Schema.Struct({
+				username: Schema.String,
+				password: Schema.String,
+			}),
+			success: RegisterResponse,
+			error: [
+				ValidationError.pipe(HttpApiSchema.status(400)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("logout", "/api/auth/logout", {
+			success: LogoutResponse,
+		}),
+	) {}
 
 export class CyclesGroup extends HttpApiGroup.make("cycles")
 	.add(
@@ -123,7 +146,11 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 		],
 	}),
 	HttpApiEndpoint.get("next", "/api/workouts/next", {
-		success: Schema.Any,
+		success: Schema.NullOr(WorkoutPlanResponse),
+		error: [
+			AuthError.pipe(HttpApiSchema.status(401)),
+			InternalError.pipe(HttpApiSchema.status(500)),
+		],
 	}),
 	HttpApiEndpoint.post("start", "/api/workouts", {
 		payload: Schema.Struct({

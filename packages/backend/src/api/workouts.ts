@@ -1,7 +1,9 @@
+import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { Workout, WorkoutSet } from "../db/schema.js";
 import {
+	findActiveCycle,
 	findSetsByWorkoutId,
 	findWorkoutById,
 	findWorkoutHistory,
@@ -83,9 +85,35 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					return results;
 				}),
 			)
-			.handle("next", (_ctx) =>
-				// Placeholder
-				Effect.succeed(null),
+			.handle("next", (ctx) =>
+				Effect.gen(function* () {
+					const userId = yield* getUserId(
+						ctx.request.headers.authorization,
+						authService,
+					);
+					const row = yield* findActiveCycle(db, userId);
+					if (!row) return null;
+					if (row.currentDay === 5) return null;
+
+					const round = row.currentRound;
+					const day = row.currentDay;
+					if (round < 1 || round > 4 || day < 1 || day > 4) return null;
+
+					const lifts = {
+						squat: Number(row.squat1rm),
+						bench: Number(row.bench1rm),
+						deadlift: Number(row.deadlift1rm),
+						ohp: Number(row.ohp1rm),
+						unit: row.unit as "lbs" | "kg",
+					};
+
+					return generateWorkoutPlan(
+						lifts,
+						row.cycleNumber,
+						round as 1 | 2 | 3 | 4,
+						day as 1 | 2 | 3 | 4,
+					);
+				}),
 			)
 			.handle("start", (ctx) =>
 				Effect.gen(function* () {

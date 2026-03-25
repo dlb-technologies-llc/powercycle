@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import LogoutButton from "../components/LogoutButton";
 
 interface Props {
 	title?: string;
@@ -17,12 +18,13 @@ const { title = "PowerCycle" } = Astro.props;
 		<header class="border-b border-zinc-800 px-6 py-4">
 			<div class="flex items-center justify-between max-w-2xl mx-auto">
 				<a href="/" class="text-xl font-bold">PowerCycle</a>
-				<nav class="flex gap-4">
+				<nav class="flex items-center gap-4">
 					<a
 						href="/history"
 						class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
 						>History</a
 					>
+					<LogoutButton client:load />
 				</nav>
 			</div>
 		</header>

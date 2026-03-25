@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { hashPassword, verifyPassword } from "../../src/lib/password.js";
 import { AuthService } from "../../src/services/AuthService.js";
 import { UserLive, UserService } from "../../src/services/UserService.js";
 
@@ -36,5 +37,21 @@ describe("auth handler logic", () => {
 				.pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
 		}).pipe(Effect.provide(UserLive)),
+	);
+
+	it.effect("verifyPassword matches correct hash", () =>
+		Effect.gen(function* () {
+			const hash = yield* hashPassword("test123456");
+			const result = yield* verifyPassword("test123456", hash);
+			expect(result).toBe(true);
+		}),
+	);
+
+	it.effect("verifyPassword rejects wrong password", () =>
+		Effect.gen(function* () {
+			const hash = yield* hashPassword("test123456");
+			const result = yield* verifyPassword("wrong-pass", hash);
+			expect(result).toBe(false);
+		}),
 	);
 });
