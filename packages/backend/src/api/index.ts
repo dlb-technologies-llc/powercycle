@@ -1,5 +1,4 @@
 export {
-	AuthGroup,
 	CyclesGroup,
 	HealthGroup,
 	PowerCycleApi,

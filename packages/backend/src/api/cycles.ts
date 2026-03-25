@@ -9,11 +9,11 @@ import {
 	insertCycle,
 	updateCycle,
 } from "../lib/queries.js";
-import { AuthService } from "../services/AuthService.js";
 import { CycleService } from "../services/CycleService.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
-import { getUserId } from "./middleware.js";
+
+const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 const toCycleResponse = (row: Cycle) => ({
 	id: row.id,
@@ -43,26 +43,19 @@ export const CyclesLive = HttpApiBuilder.group(
 	"cycles",
 	Effect.fnUntraced(function* (handlers) {
 		const cycleService = yield* CycleService;
-		const authService = yield* AuthService;
 		const { db } = yield* DatabaseService;
 
 		return handlers
-			.handle("current", (ctx) =>
+			.handle("current", (_ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const row = yield* findActiveCycle(db, userId);
 					return row ? toCycleResponse(row) : null;
 				}),
 			)
 			.handle("create", (ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const cycleCount = yield* countCyclesByUserId(db, userId);
 					const entity = yield* cycleService.createEntity(
 						userId,
@@ -91,10 +84,7 @@ export const CyclesLive = HttpApiBuilder.group(
 			)
 			.handle("progress", (ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const row = yield* findActiveCycle(db, userId);
 					if (!row) {
 						return yield* Effect.fail(
@@ -115,10 +105,7 @@ export const CyclesLive = HttpApiBuilder.group(
 			)
 			.handle("next", (ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const currentRow = yield* findActiveCycle(db, userId);
 					if (currentRow) {
 						yield* updateCycle(db, currentRow.id, {

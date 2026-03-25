@@ -5,19 +5,11 @@ import {
 	HttpApiGroup,
 	HttpApiSchema,
 } from "effect/unstable/httpapi";
-import {
-	AuthError,
-	InternalError,
-	NotFoundError,
-	ValidationError,
-} from "../errors/index.js";
+import { InternalError, NotFoundError } from "../errors/index.js";
 import {
 	CycleResponse,
-	LoginResponse,
-	LogoutResponse,
 	NullableCycleResponse,
 	ProgressionResponse,
-	RegisterResponse,
 	SetResponse,
 	WorkoutPlanResponse,
 	WorkoutResponse,
@@ -32,48 +24,11 @@ export class HealthGroup extends HttpApiGroup.make("health").add(
 	}),
 ) {}
 
-export class AuthGroup extends HttpApiGroup.make("auth")
-	.add(
-		HttpApiEndpoint.post("login", "/api/auth/login", {
-			payload: Schema.Struct({
-				username: Schema.String,
-				password: Schema.String,
-			}),
-			success: LoginResponse,
-			error: [
-				AuthError.pipe(HttpApiSchema.status(401)),
-				NotFoundError.pipe(HttpApiSchema.status(404)),
-				InternalError.pipe(HttpApiSchema.status(500)),
-			],
-		}),
-	)
-	.add(
-		HttpApiEndpoint.post("register", "/api/auth/register", {
-			payload: Schema.Struct({
-				username: Schema.String,
-				password: Schema.String,
-			}),
-			success: RegisterResponse,
-			error: [
-				ValidationError.pipe(HttpApiSchema.status(400)),
-				InternalError.pipe(HttpApiSchema.status(500)),
-			],
-		}),
-	)
-	.add(
-		HttpApiEndpoint.post("logout", "/api/auth/logout", {
-			success: LogoutResponse,
-		}),
-	) {}
-
 export class CyclesGroup extends HttpApiGroup.make("cycles")
 	.add(
 		HttpApiEndpoint.get("current", "/api/cycles/current", {
 			success: NullableCycleResponse,
-			error: [
-				AuthError.pipe(HttpApiSchema.status(401)),
-				InternalError.pipe(HttpApiSchema.status(500)),
-			],
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
 	)
 	.add(
@@ -86,10 +41,7 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				unit: Schema.String,
 			}),
 			success: CycleResponse,
-			error: [
-				AuthError.pipe(HttpApiSchema.status(401)),
-				InternalError.pipe(HttpApiSchema.status(500)),
-			],
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
 	)
 	.add(
@@ -114,7 +66,6 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 			}),
 			success: ProgressionResponse,
 			error: [
-				AuthError.pipe(HttpApiSchema.status(401)),
 				NotFoundError.pipe(HttpApiSchema.status(404)),
 				InternalError.pipe(HttpApiSchema.status(500)),
 			],
@@ -130,27 +81,18 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				unit: Schema.String,
 			}),
 			success: CycleResponse,
-			error: [
-				AuthError.pipe(HttpApiSchema.status(401)),
-				InternalError.pipe(HttpApiSchema.status(500)),
-			],
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
 	) {}
 
 export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 	HttpApiEndpoint.get("history", "/api/workouts/history", {
 		success: Schema.Array(WorkoutWithSetsResponse),
-		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
 	}),
 	HttpApiEndpoint.get("next", "/api/workouts/next", {
 		success: Schema.NullOr(WorkoutPlanResponse),
-		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
 	}),
 	HttpApiEndpoint.post("start", "/api/workouts", {
 		payload: Schema.Struct({
@@ -159,10 +101,7 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 			day: Schema.Number,
 		}),
 		success: WorkoutResponse,
-		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
 	}),
 	HttpApiEndpoint.post("logSet", "/api/workouts/:id/sets", {
 		params: {
@@ -181,7 +120,6 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 		}),
 		success: SetResponse,
 		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
 			NotFoundError.pipe(HttpApiSchema.status(404)),
 			InternalError.pipe(HttpApiSchema.status(500)),
 		],
@@ -192,7 +130,6 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 		},
 		success: WorkoutResponse,
 		error: [
-			AuthError.pipe(HttpApiSchema.status(401)),
 			NotFoundError.pipe(HttpApiSchema.status(404)),
 			InternalError.pipe(HttpApiSchema.status(500)),
 		],
@@ -201,6 +138,5 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 
 export class PowerCycleApi extends HttpApi.make("PowerCycleApi")
 	.add(HealthGroup)
-	.add(AuthGroup)
 	.add(CyclesGroup)
 	.add(WorkoutsGroup) {}

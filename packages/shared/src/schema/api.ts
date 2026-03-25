@@ -1,16 +1,6 @@
 import { Schema } from "effect";
 import { MainLift } from "./lifts.js";
 
-export const LoginResponse = Schema.Struct({
-	success: Schema.Boolean,
-	token: Schema.String,
-	userId: Schema.String,
-});
-
-export const LogoutResponse = Schema.Struct({
-	success: Schema.Boolean,
-});
-
 export const CycleResponse = Schema.Struct({
 	id: Schema.String,
 	userId: Schema.String,
@@ -59,11 +49,6 @@ export const WorkoutResponse = Schema.Struct({
 export const WorkoutWithSetsResponse = Schema.Struct({
 	...WorkoutResponse.fields,
 	sets: Schema.Array(SetResponse),
-});
-
-export const RegisterResponse = Schema.Struct({
-	success: Schema.Boolean,
-	userId: Schema.String,
 });
 
 export const PrescribedSetSchema = Schema.Struct({

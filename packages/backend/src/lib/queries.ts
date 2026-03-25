@@ -1,42 +1,15 @@
-import {
-	InternalError,
-	ValidationError,
-} from "@powercycle/shared/errors/index";
+import { InternalError } from "@powercycle/shared/errors/index";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import {
 	cycles,
 	type NewCycle,
-	type NewUser,
 	type NewWorkout,
 	type NewWorkoutSet,
-	users,
 	workoutSets,
 	workouts,
 } from "../db/schema.js";
 import type { Database } from "../services/DatabaseService.js";
-
-export const findUserByUsername = (db: Database, username: string) =>
-	Effect.tryPromise({
-		try: () =>
-			db.select().from(users).where(eq(users.username, username)).limit(1),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
-
-export const insertUser = (db: Database, data: NewUser) =>
-	Effect.tryPromise({
-		try: () => db.insert(users).values(data).returning(),
-		catch: (error) => {
-			const msg = String(error);
-			if (msg.includes("unique") || msg.includes("duplicate")) {
-				return new ValidationError({
-					message: "Username already taken",
-					field: "username",
-				});
-			}
-			return new InternalError({ message: `Insert failed: ${error}` });
-		},
-	}).pipe(Effect.map((rows) => rows[0]!));
 
 export const findActiveCycle = (db: Database, userId: string) =>
 	Effect.tryPromise({
