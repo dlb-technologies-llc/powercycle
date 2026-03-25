@@ -15,6 +15,7 @@
 		"typecheck": "bun --filter './packages/*' typecheck",
 		"test:unit": "vitest run",
 		"test:e2e": "bun run --cwd packages/frontend playwright test",
+		"test:e2e:docker": "bun run --cwd packages/frontend playwright test --config playwright.docker.config.ts",
 		"test": "bun run test:unit",
 		"docker:dev": "docker compose -f docker-compose.dev.yml up -d",
 		"docker:down": "docker compose -f docker-compose.dev.yml down",
