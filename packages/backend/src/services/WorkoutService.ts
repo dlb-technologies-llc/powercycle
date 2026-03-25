@@ -1,3 +1,4 @@
+import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Effect, Layer, ServiceMap } from "effect";
 
 export interface WorkoutData {
@@ -46,103 +47,63 @@ export interface LogSetInput {
 export class WorkoutService extends ServiceMap.Service<
 	WorkoutService,
 	{
-		readonly startWorkout: (
+		readonly createEntity: (
 			userId: string,
 			cycleId: string,
 			round: number,
 			day: number,
 		) => Effect.Effect<WorkoutData>;
-		readonly logSet: (
+		readonly createSetEntity: (
 			workoutId: string,
-			setData: LogSetInput,
+			input: LogSetInput,
 		) => Effect.Effect<SetData>;
-		readonly completeWorkout: (workoutId: string) => Effect.Effect<WorkoutData>;
-		readonly getWorkout: (
+		readonly validateWorkout: (
+			workout: WorkoutData | null,
 			workoutId: string,
-		) => Effect.Effect<(WorkoutData & { sets: Array<SetData> }) | null>;
-		readonly getHistory: (
-			userId: string,
-		) => Effect.Effect<Array<WorkoutData & { sets: Array<SetData> }>>;
+		) => Effect.Effect<WorkoutData, NotFoundError>;
 	}
->()("WorkoutService") {
-	static test = Layer.sync(this, () => {
-		const workouts: Array<WorkoutData> = [];
-		const sets: Array<SetData> = [];
+>()("@powercycle/WorkoutService") {}
 
-		return {
-			startWorkout: (
-				userId: string,
-				cycleId: string,
-				round: number,
-				day: number,
-			) =>
-				Effect.sync(() => {
-					const workout: WorkoutData = {
-						id: crypto.randomUUID(),
-						userId,
-						cycleId,
-						round,
-						day,
-						startedAt: new Date(),
-						completedAt: null,
-					};
-					workouts.push(workout);
-					return workout;
-				}),
+export const WorkoutLive = Layer.succeed(WorkoutService)({
+	createEntity: (userId, cycleId, round, day) =>
+		Effect.sync(() => ({
+			id: crypto.randomUUID(),
+			userId,
+			cycleId,
+			round,
+			day,
+			startedAt: new Date(),
+			completedAt: null,
+		})),
 
-			logSet: (workoutId: string, setData: LogSetInput) =>
-				Effect.sync(() => {
-					const set: SetData = {
-						id: crypto.randomUUID(),
-						workoutId,
-						exerciseName: setData.exerciseName,
-						category: setData.category ?? null,
-						setNumber: setData.setNumber,
-						prescribedWeight: setData.prescribedWeight ?? null,
-						actualWeight: setData.actualWeight ?? null,
-						prescribedReps: setData.prescribedReps ?? null,
-						actualReps: setData.actualReps ?? null,
-						prescribedRpeMin: setData.prescribedRpeMin ?? null,
-						prescribedRpeMax: setData.prescribedRpeMax ?? null,
-						rpe: setData.rpe ?? null,
-						isMainLift: setData.isMainLift,
-						isAmrap: setData.isAmrap,
-						completedAt: new Date(),
-					};
-					sets.push(set);
-					return set;
-				}),
+	createSetEntity: (workoutId, input) =>
+		Effect.sync(() => ({
+			id: crypto.randomUUID(),
+			workoutId,
+			exerciseName: input.exerciseName,
+			category: input.category ?? null,
+			setNumber: input.setNumber,
+			prescribedWeight: input.prescribedWeight ?? null,
+			actualWeight: input.actualWeight ?? null,
+			prescribedReps: input.prescribedReps ?? null,
+			actualReps: input.actualReps ?? null,
+			prescribedRpeMin: input.prescribedRpeMin ?? null,
+			prescribedRpeMax: input.prescribedRpeMax ?? null,
+			rpe: input.rpe ?? null,
+			isMainLift: input.isMainLift,
+			isAmrap: input.isAmrap,
+			completedAt: new Date(),
+		})),
 
-			completeWorkout: (workoutId: string) =>
-				Effect.sync(() => {
-					const workout = workouts.find((w) => w.id === workoutId);
-					if (!workout) {
-						throw new Error(`Workout not found: ${workoutId}`);
-					}
-					workout.completedAt = new Date();
-					return workout;
-				}),
-
-			getWorkout: (workoutId: string) =>
-				Effect.sync(() => {
-					const workout = workouts.find((w) => w.id === workoutId);
-					if (!workout) {
-						return null;
-					}
-					const workoutSets = sets.filter((s) => s.workoutId === workoutId);
-					return { ...workout, sets: workoutSets };
-				}),
-
-			getHistory: (userId: string) =>
-				Effect.sync(() =>
-					workouts
-						.filter((w) => w.userId === userId && w.completedAt !== null)
-						.map((w) => ({
-							...w,
-							sets: sets.filter((s) => s.workoutId === w.id),
-						}))
-						.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime()),
+	validateWorkout: (workout, workoutId) =>
+		workout
+			? Effect.succeed(workout)
+			: Effect.fail(
+					new NotFoundError({
+						message: `Workout not found: ${workoutId}`,
+						resource: "workout",
+					}),
 				),
-		};
-	});
-}
+});
+
+export const WorkoutTest = WorkoutLive;
