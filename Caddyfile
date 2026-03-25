@@ -1,4 +1,6 @@
 :80 {
+    encode gzip
+
     handle /api/* {
         reverse_proxy localhost:3001
     }
@@ -14,7 +16,5 @@
 
         @dotfiles path /.*
         respond @dotfiles 404
-
-        encode gzip
     }
 }
