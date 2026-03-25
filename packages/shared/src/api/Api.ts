@@ -4,6 +4,16 @@ import {
 	HttpApiEndpoint,
 	HttpApiGroup,
 } from "effect/unstable/httpapi";
+import {
+	CycleResponse,
+	LoginResponse,
+	LogoutResponse,
+	NullableCycleResponse,
+	ProgressionResponse,
+	SetResponse,
+	WorkoutResponse,
+	WorkoutWithSetsResponse,
+} from "../schema/api.js";
 
 export class HealthGroup extends HttpApiGroup.make("health").add(
 	HttpApiEndpoint.get("check", "/api/health", {
@@ -19,23 +29,17 @@ export class AuthGroup extends HttpApiGroup.make("auth").add(
 			username: Schema.String,
 			password: Schema.String,
 		}),
-		success: Schema.Struct({
-			success: Schema.Boolean,
-			token: Schema.String,
-			userId: Schema.String,
-		}),
+		success: LoginResponse,
 	}),
 	HttpApiEndpoint.post("logout", "/api/auth/logout", {
-		success: Schema.Struct({
-			success: Schema.Boolean,
-		}),
+		success: LogoutResponse,
 	}),
 ) {}
 
 export class CyclesGroup extends HttpApiGroup.make("cycles")
 	.add(
 		HttpApiEndpoint.get("current", "/api/cycles/current", {
-			success: Schema.Any,
+			success: NullableCycleResponse,
 		}),
 	)
 	.add(
@@ -47,7 +51,7 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				ohp: Schema.Number,
 				unit: Schema.String,
 			}),
-			success: Schema.Any,
+			success: CycleResponse,
 		}),
 	)
 	.add(
@@ -70,7 +74,7 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 					reps: Schema.Number,
 				}),
 			}),
-			success: Schema.Any,
+			success: ProgressionResponse,
 		}),
 	)
 	.add(
@@ -82,13 +86,13 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				ohp: Schema.Number,
 				unit: Schema.String,
 			}),
-			success: Schema.Any,
+			success: CycleResponse,
 		}),
 	) {}
 
 export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 	HttpApiEndpoint.get("history", "/api/workouts/history", {
-		success: Schema.Any,
+		success: Schema.Array(WorkoutWithSetsResponse),
 	}),
 	HttpApiEndpoint.get("next", "/api/workouts/next", {
 		success: Schema.Any,
@@ -99,7 +103,7 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 			round: Schema.Number,
 			day: Schema.Number,
 		}),
-		success: Schema.Any,
+		success: WorkoutResponse,
 	}),
 	HttpApiEndpoint.post("logSet", "/api/workouts/:id/sets", {
 		params: {
@@ -116,13 +120,13 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 			isMainLift: Schema.Boolean,
 			isAmrap: Schema.Boolean,
 		}),
-		success: Schema.Any,
+		success: SetResponse,
 	}),
 	HttpApiEndpoint.post("complete", "/api/workouts/:id/complete", {
 		params: {
 			id: Schema.String,
 		},
-		success: Schema.Any,
+		success: WorkoutResponse,
 	}),
 ) {}
 
