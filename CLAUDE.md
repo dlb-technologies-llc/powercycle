@@ -56,6 +56,17 @@ bun run test:unit
 - **E2E**: Playwright at `packages/frontend/tests/`
 - Pattern: `Effect.gen(...).pipe(Effect.provide(ServiceLayer))`
 
+## Local Docker Stack
+
+- `bun run docker:dev` -- starts Postgres + app (mirrors production: Caddy + Bun backend + Astro static)
+- `bun run docker:down` -- tears down
+- App: `http://localhost:4321`, Postgres: `localhost:5433`
+- Ports configurable via `APP_PORT` and `POSTGRES_PORT` env vars
+- **E2E against Docker**: `bun run test:e2e:docker`
+- **Docker-in-Docker networking**: this sandbox can't reach `localhost:4321` directly. Fix:
+  1. `docker network connect <stack-network> $(hostname)` to join the dev stack network
+  2. `BASE_URL=http://powercycle-dev-app:80 bun run test:e2e:docker` to point Playwright at the container
+
 ## Database
 
 - Schema: `packages/backend/src/db/schema.ts`

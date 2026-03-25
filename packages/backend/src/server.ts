@@ -1,9 +1,10 @@
 import { createServer } from "node:http";
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import { Layer } from "effect";
 import { HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import postgres from "postgres";
 import { CyclesLive } from "./api/cycles.js";
 import { HealthLive } from "./api/health.js";
 import { PowerCycleApi } from "./api/index.js";
@@ -21,7 +22,8 @@ const DATABASE_URL =
 
 // Ensure default user exists on startup
 const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const db = drizzle(DATABASE_URL);
+const sql = postgres(DATABASE_URL);
+const db = drizzle(sql);
 await db
 	.insert(users)
 	.values({ id: DEFAULT_USER_ID, username: "default", passwordHash: "none" })

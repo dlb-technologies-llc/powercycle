@@ -1,14 +1,34 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: powercycle-dev-postgres
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
       POSTGRES_USER: powercycle
       POSTGRES_PASSWORD: powercycle
       POSTGRES_DB: powercycle
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U powercycle -d powercycle"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build: .
+    container_name: powercycle-dev-app
+    ports:
+      - "${APP_PORT:-4321}:80"
+    environment:
+      - DATABASE_URL=postgresql://powercycle:powercycle@postgres:5432/powercycle
+      - API_PORT=3001
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
