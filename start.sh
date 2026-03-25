@@ -3,7 +3,7 @@ set -e
 
 echo "Running database migrations..."
 cd /app/packages/backend
-bun run db:migrate || echo "Warning: migrations failed, continuing..."
+bun run db:migrate
 
 echo "Starting services..."
 cleanup() { kill "$CADDY_PID" "$BACKEND_PID" 2>/dev/null; }
