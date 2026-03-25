@@ -21,13 +21,6 @@ export class RestDayError extends Schema.TaggedErrorClass<RestDayError>()(
 	},
 ) {}
 
-export class AuthError extends Schema.TaggedErrorClass<AuthError>()(
-	"AuthError",
-	{
-		message: Schema.String,
-	},
-) {}
-
 export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()(
 	"NotFoundError",
 	{

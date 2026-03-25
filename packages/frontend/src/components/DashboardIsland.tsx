@@ -2,7 +2,6 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
-import { getToken } from "../atoms/auth";
 import { currentCycleAtom } from "../atoms/cycles";
 import { startWorkoutAtom } from "../atoms/workouts";
 
@@ -35,12 +34,6 @@ export default function DashboardIsland() {
 	const startWorkout = useAtomSet(startWorkoutAtom, {
 		mode: "promiseExit",
 	});
-
-	// Auth guard
-	if (typeof window !== "undefined" && !getToken()) {
-		window.location.href = "/login";
-		return null;
-	}
 
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (

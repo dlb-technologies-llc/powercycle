@@ -11,11 +11,11 @@ import {
 	insertWorkoutSet,
 	updateWorkout,
 } from "../lib/queries.js";
-import { AuthService } from "../services/AuthService.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { WorkoutService } from "../services/WorkoutService.js";
 import { PowerCycleApi } from "./index.js";
-import { getUserId } from "./middleware.js";
+
+const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 const toWorkoutResponse = (row: Workout) => ({
 	id: row.id,
@@ -63,16 +63,12 @@ export const WorkoutsLive = HttpApiBuilder.group(
 	"workouts",
 	Effect.fnUntraced(function* (handlers) {
 		const workoutService = yield* WorkoutService;
-		const authService = yield* AuthService;
 		const { db } = yield* DatabaseService;
 
 		return handlers
-			.handle("history", (ctx) =>
+			.handle("history", (_ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const rows = yield* findWorkoutHistory(db, userId);
 					const results = [];
 					for (const row of rows) {
@@ -85,12 +81,9 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					return results;
 				}),
 			)
-			.handle("next", (ctx) =>
+			.handle("next", (_ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const row = yield* findActiveCycle(db, userId);
 					if (!row) return null;
 					if (row.currentDay === 5) return null;
@@ -117,10 +110,7 @@ export const WorkoutsLive = HttpApiBuilder.group(
 			)
 			.handle("start", (ctx) =>
 				Effect.gen(function* () {
-					const userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
+					const userId = DEFAULT_USER_ID;
 					const entity = yield* workoutService.createEntity(
 						userId,
 						ctx.payload.cycleId,
@@ -138,10 +128,6 @@ export const WorkoutsLive = HttpApiBuilder.group(
 			)
 			.handle("logSet", (ctx) =>
 				Effect.gen(function* () {
-					const _userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
 					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
 					const setEntity = yield* workoutService.createSetEntity(
@@ -186,10 +172,6 @@ export const WorkoutsLive = HttpApiBuilder.group(
 			)
 			.handle("complete", (ctx) =>
 				Effect.gen(function* () {
-					const _userId = yield* getUserId(
-						ctx.request.headers.authorization,
-						authService,
-					);
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
 					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
 					const row = yield* updateWorkout(db, ctx.params.id, {
