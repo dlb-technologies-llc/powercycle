@@ -1,7 +1,5 @@
 ---
 import "../styles/global.css";
-import LogoutButton from "../components/LogoutButton";
-
 interface Props {
 	title?: string;
 }
@@ -24,7 +22,6 @@ const { title = "PowerCycle" } = Astro.props;
 						class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
 						>History</a
 					>
-					<LogoutButton client:load />
 				</nav>
 			</div>
 		</header>

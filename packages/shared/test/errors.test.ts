@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
 import {
-	AuthError,
 	InternalError,
 	InvalidRoundError,
 	NotFoundError,
@@ -8,12 +7,6 @@ import {
 } from "../src/errors/index.js";
 
 describe("errors", () => {
-	it("AuthError has correct tag and fields", () => {
-		const err = new AuthError({ message: "unauthorized" });
-		expect(err._tag).toBe("AuthError");
-		expect(err.message).toBe("unauthorized");
-	});
-
 	it("NotFoundError has correct tag and fields", () => {
 		const err = new NotFoundError({ message: "not found", resource: "user" });
 		expect(err._tag).toBe("NotFoundError");
