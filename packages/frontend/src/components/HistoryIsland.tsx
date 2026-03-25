@@ -12,21 +12,21 @@ const DAY_NAMES: Record<number, string> = {
 };
 
 interface WorkoutSet {
-	exerciseName: string;
-	setNumber: number;
-	actualWeight: number | null;
-	actualReps: number | null;
-	rpe: number | null;
-	isMainLift: boolean;
+	readonly exerciseName: string;
+	readonly setNumber: number;
+	readonly actualWeight: number | null;
+	readonly actualReps: number | null;
+	readonly rpe: number | null;
+	readonly isMainLift: boolean;
 }
 
 interface Workout {
-	id: string;
-	round: number;
-	day: number;
-	startedAt: string;
-	completedAt: string | null;
-	sets: WorkoutSet[];
+	readonly id: string;
+	readonly round: number;
+	readonly day: number;
+	readonly startedAt: string;
+	readonly completedAt: string | null;
+	readonly sets: readonly WorkoutSet[];
 }
 
 export default function HistoryIsland() {
@@ -41,7 +41,7 @@ export default function HistoryIsland() {
 		return <p className="text-red-400">Failed to load workout history.</p>;
 	}
 
-	const workouts = (result.value ?? []) as unknown as Workout[];
+	const workouts = (result.value ?? []) as readonly Workout[];
 
 	if (workouts.length === 0) {
 		return (
