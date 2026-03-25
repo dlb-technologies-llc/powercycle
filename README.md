@@ -34,7 +34,7 @@ Pure TypeScript domain logic -- no framework dependencies except Effect Schema.
 
 Effect v4 HTTP API server with pure FP service architecture.
 
-- `src/services/` -- Pure services (no DB ops): UserService, CycleService, WorkoutService, AuthService, ConfigService
+- `src/services/` -- Pure services (no DB ops): CycleService, WorkoutService, ConfigService
 - `src/api/` -- HTTP handlers using `HttpApiBuilder.group`
 - `src/lib/queries.ts` -- Drizzle query functions wrapped in `Effect.tryPromise`
 - `src/db/schema.ts` -- Drizzle PostgreSQL schema
@@ -100,7 +100,7 @@ export class CycleService extends ServiceMap.Service<CycleService, {
 Handlers compose pure services with DB queries:
 
 ```
-Handler = getUserId (auth) -> query DB -> pure service method -> respond
+Handler = query DB -> pure service method -> respond
 ```
 
 ### Layer Composition
@@ -108,8 +108,8 @@ Handler = getUserId (auth) -> query DB -> pure service method -> respond
 ```
 ServerLive
   └── ApiLive (HttpApiBuilder)
-       └── HandlerLive (auth, cycles, workouts, health)
-            └── ServiceLive (AuthService.live, UserLive, CycleLive, WorkoutLive, DatabaseService, ConfigLive)
+       └── HandlerLive (cycles, workouts, health)
+            └── ServiceLive (CycleLive, WorkoutLive, DatabaseService, ConfigLive)
 ```
 
 ### Frontend State (Atoms)
