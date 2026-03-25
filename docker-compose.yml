@@ -36,8 +36,6 @@ services:
       - "${PORT:-3000}:80"
     environment:
       - DATABASE_URL=postgresql://${DB_USER:-powercycle}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-powercycle}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - AUTH_SECRET=${AUTH_SECRET}
       - API_PORT=3001
       - NODE_ENV=production
     depends_on:
