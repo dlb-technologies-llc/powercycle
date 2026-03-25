@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
 import { Effect } from "effect";
 import {
 	WorkoutLive,
@@ -72,4 +73,34 @@ describe("workouts handler logic", () => {
 			expect(set.rpe).toBeNull();
 		}).pipe(Effect.provide(WorkoutLive)),
 	);
+
+	it("generateWorkoutPlan returns valid plan for day 1 round 1", () => {
+		const lifts = {
+			squat: 315,
+			bench: 235,
+			deadlift: 405,
+			ohp: 150,
+			unit: "lbs" as const,
+		};
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
+		expect(plan.mainLift).toBe("squat");
+		expect(plan.day).toBe(1);
+		expect(plan.round).toBe(1);
+		expect(plan.mainLiftSets.length).toBeGreaterThan(0);
+		expect(plan.variation).toBeDefined();
+		expect(plan.accessories.length).toBeGreaterThan(0);
+	});
+
+	it("generateWorkoutPlan returns valid plan for day 4 (OHP)", () => {
+		const lifts = {
+			squat: 315,
+			bench: 235,
+			deadlift: 405,
+			ohp: 150,
+			unit: "lbs" as const,
+		};
+		const plan = generateWorkoutPlan(lifts, 1, 1, 4);
+		expect(plan.mainLift).toBe("ohp");
+		expect(plan.variation).toBeDefined();
+	});
 });
