@@ -46,12 +46,13 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - web
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     mem_limit: 512m
     logging: *default-logging
 
@@ -61,3 +62,5 @@ volumes:
 networks:
   internal:
     driver: bridge
+  web:
+    external: true
