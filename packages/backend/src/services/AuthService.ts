@@ -96,11 +96,10 @@ export class AuthService extends ServiceMap.Service<
 	}
 
 	static layer(secret: string) {
-		return Layer.succeed(AuthService, AuthService.make(secret));
+		return Layer.succeed(AuthService)(AuthService.make(secret));
 	}
 
-	static test = Layer.succeed(
-		AuthService,
+	static test = Layer.succeed(AuthService)(
 		AuthService.make("test-secret-key-for-testing-only"),
 	);
 }

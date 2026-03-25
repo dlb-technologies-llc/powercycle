@@ -10,16 +10,17 @@
 	},
 	"dependencies": {
 		"@astrojs/react": "^5.0.0",
-		"@effect/atom-react": "4.0.0-beta.31",
+		"@effect/atom-react": "4.0.0-beta.40",
 		"@powercycle/shared": "workspace:*",
 		"@tailwindcss/vite": "^4.2.1",
 		"astro": "^6.0.3",
-		"effect": "4.0.0-beta.31",
+		"effect": "4.0.0-beta.40",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
 		"tailwindcss": "^4.2.1"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.57.0",
 		"@astrojs/check": "^0.9.7",
 		"@astrojs/ts-plugin": "^1.10.7",
 		"@types/react": "^19.2.14",

@@ -62,6 +62,14 @@
 			"formatter": {
 				"enabled": false
 			}
+		},
+		{
+			"includes": ["packages/backend/**"],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "off" }
+				}
+			}
 		}
 	]
 }

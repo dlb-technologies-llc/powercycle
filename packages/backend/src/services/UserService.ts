@@ -13,7 +13,7 @@ export class UserService extends ServiceMap.Service<
 		) => Effect.Effect<{ id: string; username: string }>;
 	}
 >()("UserService") {
-	static test = Layer.succeed(this, {
+	static test = Layer.succeed(this)({
 		createUser: (username, _password) =>
 			Effect.sync(() => ({ id: crypto.randomUUID(), username })),
 		verifyUser: (username, _password) =>
