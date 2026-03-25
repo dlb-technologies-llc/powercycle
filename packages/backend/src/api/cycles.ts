@@ -1,4 +1,5 @@
 import { calculateCycleProgression } from "@powercycle/shared";
+import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { Cycle } from "../db/schema.js";
@@ -95,12 +96,19 @@ export const CyclesLive = HttpApiBuilder.group(
 						authService,
 					);
 					const row = yield* findActiveCycle(db, userId);
-					const cycle = yield* cycleService.validateActiveCycle(row);
+					if (!row) {
+						return yield* Effect.fail(
+							new NotFoundError({
+								message: "No active cycle found",
+								resource: "cycle",
+							}),
+						);
+					}
 					const currentLifts = {
-						squat: Number(cycle.squat1rm),
-						bench: Number(cycle.bench1rm),
-						deadlift: Number(cycle.deadlift1rm),
-						ohp: Number(cycle.ohp1rm),
+						squat: Number(row.squat1rm),
+						bench: Number(row.bench1rm),
+						deadlift: Number(row.deadlift1rm),
+						ohp: Number(row.ohp1rm),
 					};
 					return calculateCycleProgression(ctx.payload, currentLifts);
 				}),

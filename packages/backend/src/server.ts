@@ -20,16 +20,18 @@ const DATABASE_URL =
 	process.env.DATABASE_URL ??
 	"postgres://powercycle:powercycle@localhost:5432/powercycle";
 
+const configLayer = ConfigLive({
+	DATABASE_URL,
+	AUTH_SECRET: process.env.AUTH_SECRET ?? "dev-secret-change-me",
+});
+
 const ServiceLive = Layer.mergeAll(
-	AuthService.live,
+	Layer.provide(AuthService.live, configLayer),
 	UserLive,
 	CycleLive,
 	WorkoutLive,
 	DatabaseService.layer(DATABASE_URL),
-	ConfigLive({
-		DATABASE_URL,
-		AUTH_SECRET: process.env.AUTH_SECRET ?? "dev-secret-change-me",
-	}),
+	configLayer,
 );
 
 const HandlerLive = Layer.mergeAll(

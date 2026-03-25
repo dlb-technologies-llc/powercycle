@@ -41,7 +41,7 @@ export default function HistoryIsland() {
 		return <p className="text-red-400">Failed to load workout history.</p>;
 	}
 
-	const workouts = (result.value ?? []) as Workout[];
+	const workouts = (result.value ?? []) as unknown as Workout[];
 
 	if (workouts.length === 0) {
 		return (
