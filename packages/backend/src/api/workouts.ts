@@ -176,14 +176,20 @@ export const WorkoutsLive = HttpApiBuilder.group(
 				Effect.gen(function* () {
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
 					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
+
+					// Prevent double-completion
+					if (workoutRow!.completedAt) {
+						return toWorkoutResponse(workoutRow!);
+					}
+
 					const row = yield* updateWorkout(db, ctx.params.id, {
 						completedAt: new Date(),
 					});
 
-					// Advance cycle position after completing workout
+					// Advance cycle position only if workout belongs to the active cycle
 					const userId = DEFAULT_USER_ID;
 					const cycle = yield* findActiveCycle(db, userId);
-					if (cycle) {
+					if (cycle && cycle.id === workoutRow!.cycleId) {
 						const cycleData = {
 							id: cycle.id,
 							userId: cycle.userId,
