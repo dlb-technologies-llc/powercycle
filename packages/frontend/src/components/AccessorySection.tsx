@@ -1,21 +1,71 @@
+import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { useState } from "react";
 import { SetCard } from "./SetCard";
 
+interface AccessorySlot {
+	category: string;
+	defaultExercise: string;
+	sets: Array<{
+		setNumber: number;
+		rpeMin: number;
+		rpeMax: number;
+		repMin: number;
+		repMax: number;
+	}>;
+}
+
 interface AccessorySectionProps {
+	accessories: Array<AccessorySlot>;
 	onLogSet: (data: Record<string, unknown>) => void;
 }
 
-export function AccessorySection({ onLogSet }: AccessorySectionProps) {
+function getInitialExercise(
+	category: string,
+	index: number,
+	defaultExercise: string,
+): string {
+	if (typeof window === "undefined") return defaultExercise;
+	const stored = localStorage.getItem(
+		`exercise-pref-${category}-${String(index)}`,
+	);
+	if (stored) {
+		const options = EXERCISE_OPTIONS[category as keyof typeof EXERCISE_OPTIONS];
+		if (options?.includes(stored)) return stored;
+	}
+	return defaultExercise;
+}
+
+export function AccessorySection({
+	accessories,
+	onLogSet,
+}: AccessorySectionProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [completedCount, setCompletedCount] = useState(0);
+	const [selectedExercises, setSelectedExercises] = useState<string[]>(() =>
+		accessories.map((slot, i) =>
+			getInitialExercise(slot.category, i, slot.defaultExercise),
+		),
+	);
 
-	// V1: placeholder accessory sets
-	const accessories = [
-		{ name: "Accessory 1", sets: 3 },
-		{ name: "Accessory 2", sets: 3 },
-	];
+	const totalSets = accessories.reduce(
+		(sum, slot) => sum + slot.sets.length,
+		0,
+	);
 
-	const totalSets = accessories.reduce((sum, a) => sum + a.sets, 0);
+	const handleExerciseChange = (
+		index: number,
+		category: string,
+		value: string,
+	) => {
+		setSelectedExercises((prev) => {
+			const next = [...prev];
+			next[index] = value;
+			return next;
+		});
+		if (typeof window !== "undefined") {
+			localStorage.setItem(`exercise-pref-${category}-${String(index)}`, value);
+		}
+	};
 
 	return (
 		<section>
@@ -34,33 +84,60 @@ export function AccessorySection({ onLogSet }: AccessorySectionProps) {
 			</button>
 			{isOpen && (
 				<div className="space-y-6">
-					{accessories.map((accessory) => (
-						<div key={accessory.name}>
-							<p className="text-sm text-zinc-400 mb-2">{accessory.name}</p>
-							<div className="space-y-3">
-								{Array.from({ length: accessory.sets }, (_, i) => (
-									<SetCard
-										key={`${accessory.name}-set-${String(i + 1)}`}
-										setNumber={i + 1}
-										rpeTarget="RPE 7-9"
-										repRange="8-12 reps"
-										onComplete={(data) => {
-											setCompletedCount((c) => c + 1);
-											onLogSet({
-												exerciseName: accessory.name,
-												setNumber: i + 1,
-												actualWeight: data.actualWeight ?? null,
-												actualReps: data.actualReps,
-												rpe: data.rpe ?? null,
-												isMainLift: false,
-												isAmrap: false,
-											});
-										}}
-									/>
-								))}
+					{accessories.map((slot, slotIndex) => {
+						const options =
+							EXERCISE_OPTIONS[
+								slot.category as keyof typeof EXERCISE_OPTIONS
+							] ?? [];
+						const exerciseName =
+							selectedExercises[slotIndex] ?? slot.defaultExercise;
+
+						return (
+							<div key={`${slot.category}-${String(slotIndex)}`}>
+								<div className="mb-2">
+									<select
+										value={exerciseName}
+										onChange={(e) =>
+											handleExerciseChange(
+												slotIndex,
+												slot.category,
+												e.target.value,
+											)
+										}
+										className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm"
+									>
+										{options.map((opt) => (
+											<option key={opt} value={opt}>
+												{opt}
+											</option>
+										))}
+									</select>
+								</div>
+								<div className="space-y-3">
+									{slot.sets.map((set) => (
+										<SetCard
+											key={`${slot.category}-${String(slotIndex)}-set-${String(set.setNumber)}`}
+											setNumber={set.setNumber}
+											rpeTarget={`RPE ${set.rpeMin}-${set.rpeMax}`}
+											repRange={`${set.repMin}-${set.repMax} reps`}
+											onComplete={(data) => {
+												setCompletedCount((c) => c + 1);
+												onLogSet({
+													exerciseName,
+													setNumber: set.setNumber,
+													actualWeight: data.actualWeight ?? null,
+													actualReps: data.actualReps,
+													rpe: data.rpe ?? null,
+													isMainLift: false,
+													isAmrap: false,
+												});
+											}}
+										/>
+									))}
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</section>

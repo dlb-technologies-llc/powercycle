@@ -1,7 +1,12 @@
-import { useAtomSet } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
-import { completeWorkoutAtom, logSetAtom } from "../atoms/workouts";
+import {
+	completeWorkoutAtom,
+	logSetAtom,
+	nextWorkoutAtom,
+} from "../atoms/workouts";
 import { AccessorySection } from "./AccessorySection";
 import { MainLiftSection } from "./MainLiftSection";
 import { VariationSection } from "./VariationSection";
@@ -18,6 +23,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			: null);
 	const [isFinishing, setIsFinishing] = useState(false);
 
+	const result = useAtomValue(nextWorkoutAtom);
 	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
 	const completeWorkout = useAtomSet(completeWorkoutAtom, {
 		mode: "promiseExit",
@@ -27,6 +33,72 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<p className="text-zinc-400">No workout ID provided.</p>
+			</div>
+		);
+	}
+
+	if (AsyncResult.isInitial(result) || result.waiting) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-zinc-400">Loading workout plan...</p>
+			</div>
+		);
+	}
+
+	if (AsyncResult.isFailure(result)) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-red-400">Failed to load workout plan.</p>
+			</div>
+		);
+	}
+
+	const plan = result.value as {
+		day: number;
+		round: number;
+		cycle: number;
+		mainLift: string;
+		mainLiftSets: Array<{
+			setNumber: number;
+			weight: number;
+			reps: number;
+			percentage: number;
+			isAmrap: boolean;
+		}>;
+		variation: {
+			category: string;
+			defaultExercise: string;
+			sets: Array<{
+				setNumber: number;
+				rpeMin: number;
+				rpeMax: number;
+				repMin: number;
+				repMax: number;
+			}>;
+		};
+		accessories: Array<{
+			category: string;
+			defaultExercise: string;
+			sets: Array<{
+				setNumber: number;
+				rpeMin: number;
+				rpeMax: number;
+				repMin: number;
+				repMax: number;
+			}>;
+		}>;
+	} | null;
+
+	if (!plan) {
+		return (
+			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+				<p className="text-zinc-400 mb-4">No workout available.</p>
+				<a
+					href="/"
+					className="text-zinc-100 underline hover:text-zinc-300 transition-colors"
+				>
+					Back to Dashboard
+				</a>
 			</div>
 		);
 	}
@@ -71,9 +143,17 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				</p>
 			</div>
 
-			<MainLiftSection onLogSet={handleLogSet} />
-			<VariationSection onLogSet={handleLogSet} />
-			<AccessorySection onLogSet={handleLogSet} />
+			<MainLiftSection
+				mainLift={plan.mainLift}
+				sets={plan.mainLiftSets}
+				unit="lbs"
+				onLogSet={handleLogSet}
+			/>
+			<VariationSection variation={plan.variation} onLogSet={handleLogSet} />
+			<AccessorySection
+				accessories={plan.accessories}
+				onLogSet={handleLogSet}
+			/>
 
 			<div className="fixed bottom-0 left-0 right-0 p-4 bg-zinc-950 border-t border-zinc-800">
 				<div className="max-w-2xl mx-auto">
