@@ -1,27 +1,39 @@
 import { useState } from "react";
 import { SetCard } from "./SetCard";
 
+const LIFT_DISPLAY_NAMES: Record<string, string> = {
+	squat: "Squat",
+	bench: "Bench Press",
+	deadlift: "Deadlift",
+	ohp: "Overhead Press",
+};
+
 interface MainLiftSectionProps {
+	mainLift: string;
+	sets: Array<{
+		setNumber: number;
+		weight: number;
+		reps: number;
+		percentage: number;
+		isAmrap: boolean;
+	}>;
+	unit?: string;
 	onLogSet: (data: Record<string, unknown>) => void;
 }
 
-export function MainLiftSection({ onLogSet }: MainLiftSectionProps) {
+export function MainLiftSection({
+	mainLift,
+	sets,
+	unit = "lbs",
+	onLogSet,
+}: MainLiftSectionProps) {
 	const [completedCount, setCompletedCount] = useState(0);
-
-	// V1: placeholder sets. In the real app, these come from the workout plan.
-	const sets = [
-		{ setNumber: 1, weight: 140, reps: 10, isAmrap: false },
-		{ setNumber: 2, weight: 175, reps: 5, isAmrap: false },
-		{ setNumber: 3, weight: 205, reps: 5, isAmrap: false },
-		{ setNumber: 4, weight: 235, reps: 5, isAmrap: false },
-		{ setNumber: 5, weight: 270, reps: 5, isAmrap: true },
-		{ setNumber: 6, weight: 270, reps: 5, isAmrap: true },
-	];
+	const displayName = LIFT_DISPLAY_NAMES[mainLift] ?? mainLift;
 
 	return (
 		<section>
 			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-lg font-bold">Main Lift</h2>
+				<h2 className="text-lg font-bold">{displayName}</h2>
 				<span className="text-sm text-zinc-500">
 					{completedCount}/{sets.length}
 				</span>
@@ -34,10 +46,11 @@ export function MainLiftSection({ onLogSet }: MainLiftSectionProps) {
 						prescribedWeight={set.weight}
 						prescribedReps={set.reps}
 						isAmrap={set.isAmrap}
+						unit={unit}
 						onComplete={(data) => {
 							setCompletedCount((c) => c + 1);
 							onLogSet({
-								exerciseName: "Squat",
+								exerciseName: displayName,
 								setNumber: set.setNumber,
 								prescribedWeight: set.weight,
 								actualWeight: data.actualWeight ?? null,

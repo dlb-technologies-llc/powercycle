@@ -129,10 +129,6 @@ describe("generateWorkoutPlan", () => {
 		expect(accCategories).toContain("tricep");
 	});
 
-	it("throws RestDayError for day 5", () => {
-		expect(() => generateWorkoutPlan(TEST_LIFTS, 1, 1, 5)).toThrow();
-	});
-
 	it("variation has 6 RPE sets", () => {
 		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 1);
 		expect(plan.variation.sets).toHaveLength(6);

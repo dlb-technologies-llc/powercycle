@@ -4,7 +4,7 @@ import type { MainLift } from "./lifts.js";
 export const Round = Schema.Literals([1, 2, 3, 4]);
 export type Round = typeof Round.Type;
 
-export const TrainingDay = Schema.Literals([1, 2, 3, 4, 5]);
+export const TrainingDay = Schema.Literals([1, 2, 3, 4]);
 export type TrainingDay = typeof TrainingDay.Type;
 
 export const DAY_LIFT_MAP = {
@@ -12,7 +12,7 @@ export const DAY_LIFT_MAP = {
 	2: "bench",
 	3: "deadlift",
 	4: "ohp",
-} as const satisfies Record<Exclude<TrainingDay, 5>, MainLift>;
+} as const satisfies Record<TrainingDay, MainLift>;
 
 export interface SetConfig {
 	readonly percentage: number;

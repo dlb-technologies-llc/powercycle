@@ -9,8 +9,10 @@ import {
 	findWorkoutHistory,
 	insertWorkout,
 	insertWorkoutSet,
+	updateCycle,
 	updateWorkout,
 } from "../lib/queries.js";
+import { CycleService } from "../services/CycleService.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { WorkoutService } from "../services/WorkoutService.js";
 import { PowerCycleApi } from "./index.js";
@@ -63,6 +65,7 @@ export const WorkoutsLive = HttpApiBuilder.group(
 	"workouts",
 	Effect.fnUntraced(function* (handlers) {
 		const workoutService = yield* WorkoutService;
+		const cycleService = yield* CycleService;
 		const { db } = yield* DatabaseService;
 
 		return handlers
@@ -86,7 +89,6 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					const userId = DEFAULT_USER_ID;
 					const row = yield* findActiveCycle(db, userId);
 					if (!row) return null;
-					if (row.currentDay === 5) return null;
 
 					const round = row.currentRound;
 					const day = row.currentDay;
@@ -174,9 +176,45 @@ export const WorkoutsLive = HttpApiBuilder.group(
 				Effect.gen(function* () {
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
 					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
+
+					// Prevent double-completion
+					if (workoutRow!.completedAt) {
+						return toWorkoutResponse(workoutRow!);
+					}
+
 					const row = yield* updateWorkout(db, ctx.params.id, {
 						completedAt: new Date(),
 					});
+
+					// Advance cycle position only if workout belongs to the active cycle
+					const userId = DEFAULT_USER_ID;
+					const cycle = yield* findActiveCycle(db, userId);
+					if (cycle && cycle.id === workoutRow!.cycleId) {
+						const cycleData = {
+							id: cycle.id,
+							userId: cycle.userId,
+							cycleNumber: cycle.cycleNumber,
+							squat1rm: Number(cycle.squat1rm),
+							bench1rm: Number(cycle.bench1rm),
+							deadlift1rm: Number(cycle.deadlift1rm),
+							ohp1rm: Number(cycle.ohp1rm),
+							unit: cycle.unit,
+							currentRound: cycle.currentRound,
+							currentDay: cycle.currentDay,
+							startedAt:
+								cycle.startedAt instanceof Date
+									? cycle.startedAt
+									: new Date(String(cycle.startedAt)),
+							completedAt: cycle.completedAt,
+						};
+						const advanced = yield* cycleService.advancePosition(cycleData);
+						yield* updateCycle(db, cycle.id, {
+							currentRound: advanced.currentRound,
+							currentDay: advanced.currentDay,
+							completedAt: advanced.completedAt,
+						});
+					}
+
 					return toWorkoutResponse(row);
 				}),
 			);
