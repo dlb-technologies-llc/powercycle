@@ -46,26 +46,26 @@ describe("CycleService", () => {
 		}).pipe(Effect.provide(CycleLive)),
 	);
 
-	it.effect("advancePosition: day 4 to day 5", () =>
+	it.effect("advancePosition: day 3 to day 4", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const cycle: CycleData = {
+				...(yield* service.createEntity("user-1", testLifts, 1)),
+				currentDay: 3,
+			};
+			const advanced = yield* service.advancePosition(cycle);
+
+			expect(advanced.currentDay).toBe(4);
+			expect(advanced.currentRound).toBe(1);
+		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect("advancePosition: day 4 advances to next round day 1", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const cycle: CycleData = {
 				...(yield* service.createEntity("user-1", testLifts, 1)),
 				currentDay: 4,
-			};
-			const advanced = yield* service.advancePosition(cycle);
-
-			expect(advanced.currentDay).toBe(5);
-			expect(advanced.currentRound).toBe(1);
-		}).pipe(Effect.provide(CycleLive)),
-	);
-
-	it.effect("advancePosition: day 5 advances to next round day 1", () =>
-		Effect.gen(function* () {
-			const service = yield* CycleService;
-			const cycle: CycleData = {
-				...(yield* service.createEntity("user-1", testLifts, 1)),
-				currentDay: 5,
 				currentRound: 2,
 			};
 			const advanced = yield* service.advancePosition(cycle);
@@ -75,19 +75,19 @@ describe("CycleService", () => {
 		}).pipe(Effect.provide(CycleLive)),
 	);
 
-	it.effect("advancePosition: round 4 day 5 sets completedAt", () =>
+	it.effect("advancePosition: round 4 day 4 sets completedAt", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const cycle: CycleData = {
 				...(yield* service.createEntity("user-1", testLifts, 1)),
 				currentRound: 4,
-				currentDay: 5,
+				currentDay: 4,
 			};
 			const advanced = yield* service.advancePosition(cycle);
 
 			expect(advanced.completedAt).toBeInstanceOf(Date);
 			expect(advanced.currentRound).toBe(4);
-			expect(advanced.currentDay).toBe(5);
+			expect(advanced.currentDay).toBe(4);
 		}).pipe(Effect.provide(CycleLive)),
 	);
 

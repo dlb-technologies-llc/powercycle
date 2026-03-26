@@ -57,18 +57,18 @@ export const CycleLive = Layer.succeed(CycleService)({
 
 	advancePosition: (cycle) =>
 		Effect.sync(() => {
-			if (cycle.currentDay < 5) {
+			if (cycle.currentDay < 4) {
 				return { ...cycle, currentDay: cycle.currentDay + 1 };
 			}
-			// Day 5 done — advance to next round
-			if (cycle.currentRound < 4) {
+			// Day 4 done — advance to next round
+			if (cycle.currentDay === 4 && cycle.currentRound < 4) {
 				return {
 					...cycle,
 					currentRound: cycle.currentRound + 1,
 					currentDay: 1,
 				};
 			}
-			// Round 4, day 5 — cycle complete
+			// Round 4, day 4 — cycle complete
 			return { ...cycle, completedAt: new Date() };
 		}),
 

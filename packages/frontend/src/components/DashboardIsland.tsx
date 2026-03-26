@@ -10,7 +10,6 @@ const DAY_NAMES: Record<number, string> = {
 	2: "Bench Press",
 	3: "Deadlift",
 	4: "Overhead Press",
-	5: "Rest",
 };
 
 const ROUND_NAMES: Record<number, string> = {
@@ -81,7 +80,6 @@ export default function DashboardIsland() {
 		);
 	}
 
-	const isRestDay = cycle.currentDay === 5;
 	const dayName = DAY_NAMES[cycle.currentDay] ?? "Unknown";
 	const roundName = ROUND_NAMES[cycle.currentRound] ?? "Unknown";
 
@@ -105,27 +103,13 @@ export default function DashboardIsland() {
 		});
 	};
 
-	if (isRestDay) {
-		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<h1 className="text-4xl font-bold mb-4">Rest Day</h1>
-				<p className="text-zinc-400 mb-8">
-					Recovery is part of the program. Take it easy today.
-				</p>
-				<p className="text-sm text-zinc-500">
-					Cycle {cycle.cycleNumber} — Round {cycle.currentRound} ({roundName})
-				</p>
-			</div>
-		);
-	}
-
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
 			<p className="text-sm text-zinc-500 mb-4">
 				Cycle {cycle.cycleNumber} — Round {cycle.currentRound} ({roundName})
 			</p>
 			<h1 className="text-4xl font-bold mb-2">{dayName} Day</h1>
-			<p className="text-zinc-400 mb-2">Day {cycle.currentDay} of 5</p>
+			<p className="text-zinc-400 mb-2">Day {cycle.currentDay} of 4</p>
 			<div className="w-full max-w-xs mt-8">
 				<button
 					type="button"
