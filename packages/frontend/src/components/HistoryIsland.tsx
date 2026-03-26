@@ -8,7 +8,6 @@ const DAY_NAMES: Record<number, string> = {
 	2: "Bench Press",
 	3: "Deadlift",
 	4: "Overhead Press",
-	5: "Rest",
 };
 
 interface WorkoutSet {
@@ -41,7 +40,9 @@ export default function HistoryIsland() {
 		return <p className="text-red-400">Failed to load workout history.</p>;
 	}
 
-	const workouts = (result.value ?? []) as readonly Workout[];
+	const workouts = ((result.value ?? []) as readonly Workout[]).filter(
+		(w) => w.completedAt !== null,
+	);
 
 	if (workouts.length === 0) {
 		return (

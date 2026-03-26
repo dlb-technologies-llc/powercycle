@@ -90,7 +90,7 @@ export interface ExerciseSlot {
 }
 
 export interface WorkoutPlan {
-	readonly day: Exclude<TrainingDay, 5>;
+	readonly day: TrainingDay;
 	readonly round: Round;
 	readonly cycle: number;
 	readonly mainLift: MainLift;

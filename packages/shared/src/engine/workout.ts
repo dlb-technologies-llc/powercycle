@@ -1,4 +1,3 @@
-import { RestDayError } from "../errors/index.js";
 import type { Unit, UserLifts } from "../schema/lifts.js";
 import {
 	DAY_LIFT_MAP,
@@ -97,19 +96,14 @@ const day4ArmSets = (): readonly RpeSet[] => {
 	}));
 };
 
-const VARIATION_MAP: Record<
-	Exclude<TrainingDay, 5>,
-	ExerciseCategory | null
-> = {
+const VARIATION_MAP: Record<TrainingDay, ExerciseCategory | null> = {
 	1: "squat_variation",
 	2: "bench_variation",
 	3: "deadlift_variation",
 	4: null, // OHP has no variation
 };
 
-export const getVariationSlot = (
-	day: Exclude<TrainingDay, 5>,
-): ExerciseSlot | null => {
+export const getVariationSlot = (day: TrainingDay): ExerciseSlot | null => {
 	const category = VARIATION_MAP[day];
 	if (category === null) return null;
 	return {
@@ -120,7 +114,7 @@ export const getVariationSlot = (
 };
 
 export const getAccessorySlots = (
-	day: Exclude<TrainingDay, 5>,
+	day: TrainingDay,
 ): readonly ExerciseSlot[] => {
 	switch (day) {
 		case 1: // Legs
@@ -229,10 +223,6 @@ export const generateWorkoutPlan = (
 	round: Round,
 	day: TrainingDay,
 ): WorkoutPlan => {
-	if (day === 5) {
-		throw new RestDayError({ day: 5 });
-	}
-
 	const mainLift = DAY_LIFT_MAP[day];
 	const oneRepMax = lifts[mainLift];
 

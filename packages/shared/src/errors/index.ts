@@ -14,13 +14,6 @@ export class InvalidDayError extends Schema.TaggedErrorClass<InvalidDayError>()(
 	},
 ) {}
 
-export class RestDayError extends Schema.TaggedErrorClass<RestDayError>()(
-	"RestDayError",
-	{
-		day: Schema.Number,
-	},
-) {}
-
 export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()(
 	"NotFoundError",
 	{
