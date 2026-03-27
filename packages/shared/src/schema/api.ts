@@ -107,3 +107,8 @@ export const ProgressionResponse = Schema.Struct({
 		progressed: Schema.Boolean,
 	}),
 });
+
+export const ExercisePreferenceResponse = Schema.Struct({
+	slotKey: Schema.String,
+	exerciseName: Schema.String,
+});

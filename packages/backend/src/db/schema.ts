@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
 
@@ -73,6 +74,21 @@ export const workoutSets = pgTable(
 	(table) => [index("workout_sets_workout_id_idx").on(table.workoutId)],
 );
 
+export const exercisePreferences = pgTable(
+	"exercise_preferences",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		userId: uuid("user_id").notNull(),
+		slotKey: text("slot_key").notNull(),
+		exerciseName: text("exercise_name").notNull(),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [
+		index("exercise_prefs_user_id_idx").on(table.userId),
+		unique("exercise_prefs_user_slot_key").on(table.userId, table.slotKey),
+	],
+);
+
 // Type exports
 export type Cycle = typeof cycles.$inferSelect;
 export type NewCycle = typeof cycles.$inferInsert;
@@ -80,3 +96,5 @@ export type Workout = typeof workouts.$inferSelect;
 export type NewWorkout = typeof workouts.$inferInsert;
 export type WorkoutSet = typeof workoutSets.$inferSelect;
 export type NewWorkoutSet = typeof workoutSets.$inferInsert;
+export type ExercisePreference = typeof exercisePreferences.$inferSelect;
+export type NewExercisePreference = typeof exercisePreferences.$inferInsert;
