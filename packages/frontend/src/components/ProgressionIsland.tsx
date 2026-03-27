@@ -121,7 +121,9 @@ export default function ProgressionIsland() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold mb-2">Cycle Complete</h1>
+			<h1 className="text-2xl font-[family-name:var(--font-heading)] uppercase tracking-wider gradient-text-green mb-2">
+				Cycle Complete
+			</h1>
 			<p className="text-zinc-400 mb-6">
 				Enter your Round 3 AMRAP results to calculate new maxes.
 			</p>
@@ -139,13 +141,19 @@ export default function ProgressionIsland() {
 				) : (
 					<div className="space-y-4">
 						{liftsWithData.map(({ key, label }) => (
-							<div key={key} className="bg-zinc-900 rounded-lg p-4">
-								<p className="text-sm text-zinc-400 mb-2">
-									{label} (current 1RM: {cycle[`${key}1rm` as keyof CycleData]})
+							<div key={key} className="glass-card p-5">
+								<p className="font-[family-name:var(--font-heading)] uppercase text-sm mb-1">
+									{label}
+								</p>
+								<p className="text-sm text-zinc-500 mb-3">
+									current 1RM:{" "}
+									<span className="font-[family-name:var(--font-mono)]">
+										{cycle[`${key}1rm` as keyof CycleData]}
+									</span>
 								</p>
 								<div className="grid grid-cols-2 gap-3">
 									<label className="block">
-										<span className="text-xs text-zinc-500 block mb-1">
+										<span className="text-xs text-zinc-500 uppercase block mb-1">
 											Weight @ 95%
 										</span>
 										<input
@@ -157,11 +165,11 @@ export default function ProgressionIsland() {
 													[key]: { ...r[key], weight: e.target.value },
 												}))
 											}
-											className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+											className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-4 py-3 font-[family-name:var(--font-mono)] text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
 										/>
 									</label>
 									<label className="block">
-										<span className="text-xs text-zinc-500 block mb-1">
+										<span className="text-xs text-zinc-500 uppercase block mb-1">
 											Reps (1+)
 										</span>
 										<input
@@ -173,7 +181,7 @@ export default function ProgressionIsland() {
 													[key]: { ...r[key], reps: e.target.value },
 												}))
 											}
-											className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+											className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-4 py-3 font-[family-name:var(--font-mono)] text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
 										/>
 									</label>
 								</div>
@@ -182,7 +190,7 @@ export default function ProgressionIsland() {
 						<button
 							type="button"
 							onClick={handleCalculate}
-							className="w-full py-4 bg-zinc-100 text-zinc-900 font-bold text-lg rounded-xl hover:bg-zinc-200 transition-colors"
+							className="w-full btn-gradient-cyan min-h-16 rounded-2xl text-lg"
 						>
 							Calculate New Maxes
 						</button>
@@ -190,32 +198,43 @@ export default function ProgressionIsland() {
 				)
 			) : (
 				<div className="space-y-4">
-					{LIFTS.filter(({ key }) => progression[key]).map(({ key, label }) => {
-						const p = progression[key];
-						return (
-							<div
-								key={key}
-								className="bg-zinc-900 rounded-lg p-4 flex items-center justify-between"
-							>
-								<div>
-									<p className="font-medium">{label}</p>
-									<p className="text-sm text-zinc-400">
-										{p.currentMax} → {p.newMax}
-									</p>
-								</div>
+					{LIFTS.filter(({ key }) => progression[key]).map(
+						({ key, label }, index) => {
+							const p = progression[key];
+							return (
 								<div
-									className={`text-lg font-bold ${p.progressed ? "text-green-400" : "text-zinc-500"}`}
+									key={key}
+									className="glass-card p-5 flex items-center justify-between animate-fade-in"
+									style={{ animationDelay: `${index * 80}ms` }}
 								>
-									{p.progressed ? `+${p.newMax - p.currentMax}` : "Same"}
+									<div>
+										<p className="font-[family-name:var(--font-heading)] uppercase">
+											{label}
+										</p>
+										<p className="text-sm text-zinc-400">
+											<span className="font-[family-name:var(--font-mono)]">
+												{p.currentMax}
+											</span>
+											{" → "}
+											<span className="font-[family-name:var(--font-mono)]">
+												{p.newMax}
+											</span>
+										</p>
+									</div>
+									<div
+										className={`text-lg font-bold font-[family-name:var(--font-mono)] ${p.progressed ? "text-green-400" : "text-amber-400"}`}
+									>
+										{p.progressed ? `+${p.newMax - p.currentMax}` : "Same"}
+									</div>
 								</div>
-							</div>
-						);
-					})}
+							);
+						},
+					)}
 					<button
 						type="button"
 						onClick={handleStartNext}
 						disabled={isStarting}
-						className="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-500 disabled:opacity-50 transition-colors"
+						className="w-full btn-gradient-green min-h-16 rounded-2xl text-lg disabled:opacity-50"
 					>
 						{isStarting ? "Starting..." : "Start Next Cycle"}
 					</button>

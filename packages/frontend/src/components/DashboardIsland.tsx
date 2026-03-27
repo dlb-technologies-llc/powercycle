@@ -51,7 +51,7 @@ export default function DashboardIsland() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-red-400">Failed to load cycle data.</p>
+				<p className="text-zinc-400">Failed to load cycle data.</p>
 			</div>
 		);
 	}
@@ -70,18 +70,25 @@ export default function DashboardIsland() {
 	if (cycle.completedAt) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<h1 className="text-4xl font-bold mb-4">
-					Cycle {cycle.cycleNumber} Complete
-				</h1>
-				<p className="text-zinc-400 mb-8">
-					Time to calculate your new maxes and start the next cycle.
-				</p>
-				<a
-					href="/progression"
-					className="w-full max-w-xs py-5 bg-green-600 text-white font-bold text-xl rounded-xl hover:bg-green-500 transition-colors text-center block"
-				>
-					View Progression
-				</a>
+				<div className="glass-card p-8 w-full max-w-md">
+					<h1 className="gradient-text-green text-5xl font-[family-name:var(--font-heading)] uppercase tracking-wider mb-4 animate-fade-in">
+						CYCLE COMPLETE
+					</h1>
+					<p
+						className="text-zinc-400 mb-8 animate-fade-in"
+						style={{ animationDelay: "100ms" }}
+					>
+						Cycle {cycle.cycleNumber} finished. Time to calculate your new
+						maxes.
+					</p>
+					<a
+						href="/progression"
+						className="btn-gradient-green block w-full min-h-20 flex items-center justify-center text-xl rounded-2xl animate-fade-in"
+						style={{ animationDelay: "200ms" }}
+					>
+						View Progression
+					</a>
+				</div>
 			</div>
 		);
 	}
@@ -111,19 +118,34 @@ export default function DashboardIsland() {
 
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-			<p className="text-sm text-zinc-500 mb-4">
-				Cycle {cycle.cycleNumber} — Round {cycle.currentRound} ({roundName})
-			</p>
-			<h1 className="text-4xl font-bold mb-2">{dayName} Day</h1>
-			<p className="text-zinc-400 mb-2">Day {cycle.currentDay} of 4</p>
-			<div className="w-full max-w-xs mt-8">
+			<div className="glass-card p-8 w-full max-w-md">
+				<p
+					className="text-sm text-zinc-500 mb-4 animate-fade-in"
+					style={{ animationDelay: "0ms" }}
+				>
+					Cycle {cycle.cycleNumber} &middot; Round {cycle.currentRound} (
+					{roundName})
+				</p>
+				<h1
+					className="gradient-text-cyan text-5xl font-[family-name:var(--font-heading)] uppercase tracking-wider mb-2 animate-fade-in"
+					style={{ animationDelay: "100ms" }}
+				>
+					{dayName} Day
+				</h1>
+				<p
+					className="text-zinc-400 mb-8 animate-fade-in"
+					style={{ animationDelay: "200ms" }}
+				>
+					Day {cycle.currentDay} of 4
+				</p>
 				<button
 					type="button"
 					onClick={handleStart}
 					disabled={isStarting}
-					className="w-full py-5 bg-zinc-100 text-zinc-900 font-bold text-xl rounded-xl hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+					className="btn-gradient-cyan w-full min-h-20 text-xl rounded-2xl disabled:opacity-50 animate-fade-in animate-glow-cyan"
+					style={{ animationDelay: "300ms" }}
 				>
-					{isStarting ? "Starting..." : "Start Workout"}
+					{isStarting ? "Starting..." : "START WORKOUT"}
 				</button>
 			</div>
 			<WeightManagement cycle={cycle} />
