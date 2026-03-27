@@ -69,11 +69,18 @@ export const RpeSetSchema = Schema.Struct({
 	repMax: Schema.Number,
 });
 
+export const LastSessionSchema = Schema.Struct({
+	weight: Schema.NullOr(Schema.Number),
+	reps: Schema.NullOr(Schema.Number),
+	rpe: Schema.NullOr(Schema.Number),
+});
+
 export const ExerciseSlotSchema = Schema.Struct({
 	category: Schema.String,
 	defaultExercise: Schema.String,
 	sets: Schema.Array(RpeSetSchema),
 	preferredWeight: Schema.NullOr(Schema.Number),
+	lastSession: Schema.NullOr(LastSessionSchema),
 });
 
 export const WorkoutPlanResponse = Schema.Struct({
