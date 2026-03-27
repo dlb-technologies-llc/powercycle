@@ -1,16 +1,15 @@
+import { Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import { describe, expect, it } from "vitest";
 import {
 	generateMainLiftSets,
 	generateWorkoutPlan,
 } from "../src/engine/workout.js";
-import type { UserLifts } from "../src/schema/lifts.js";
+import { UserLifts } from "../src/schema/lifts.js";
 
-const TEST_LIFTS: UserLifts = {
-	squat: 315,
-	bench: 235,
-	deadlift: 405,
-	ohp: 150,
-	unit: "lbs",
+const sampleLifts = () => {
+	const arb = Schema.toArbitrary(UserLifts);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
 };
 
 describe("generateMainLiftSets", () => {
@@ -93,31 +92,35 @@ describe("generateMainLiftSets", () => {
 
 describe("generateWorkoutPlan", () => {
 	it("generates squat day (day 1) workout", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 1);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
 		expect(plan.mainLift).toBe("squat");
 		expect(plan.day).toBe(1);
 		expect(plan.round).toBe(1);
 		expect(plan.cycle).toBe(1);
-		expect(plan.mainLiftSets).toHaveLength(6);
+		expect(plan.mainLiftSets).toHaveLength(lifts.squat != null ? 6 : 0);
 		expect(plan.variation).toBeDefined();
 		expect(plan.variation.category).toBe("squat_variation");
 		expect(plan.accessories.length).toBeGreaterThan(0);
 	});
 
 	it("generates bench day (day 2) workout", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 2);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 2);
 		expect(plan.mainLift).toBe("bench");
 		expect(plan.variation.category).toBe("bench_variation");
 	});
 
 	it("generates deadlift day (day 3) workout", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 3);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 3);
 		expect(plan.mainLift).toBe("deadlift");
 		expect(plan.variation.category).toBe("deadlift_variation");
 	});
 
 	it("generates OHP day (day 4) workout with delt as variation", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 4);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 4);
 		expect(plan.mainLift).toBe("ohp");
 		// Day 4 has no formal variation — first delt exercise serves as variation
 		expect(plan.variation.category).toBe("delt");
@@ -130,7 +133,8 @@ describe("generateWorkoutPlan", () => {
 	});
 
 	it("variation has 6 RPE sets", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 1);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
 		expect(plan.variation.sets).toHaveLength(6);
 		// Each set should have RPE range and rep range
 		for (const set of plan.variation.sets) {
@@ -142,7 +146,8 @@ describe("generateWorkoutPlan", () => {
 	});
 
 	it("accessories have correct categories for leg day", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 1);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
 		const categories = plan.accessories.map(
 			(a: { category: string }) => a.category,
 		);
@@ -153,7 +158,8 @@ describe("generateWorkoutPlan", () => {
 	});
 
 	it("accessories have correct categories for push day", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 2);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 2);
 		const categories = plan.accessories.map(
 			(a: { category: string }) => a.category,
 		);
@@ -162,7 +168,7 @@ describe("generateWorkoutPlan", () => {
 	});
 
 	it("generates workout plan with kg unit (2.5 kg increment)", () => {
-		const kgLifts: UserLifts = {
+		const kgLifts: typeof UserLifts.Type = {
 			squat: 140,
 			bench: 100,
 			deadlift: 180,
@@ -179,7 +185,8 @@ describe("generateWorkoutPlan", () => {
 	});
 
 	it("accessories have correct categories for pull day", () => {
-		const plan = generateWorkoutPlan(TEST_LIFTS, 1, 1, 3);
+		const lifts = sampleLifts();
+		const plan = generateWorkoutPlan(lifts, 1, 1, 3);
 		const categories = plan.accessories.map(
 			(a: { category: string }) => a.category,
 		);
@@ -191,14 +198,11 @@ describe("generateWorkoutPlan", () => {
 
 describe("generateWorkoutPlan with null 1RM", () => {
 	it("returns empty mainLiftSets when day's main lift 1RM is null", () => {
-		const liftsWithNullSquat: UserLifts = {
+		const lifts: typeof UserLifts.Type = {
+			...sampleLifts(),
 			squat: null,
-			bench: 235,
-			deadlift: 405,
-			ohp: 150,
-			unit: "lbs",
 		};
-		const plan = generateWorkoutPlan(liftsWithNullSquat, 1, 1, 1); // day 1 = squat
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1); // day 1 = squat
 		expect(plan.mainLift).toBe("squat");
 		expect(plan.mainLiftSets).toHaveLength(0);
 		// Variation and accessories should still be generated
@@ -207,25 +211,23 @@ describe("generateWorkoutPlan with null 1RM", () => {
 	});
 
 	it("generates main lift sets normally when another lift is null", () => {
-		const liftsWithNullBench: UserLifts = {
+		const lifts: typeof UserLifts.Type = {
+			...sampleLifts(),
 			squat: 315,
 			bench: null,
-			deadlift: 405,
-			ohp: 150,
-			unit: "lbs",
 		};
 		// Day 1 = squat, bench being null shouldn't matter
-		const plan = generateWorkoutPlan(liftsWithNullBench, 1, 1, 1);
+		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
 		expect(plan.mainLiftSets).toHaveLength(6);
 	});
 
 	it("handles all null 1RMs", () => {
-		const allNull: UserLifts = {
+		const allNull: typeof UserLifts.Type = {
+			...sampleLifts(),
 			squat: null,
 			bench: null,
 			deadlift: null,
 			ohp: null,
-			unit: "lbs",
 		};
 		const plan = generateWorkoutPlan(allNull, 1, 1, 1);
 		expect(plan.mainLiftSets).toHaveLength(0);

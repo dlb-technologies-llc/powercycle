@@ -1,51 +1,40 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import {
 	LogSetInput,
 	WorkoutSet,
 } from "../../src/schema/entities/workout-set.js";
 
-const validUUID = "550e8400-e29b-41d4-a716-446655440000";
-const validUUID2 = "660e8400-e29b-41d4-a716-446655440000";
+const sample = () => {
+	const arb = Schema.toArbitrary(WorkoutSet);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
+};
 
-const validSetData = {
-	id: validUUID,
-	workoutId: validUUID2,
-	exerciseName: "Squat",
-	category: "main",
-	setNumber: 1,
-	prescribedWeight: 315,
-	actualWeight: 315,
-	prescribedReps: 5,
-	actualReps: 5,
-	prescribedRpeMin: 7,
-	prescribedRpeMax: 8,
-	rpe: 7.5,
-	isMainLift: true,
-	isAmrap: false,
-	setDuration: 45,
-	restDuration: 180,
-	completedAt: new Date("2024-01-15T10:30:00.000Z"),
+const sampleLogSetInput = () => {
+	const arb = Schema.toArbitrary(LogSetInput);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
 };
 
 describe("WorkoutSet entity", () => {
 	it("constructs with valid data", () => {
-		const set = new WorkoutSet(validSetData);
-		expect(set.id).toBe(validUUID);
-		expect(set.workoutId).toBe(validUUID2);
-		expect(set.exerciseName).toBe("Squat");
-		expect(set.category).toBe("main");
-		expect(set.setNumber).toBe(1);
-		expect(set.prescribedWeight).toBe(315);
-		expect(set.actualWeight).toBe(315);
-		expect(set.rpe).toBe(7.5);
-		expect(set.isMainLift).toBe(true);
-		expect(set.isAmrap).toBe(false);
+		const data = sample();
+		const set = new WorkoutSet(data);
+		expect(set.id).toBe(data.id);
+		expect(set.workoutId).toBe(data.workoutId);
+		expect(set.exerciseName).toBe(data.exerciseName);
+		expect(set.category).toBe(data.category);
+		expect(set.setNumber).toBe(data.setNumber);
+		expect(set.prescribedWeight).toBe(data.prescribedWeight);
+		expect(set.actualWeight).toBe(data.actualWeight);
+		expect(set.rpe).toBe(data.rpe);
+		expect(set.isMainLift).toBe(data.isMainLift);
+		expect(set.isAmrap).toBe(data.isAmrap);
 	});
 
 	it("constructs with null optional fields", () => {
 		const set = new WorkoutSet({
-			...validSetData,
+			...sample(),
 			category: null,
 			prescribedWeight: null,
 			actualWeight: null,
@@ -69,7 +58,7 @@ describe("WorkoutSet entity", () => {
 		expect(
 			() =>
 				new WorkoutSet({
-					...validSetData,
+					...sample(),
 					setNumber: 0,
 				}),
 		).toThrow();
@@ -79,44 +68,36 @@ describe("WorkoutSet entity", () => {
 describe("WorkoutSet.decodeRow", () => {
 	it.effect("decodes Drizzle row with string numerics", () =>
 		Effect.gen(function* () {
+			const base = sample();
 			const drizzleRow = {
-				id: validUUID,
-				workoutId: validUUID2,
-				exerciseName: "Squat",
-				category: "main",
-				setNumber: 1,
-				prescribedWeight: "315",
-				actualWeight: "310",
-				prescribedReps: 5,
-				actualReps: 5,
-				prescribedRpeMin: "7",
-				prescribedRpeMax: "8",
-				rpe: "7.5",
-				isMainLift: true,
-				isAmrap: false,
-				setDuration: 45,
-				restDuration: 180,
-				completedAt: new Date("2024-01-15T10:30:00.000Z"),
+				...base,
+				prescribedWeight:
+					base.prescribedWeight != null ? String(base.prescribedWeight) : null,
+				actualWeight:
+					base.actualWeight != null ? String(base.actualWeight) : null,
+				prescribedRpeMin:
+					base.prescribedRpeMin != null ? String(base.prescribedRpeMin) : null,
+				prescribedRpeMax:
+					base.prescribedRpeMax != null ? String(base.prescribedRpeMax) : null,
+				rpe: base.rpe != null ? String(base.rpe) : null,
 			};
 
 			const set = yield* WorkoutSet.decodeRow(drizzleRow);
 			expect(set).toBeInstanceOf(WorkoutSet);
-			expect(set.prescribedWeight).toBe(315);
-			expect(set.actualWeight).toBe(310);
-			expect(set.prescribedRpeMin).toBe(7);
-			expect(set.prescribedRpeMax).toBe(8);
-			expect(set.rpe).toBe(7.5);
+			expect(set.prescribedWeight).toBe(base.prescribedWeight);
+			expect(set.actualWeight).toBe(base.actualWeight);
+			expect(set.prescribedRpeMin).toBe(base.prescribedRpeMin);
+			expect(set.prescribedRpeMax).toBe(base.prescribedRpeMax);
+			expect(set.rpe).toBe(base.rpe);
 		}),
 	);
 
 	it.effect("decodes Drizzle row with null numerics", () =>
 		Effect.gen(function* () {
+			const base = sample();
 			const drizzleRow = {
-				id: validUUID,
-				workoutId: validUUID2,
-				exerciseName: "Squat",
+				...base,
 				category: null,
-				setNumber: 1,
 				prescribedWeight: null,
 				actualWeight: null,
 				prescribedReps: null,
@@ -124,8 +105,6 @@ describe("WorkoutSet.decodeRow", () => {
 				prescribedRpeMin: null,
 				prescribedRpeMax: null,
 				rpe: null,
-				isMainLift: false,
-				isAmrap: true,
 				setDuration: null,
 				restDuration: null,
 				completedAt: null,
@@ -144,39 +123,62 @@ describe("WorkoutSet.decodeRow", () => {
 
 describe("WorkoutSet.toResponse", () => {
 	it("converts completedAt date to ISO string", () => {
-		const set = new WorkoutSet(validSetData);
+		const completedAt = new Date("2024-01-15T10:30:00.000Z");
+		const set = new WorkoutSet({ ...sample(), completedAt });
 		const response = WorkoutSet.toResponse(set);
 		expect(response.completedAt).toBe("2024-01-15T10:30:00.000Z");
 	});
 
 	it("handles null completedAt", () => {
-		const set = new WorkoutSet({ ...validSetData, completedAt: null });
+		const set = new WorkoutSet({ ...sample(), completedAt: null });
 		const response = WorkoutSet.toResponse(set);
 		expect(response.completedAt).toBeNull();
 	});
 
 	it("returns plain number values", () => {
-		const set = new WorkoutSet(validSetData);
+		const set = new WorkoutSet(sample());
 		const response = WorkoutSet.toResponse(set);
 		expect(typeof response.setNumber).toBe("number");
-		expect(typeof response.prescribedWeight).toBe("number");
+		if (set.prescribedWeight != null) {
+			expect(typeof response.prescribedWeight).toBe("number");
+		}
 	});
 });
 
 describe("WorkoutSet.toDbInsert", () => {
 	it("converts numeric columns to strings", () => {
-		const set = new WorkoutSet(validSetData);
+		const set = new WorkoutSet(sample());
 		const insert = WorkoutSet.toDbInsert(set);
-		expect(insert.prescribedWeight).toBe("315");
-		expect(insert.actualWeight).toBe("315");
-		expect(insert.prescribedRpeMin).toBe("7");
-		expect(insert.prescribedRpeMax).toBe("8");
-		expect(insert.rpe).toBe("7.5");
+		if (set.prescribedWeight != null) {
+			expect(insert.prescribedWeight).toBe(String(set.prescribedWeight));
+		} else {
+			expect(insert.prescribedWeight).toBeNull();
+		}
+		if (set.actualWeight != null) {
+			expect(insert.actualWeight).toBe(String(set.actualWeight));
+		} else {
+			expect(insert.actualWeight).toBeNull();
+		}
+		if (set.prescribedRpeMin != null) {
+			expect(insert.prescribedRpeMin).toBe(String(set.prescribedRpeMin));
+		} else {
+			expect(insert.prescribedRpeMin).toBeNull();
+		}
+		if (set.prescribedRpeMax != null) {
+			expect(insert.prescribedRpeMax).toBe(String(set.prescribedRpeMax));
+		} else {
+			expect(insert.prescribedRpeMax).toBeNull();
+		}
+		if (set.rpe != null) {
+			expect(insert.rpe).toBe(String(set.rpe));
+		} else {
+			expect(insert.rpe).toBeNull();
+		}
 	});
 
 	it("preserves null numeric columns", () => {
 		const set = new WorkoutSet({
-			...validSetData,
+			...sample(),
 			prescribedWeight: null,
 			actualWeight: null,
 			prescribedRpeMin: null,
@@ -192,7 +194,7 @@ describe("WorkoutSet.toDbInsert", () => {
 	});
 
 	it("does not include id or completedAt", () => {
-		const set = new WorkoutSet(validSetData);
+		const set = new WorkoutSet(sample());
 		const insert = WorkoutSet.toDbInsert(set);
 		expect("id" in insert).toBe(false);
 		expect("completedAt" in insert).toBe(false);
@@ -200,31 +202,16 @@ describe("WorkoutSet.toDbInsert", () => {
 });
 
 describe("LogSetInput", () => {
-	it("validates with all fields", () => {
-		const input = {
-			exerciseName: "Squat",
-			category: "main",
-			setNumber: 1,
-			prescribedWeight: 315,
-			actualWeight: 315,
-			prescribedReps: 5,
-			actualReps: 5,
-			prescribedRpeMin: 7,
-			prescribedRpeMax: 8,
-			rpe: 7.5,
-			setDuration: 45,
-			restDuration: 180,
-			isMainLift: true,
-			isAmrap: false,
-		};
+	it("validates with arbitrary data", () => {
+		const input = sampleLogSetInput();
 		expect(() => Schema.decodeUnknownSync(LogSetInput)(input)).not.toThrow();
 	});
 
 	it("validates with null optional fields", () => {
-		const input = {
-			exerciseName: "Squat",
+		const input = sampleLogSetInput();
+		const withNulls = {
+			...input,
 			category: null,
-			setNumber: 1,
 			prescribedWeight: null,
 			actualWeight: null,
 			prescribedReps: null,
@@ -234,12 +221,10 @@ describe("LogSetInput", () => {
 			rpe: null,
 			setDuration: null,
 			restDuration: null,
-			isMainLift: true,
-			isAmrap: false,
 		};
-		const decoded = Schema.decodeUnknownSync(LogSetInput)(input);
-		expect(decoded.exerciseName).toBe("Squat");
-		expect(decoded.setNumber).toBe(1);
+		const decoded = Schema.decodeUnknownSync(LogSetInput)(withNulls);
+		expect(decoded.exerciseName).toBe(input.exerciseName);
+		expect(decoded.setNumber).toBe(input.setNumber);
 		expect(decoded.category).toBeNull();
 		expect(decoded.prescribedWeight).toBeNull();
 	});

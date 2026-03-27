@@ -6,23 +6,16 @@ import {
 	WorkoutService,
 } from "../../src/services/WorkoutService.js";
 
-const TEST_USER_ID = "00000000-0000-4000-a000-000000000001";
-const TEST_CYCLE_ID = "00000000-0000-4000-a000-000000000002";
-const TEST_WORKOUT_ID = "00000000-0000-4000-a000-000000000003";
-
 describe("workouts handler logic", () => {
 	it.effect("creates workout entity", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const entity = yield* service.createEntity(
-				TEST_USER_ID,
-				TEST_CYCLE_ID,
-				1,
-				1,
-			);
+			const userId = crypto.randomUUID();
+			const cycleId = crypto.randomUUID();
+			const entity = yield* service.createEntity(userId, cycleId, 1, 1);
 			expect(entity.id).toBeDefined();
-			expect(entity.userId).toBe(TEST_USER_ID);
-			expect(entity.cycleId).toBe(TEST_CYCLE_ID);
+			expect(entity.userId).toBe(userId);
+			expect(entity.cycleId).toBe(cycleId);
 			expect(entity.round).toBe(1);
 			expect(entity.day).toBe(1);
 			expect(entity.completedAt).toBeNull();
@@ -32,7 +25,8 @@ describe("workouts handler logic", () => {
 	it.effect("creates set entity with all fields", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
+			const workoutId = crypto.randomUUID();
+			const set = yield* service.createSetEntity(workoutId, {
 				exerciseName: "Squat",
 				category: null,
 				setNumber: 1,
@@ -48,7 +42,7 @@ describe("workouts handler logic", () => {
 				isMainLift: true,
 				isAmrap: false,
 			});
-			expect(set.workoutId).toBe(TEST_WORKOUT_ID);
+			expect(set.workoutId).toBe(workoutId);
 			expect(set.exerciseName).toBe("Squat");
 			expect(set.prescribedWeight).toBe(225);
 			expect(set.isMainLift).toBe(true);
@@ -58,12 +52,9 @@ describe("workouts handler logic", () => {
 	it.effect("validates workout — returns when found", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const workout = yield* service.createEntity(
-				TEST_USER_ID,
-				TEST_CYCLE_ID,
-				1,
-				1,
-			);
+			const userId = crypto.randomUUID();
+			const cycleId = crypto.randomUUID();
+			const workout = yield* service.createEntity(userId, cycleId, 1, 1);
 			const result = yield* service.validateWorkout(workout, workout.id);
 			expect(result.id).toBe(workout.id);
 		}).pipe(Effect.provide(WorkoutLive)),
@@ -72,8 +63,9 @@ describe("workouts handler logic", () => {
 	it.effect("validates workout — fails when null", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
+			const workoutId = crypto.randomUUID();
 			const error = yield* service
-				.validateWorkout(null, TEST_WORKOUT_ID)
+				.validateWorkout(null, workoutId)
 				.pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
 		}).pipe(Effect.provide(WorkoutLive)),
@@ -82,7 +74,8 @@ describe("workouts handler logic", () => {
 	it.effect("creates set entity with timing fields", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
+			const workoutId = crypto.randomUUID();
+			const set = yield* service.createSetEntity(workoutId, {
 				exerciseName: "Squat",
 				category: null,
 				setNumber: 1,
@@ -106,7 +99,8 @@ describe("workouts handler logic", () => {
 	it.effect("creates set entity with optional fields as null", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
+			const workoutId = crypto.randomUUID();
+			const set = yield* service.createSetEntity(workoutId, {
 				exerciseName: "Face Pulls",
 				category: null,
 				setNumber: 1,

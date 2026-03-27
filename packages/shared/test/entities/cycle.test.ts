@@ -1,40 +1,29 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import { Cycle } from "../../src/schema/entities/cycle.js";
 
-const validUUID = "550e8400-e29b-41d4-a716-446655440000";
-const validUUID2 = "660e8400-e29b-41d4-a716-446655440000";
-
-const validCycleData = {
-	id: validUUID,
-	userId: validUUID2,
-	cycleNumber: 1,
-	squat1rm: 315,
-	bench1rm: 235,
-	deadlift1rm: 405,
-	ohp1rm: 150,
-	unit: "lbs" as const,
-	currentRound: 1 as const,
-	currentDay: 1 as const,
-	startedAt: new Date("2024-01-01T00:00:00.000Z"),
-	completedAt: null,
+const sample = () => {
+	const arb = Schema.toArbitrary(Cycle);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
 };
 
 describe("Cycle entity", () => {
 	it("constructs with valid data", () => {
-		const cycle = new Cycle(validCycleData);
-		expect(cycle.id).toBe(validUUID);
-		expect(cycle.userId).toBe(validUUID2);
-		expect(cycle.cycleNumber).toBe(1);
-		expect(cycle.squat1rm).toBe(315);
-		expect(cycle.unit).toBe("lbs");
-		expect(cycle.currentRound).toBe(1);
-		expect(cycle.currentDay).toBe(1);
+		const data = sample();
+		const cycle = new Cycle(data);
+		expect(cycle.id).toBe(data.id);
+		expect(cycle.userId).toBe(data.userId);
+		expect(cycle.cycleNumber).toBe(data.cycleNumber);
+		expect(cycle.squat1rm).toBe(data.squat1rm);
+		expect(cycle.unit).toBe(data.unit);
+		expect(cycle.currentRound).toBe(data.currentRound);
+		expect(cycle.currentDay).toBe(data.currentDay);
 	});
 
 	it("constructs with null 1RM values", () => {
 		const cycle = new Cycle({
-			...validCycleData,
+			...sample(),
 			squat1rm: null,
 			bench1rm: null,
 			deadlift1rm: null,
@@ -50,7 +39,7 @@ describe("Cycle entity", () => {
 		expect(
 			() =>
 				new Cycle({
-					...validCycleData,
+					...sample(),
 					currentRound: 5 as never,
 				}),
 		).toThrow();
@@ -60,7 +49,7 @@ describe("Cycle entity", () => {
 		expect(
 			() =>
 				new Cycle({
-					...validCycleData,
+					...sample(),
 					currentDay: 0 as never,
 				}),
 		).toThrow();
@@ -70,7 +59,7 @@ describe("Cycle entity", () => {
 		expect(
 			() =>
 				new Cycle({
-					...validCycleData,
+					...sample(),
 					unit: "stones" as never,
 				}),
 		).toThrow();
@@ -80,7 +69,7 @@ describe("Cycle entity", () => {
 		expect(
 			() =>
 				new Cycle({
-					...validCycleData,
+					...sample(),
 					cycleNumber: 0,
 				}),
 		).toThrow();
@@ -90,54 +79,42 @@ describe("Cycle entity", () => {
 describe("Cycle.decodeRow", () => {
 	it.effect("decodes Drizzle row with string numerics", () =>
 		Effect.gen(function* () {
+			const base = sample();
 			const drizzleRow = {
-				id: validUUID,
-				userId: validUUID2,
-				cycleNumber: 1,
-				squat1rm: "315",
-				bench1rm: "235",
-				deadlift1rm: "405",
-				ohp1rm: "150",
-				unit: "lbs",
-				currentRound: 1,
-				currentDay: 1,
-				startedAt: new Date("2024-01-01T00:00:00.000Z"),
-				completedAt: null,
+				...base,
+				squat1rm: base.squat1rm != null ? String(base.squat1rm) : null,
+				bench1rm: base.bench1rm != null ? String(base.bench1rm) : null,
+				deadlift1rm: base.deadlift1rm != null ? String(base.deadlift1rm) : null,
+				ohp1rm: base.ohp1rm != null ? String(base.ohp1rm) : null,
 			};
 
 			const cycle = yield* Cycle.decodeRow(drizzleRow);
 			expect(cycle).toBeInstanceOf(Cycle);
-			expect(cycle.squat1rm).toBe(315);
-			expect(cycle.bench1rm).toBe(235);
-			expect(cycle.deadlift1rm).toBe(405);
-			expect(cycle.ohp1rm).toBe(150);
-			expect(cycle.unit).toBe("lbs");
+			expect(cycle.squat1rm).toBe(base.squat1rm);
+			expect(cycle.bench1rm).toBe(base.bench1rm);
+			expect(cycle.deadlift1rm).toBe(base.deadlift1rm);
+			expect(cycle.ohp1rm).toBe(base.ohp1rm);
+			expect(cycle.unit).toBe(base.unit);
 		}),
 	);
 
 	it.effect("decodes Drizzle row with null numerics", () =>
 		Effect.gen(function* () {
+			const base = sample();
 			const drizzleRow = {
-				id: validUUID,
-				userId: validUUID2,
-				cycleNumber: 2,
+				...base,
 				squat1rm: null,
 				bench1rm: null,
 				deadlift1rm: null,
 				ohp1rm: null,
-				unit: "kg",
-				currentRound: 3,
-				currentDay: 2,
-				startedAt: new Date("2024-06-01T00:00:00.000Z"),
-				completedAt: null,
 			};
 
 			const cycle = yield* Cycle.decodeRow(drizzleRow);
 			expect(cycle).toBeInstanceOf(Cycle);
 			expect(cycle.squat1rm).toBeNull();
 			expect(cycle.bench1rm).toBeNull();
-			expect(cycle.cycleNumber).toBe(2);
-			expect(cycle.unit).toBe("kg");
+			expect(cycle.cycleNumber).toBe(base.cycleNumber);
+			expect(cycle.unit).toBe(base.unit);
 		}),
 	);
 });
@@ -147,7 +124,7 @@ describe("Cycle.toResponse", () => {
 		const startedAt = new Date("2024-01-01T00:00:00.000Z");
 		const completedAt = new Date("2024-02-01T00:00:00.000Z");
 		const cycle = new Cycle({
-			...validCycleData,
+			...sample(),
 			startedAt,
 			completedAt,
 		});
@@ -158,13 +135,13 @@ describe("Cycle.toResponse", () => {
 	});
 
 	it("handles null completedAt", () => {
-		const cycle = new Cycle(validCycleData);
+		const cycle = new Cycle({ ...sample(), completedAt: null });
 		const response = Cycle.toResponse(cycle);
 		expect(response.completedAt).toBeNull();
 	});
 
 	it("returns plain number values for round and day", () => {
-		const cycle = new Cycle(validCycleData);
+		const cycle = new Cycle(sample());
 		const response = Cycle.toResponse(cycle);
 		expect(typeof response.currentRound).toBe("number");
 		expect(typeof response.currentDay).toBe("number");
@@ -173,17 +150,33 @@ describe("Cycle.toResponse", () => {
 
 describe("Cycle.toDbInsert", () => {
 	it("converts number 1RMs to strings", () => {
-		const cycle = new Cycle(validCycleData);
+		const cycle = new Cycle(sample());
 		const insert = Cycle.toDbInsert(cycle);
-		expect(insert.squat1rm).toBe("315");
-		expect(insert.bench1rm).toBe("235");
-		expect(insert.deadlift1rm).toBe("405");
-		expect(insert.ohp1rm).toBe("150");
+		if (cycle.squat1rm != null) {
+			expect(insert.squat1rm).toBe(String(cycle.squat1rm));
+		} else {
+			expect(insert.squat1rm).toBeNull();
+		}
+		if (cycle.bench1rm != null) {
+			expect(insert.bench1rm).toBe(String(cycle.bench1rm));
+		} else {
+			expect(insert.bench1rm).toBeNull();
+		}
+		if (cycle.deadlift1rm != null) {
+			expect(insert.deadlift1rm).toBe(String(cycle.deadlift1rm));
+		} else {
+			expect(insert.deadlift1rm).toBeNull();
+		}
+		if (cycle.ohp1rm != null) {
+			expect(insert.ohp1rm).toBe(String(cycle.ohp1rm));
+		} else {
+			expect(insert.ohp1rm).toBeNull();
+		}
 	});
 
 	it("preserves null 1RMs", () => {
 		const cycle = new Cycle({
-			...validCycleData,
+			...sample(),
 			squat1rm: null,
 			bench1rm: null,
 			deadlift1rm: null,
@@ -197,7 +190,7 @@ describe("Cycle.toDbInsert", () => {
 	});
 
 	it("does not include id or timestamps", () => {
-		const cycle = new Cycle(validCycleData);
+		const cycle = new Cycle(sample());
 		const insert = Cycle.toDbInsert(cycle);
 		expect("id" in insert).toBe(false);
 		expect("startedAt" in insert).toBe(false);

@@ -1,31 +1,27 @@
 import { describe, expect, it } from "@effect/vitest";
 import { calculateCycleProgression } from "@powercycle/shared";
-import { Effect } from "effect";
+import { UserLifts } from "@powercycle/shared/schema/lifts";
+import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import { CycleLive, CycleService } from "../../src/services/CycleService.js";
 
-const TEST_USER_ID = "00000000-0000-4000-a000-000000000001";
-
-const testLifts = {
-	squat: 315,
-	bench: 235,
-	deadlift: 405,
-	ohp: 150,
-	unit: "lbs",
+const sampleLifts = () => {
+	const arb = Schema.toArbitrary(UserLifts);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
 };
 
-const testLiftsWithNulls = {
-	squat: 315,
+const sampleLiftsWithNulls = () => ({
+	...sampleLifts(),
 	bench: null,
-	deadlift: 405,
 	ohp: null,
-	unit: "lbs",
-};
+});
 
 describe("cycles handler logic", () => {
 	it.effect("creates cycle entity with correct defaults", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const entity = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const lifts = sampleLifts();
+			const entity = yield* service.createEntity(crypto.randomUUID(), lifts, 1);
 			expect(entity.cycleNumber).toBe(1);
 			expect(entity.currentRound).toBe(1);
 			expect(entity.currentDay).toBe(1);
@@ -36,14 +32,11 @@ describe("cycles handler logic", () => {
 	it.effect("creates cycle entity with nullable 1RMs", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const entity = yield* service.createEntity(
-				TEST_USER_ID,
-				testLiftsWithNulls,
-				1,
-			);
-			expect(entity.squat1rm).toBe(315);
+			const lifts = sampleLiftsWithNulls();
+			const entity = yield* service.createEntity(crypto.randomUUID(), lifts, 1);
+			expect(entity.squat1rm).toBe(lifts.squat);
 			expect(entity.bench1rm).toBeNull();
-			expect(entity.deadlift1rm).toBe(405);
+			expect(entity.deadlift1rm).toBe(lifts.deadlift);
 			expect(entity.ohp1rm).toBeNull();
 		}).pipe(Effect.provide(CycleLive)),
 	);
@@ -51,7 +44,11 @@ describe("cycles handler logic", () => {
 	it.effect("validates active cycle — returns cycle when found", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const cycle = yield* service.createEntity(
+				crypto.randomUUID(),
+				sampleLifts(),
+				1,
+			);
 			const result = yield* service.validateActiveCycle(cycle);
 			expect(result.id).toBe(cycle.id);
 		}).pipe(Effect.provide(CycleLive)),
@@ -81,26 +78,20 @@ describe("cycles handler logic", () => {
 	it.effect("next cycle handler advances correctly", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity(
-				TEST_USER_ID,
-				{ squat: 320, bench: 240, deadlift: 410, ohp: 155, unit: "lbs" },
-				2,
-			);
+			const lifts = sampleLifts();
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
 			expect(cycle.cycleNumber).toBe(2);
-			expect(cycle.squat1rm).toBe(320);
+			expect(cycle.squat1rm).toBe(lifts.squat);
 		}).pipe(Effect.provide(CycleLive)),
 	);
 
 	it.effect("next cycle handler works with nullable 1RMs", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity(
-				TEST_USER_ID,
-				{ squat: 320, bench: null, deadlift: 410, ohp: null, unit: "lbs" },
-				2,
-			);
+			const lifts = sampleLiftsWithNulls();
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
 			expect(cycle.cycleNumber).toBe(2);
-			expect(cycle.squat1rm).toBe(320);
+			expect(cycle.squat1rm).toBe(lifts.squat);
 			expect(cycle.bench1rm).toBeNull();
 			expect(cycle.ohp1rm).toBeNull();
 		}).pipe(Effect.provide(CycleLive)),
