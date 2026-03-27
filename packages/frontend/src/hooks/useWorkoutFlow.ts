@@ -1,42 +1,7 @@
+import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-interface PrescribedSet {
-	setNumber: number;
-	weight: number;
-	reps: number;
-	percentage: number;
-	isAmrap: boolean;
-}
-
-interface RpeSet {
-	setNumber: number;
-	rpeMin: number;
-	rpeMax: number;
-	repMin: number;
-	repMax: number;
-}
-
-interface ExerciseSlot {
-	category: string;
-	defaultExercise: string;
-	preferredWeight?: number | null;
-	lastSession?: {
-		weight: number | null;
-		reps: number | null;
-		rpe: number | null;
-	} | null;
-	sets: RpeSet[];
-}
-
-interface WorkoutPlan {
-	day: number;
-	round: number;
-	cycle: number;
-	mainLift: string;
-	mainLiftSets: PrescribedSet[];
-	variation: ExerciseSlot;
-	accessories: ExerciseSlot[];
-}
+type WorkoutPlan = typeof WorkoutPlanResponse.Type;
 
 export interface FlatSet {
 	exerciseName: string;

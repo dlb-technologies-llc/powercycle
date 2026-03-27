@@ -178,10 +178,10 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						ctx.params.id,
 						ctx.payload,
 					);
-					const row = yield* insertWorkoutSet(
-						db,
-						WorkoutSet.toDbInsert(setEntity),
-					);
+					const row = yield* insertWorkoutSet(db, {
+						...WorkoutSet.toDbInsert(setEntity),
+						completedAt: setEntity.completedAt,
+					});
 					const inserted = yield* WorkoutSet.decodeRow(row);
 					return WorkoutSet.toResponse(inserted);
 				}),

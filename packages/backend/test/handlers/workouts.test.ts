@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
+import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { Effect } from "effect";
 import {
 	WorkoutLive,
@@ -121,6 +122,41 @@ describe("workouts handler logic", () => {
 			expect(set.rpe).toBeNull();
 			expect(set.setDuration).toBeNull();
 			expect(set.restDuration).toBeNull();
+		}).pipe(Effect.provide(WorkoutLive)),
+	);
+
+	it.effect("logSet insert object includes non-null completedAt", () =>
+		Effect.gen(function* () {
+			const service = yield* WorkoutService;
+			const workoutId = crypto.randomUUID();
+			const setEntity = yield* service.createSetEntity(workoutId, {
+				exerciseName: "Squat",
+				category: null,
+				setNumber: 1,
+				prescribedWeight: 225,
+				actualWeight: 225,
+				prescribedReps: 5,
+				actualReps: 5,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
+				setDuration: null,
+				restDuration: null,
+				isMainLift: true,
+				isAmrap: false,
+			});
+			// Simulate what the logSet handler does: spread toDbInsert + add completedAt
+			const insertData = {
+				...WorkoutSet.toDbInsert(setEntity),
+				completedAt: setEntity.completedAt,
+			};
+			expect(insertData.completedAt).toBeInstanceOf(Date);
+			// Verify toResponse produces a valid ISO string
+			const response = WorkoutSet.toResponse(setEntity);
+			expect(response.completedAt).not.toBeNull();
+			expect(new Date(response.completedAt!).toISOString()).toBe(
+				response.completedAt,
+			);
 		}).pipe(Effect.provide(WorkoutLive)),
 	);
 
