@@ -6,6 +6,7 @@ import {
 	findActiveCycle,
 	findExerciseWeightsByUserId,
 	findInProgressWorkout,
+	findLastSessionSets,
 	findSetsByWorkoutId,
 	findWorkoutById,
 	findWorkoutHistory,
@@ -125,11 +126,28 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						]),
 					);
 
+					// Fetch last session data and build lookup
+					const lastSessionRows = yield* findLastSessionSets(db, userId);
+					const lastSessionMap = new Map<
+						string,
+						{ weight: number | null; reps: number | null; rpe: number | null }
+					>();
+					for (const row of lastSessionRows) {
+						if (!lastSessionMap.has(row.exerciseName)) {
+							lastSessionMap.set(row.exerciseName, {
+								weight: row.actualWeight ? Number(row.actualWeight) : null,
+								reps: row.actualReps,
+								rpe: row.rpe ? Number(row.rpe) : null,
+							});
+						}
+					}
+
 					const addPreferredWeight = <T extends { defaultExercise: string }>(
 						slot: T,
 					) => ({
 						...slot,
 						preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
+						lastSession: lastSessionMap.get(slot.defaultExercise) ?? null,
 					});
 
 					return {
