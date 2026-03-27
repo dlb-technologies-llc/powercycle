@@ -32,8 +32,8 @@ export const CycleLive = Layer.succeed(CycleService)({
 					deadlift1rm: lifts.deadlift,
 					ohp1rm: lifts.ohp,
 					unit: lifts.unit,
-					currentRound: 1 as 1,
-					currentDay: 1 as 1,
+					currentRound: 1,
+					currentDay: 1,
 					startedAt: new Date(),
 					completedAt: null,
 				}),
@@ -41,18 +41,21 @@ export const CycleLive = Layer.succeed(CycleService)({
 
 	advancePosition: (cycle) =>
 		Effect.sync(() => {
+			const nextDay = { 1: 2, 2: 3, 3: 4 } as const;
+			const nextRound = { 1: 2, 2: 3, 3: 4 } as const;
+
 			if (cycle.currentDay < 4) {
 				return new Cycle({
 					...cycle,
-					currentDay: (cycle.currentDay + 1) as typeof cycle.currentDay,
+					currentDay: nextDay[cycle.currentDay as keyof typeof nextDay],
 				});
 			}
 			// Day 4 done — advance to next round
 			if (cycle.currentDay === 4 && cycle.currentRound < 4) {
 				return new Cycle({
 					...cycle,
-					currentRound: (cycle.currentRound + 1) as typeof cycle.currentRound,
-					currentDay: 1 as 1,
+					currentRound: nextRound[cycle.currentRound as keyof typeof nextRound],
+					currentDay: 1,
 				});
 			}
 			// Round 4, day 4 — cycle complete

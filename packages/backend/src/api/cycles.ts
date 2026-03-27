@@ -1,7 +1,6 @@
 import { calculateCycleProgression } from "@powercycle/shared";
 import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
-import type { Unit } from "@powercycle/shared/schema/lifts";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { NewCycle } from "../db/schema.js";
@@ -45,7 +44,7 @@ export const CyclesLive = HttpApiBuilder.group(
 							bench: ctx.payload.bench,
 							deadlift: ctx.payload.deadlift,
 							ohp: ctx.payload.ohp,
-							unit: ctx.payload.unit as Unit,
+							unit: ctx.payload.unit,
 						},
 						cycleCount + 1,
 					);
@@ -93,7 +92,7 @@ export const CyclesLive = HttpApiBuilder.group(
 							bench: ctx.payload.bench,
 							deadlift: ctx.payload.deadlift,
 							ohp: ctx.payload.ohp,
-							unit: ctx.payload.unit as Unit,
+							unit: ctx.payload.unit,
 						},
 						cycleCount + 1,
 					);

@@ -55,6 +55,8 @@ describe("WorkoutService", () => {
 				prescribedRpeMin: 7,
 				prescribedRpeMax: 8,
 				rpe: 8,
+				setDuration: null,
+				restDuration: null,
 				isMainLift: true,
 				isAmrap: true,
 			});
@@ -81,7 +83,17 @@ describe("WorkoutService", () => {
 			const service = yield* WorkoutService;
 			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
 				exerciseName: "Bench Press",
+				category: null,
 				setNumber: 2,
+				prescribedWeight: null,
+				actualWeight: null,
+				prescribedReps: null,
+				actualReps: null,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
+				setDuration: null,
+				restDuration: null,
 				isMainLift: false,
 				isAmrap: false,
 			});
@@ -103,7 +115,15 @@ describe("WorkoutService", () => {
 			const service = yield* WorkoutService;
 			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
 				exerciseName: "Squat",
+				category: null,
 				setNumber: 1,
+				prescribedWeight: null,
+				actualWeight: null,
+				prescribedReps: null,
+				actualReps: null,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
 				isMainLift: true,
 				isAmrap: false,
 				setDuration: 45,

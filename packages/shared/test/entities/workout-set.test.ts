@@ -220,18 +220,28 @@ describe("LogSetInput", () => {
 		expect(() => Schema.decodeUnknownSync(LogSetInput)(input)).not.toThrow();
 	});
 
-	it("validates with only required fields", () => {
+	it("validates with null optional fields", () => {
 		const input = {
 			exerciseName: "Squat",
+			category: null,
 			setNumber: 1,
+			prescribedWeight: null,
+			actualWeight: null,
+			prescribedReps: null,
+			actualReps: null,
+			prescribedRpeMin: null,
+			prescribedRpeMax: null,
+			rpe: null,
+			setDuration: null,
+			restDuration: null,
 			isMainLift: true,
 			isAmrap: false,
 		};
 		const decoded = Schema.decodeUnknownSync(LogSetInput)(input);
 		expect(decoded.exerciseName).toBe("Squat");
 		expect(decoded.setNumber).toBe(1);
-		expect(decoded.category).toBeUndefined();
-		expect(decoded.prescribedWeight).toBeUndefined();
+		expect(decoded.category).toBeNull();
+		expect(decoded.prescribedWeight).toBeNull();
 	});
 
 	it("rejects missing required fields", () => {

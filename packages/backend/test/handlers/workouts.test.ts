@@ -34,11 +34,17 @@ describe("workouts handler logic", () => {
 			const service = yield* WorkoutService;
 			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
 				exerciseName: "Squat",
+				category: null,
 				setNumber: 1,
 				prescribedWeight: 225,
 				actualWeight: 225,
 				prescribedReps: 5,
 				actualReps: 5,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
+				setDuration: null,
+				restDuration: null,
 				isMainLift: true,
 				isAmrap: false,
 			});
@@ -78,7 +84,15 @@ describe("workouts handler logic", () => {
 			const service = yield* WorkoutService;
 			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
 				exerciseName: "Squat",
+				category: null,
 				setNumber: 1,
+				prescribedWeight: null,
+				actualWeight: null,
+				prescribedReps: null,
+				actualReps: null,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
 				isMainLift: true,
 				isAmrap: false,
 				setDuration: 30,
@@ -94,7 +108,17 @@ describe("workouts handler logic", () => {
 			const service = yield* WorkoutService;
 			const set = yield* service.createSetEntity(TEST_WORKOUT_ID, {
 				exerciseName: "Face Pulls",
+				category: null,
 				setNumber: 1,
+				prescribedWeight: null,
+				actualWeight: null,
+				prescribedReps: null,
+				actualReps: null,
+				prescribedRpeMin: null,
+				prescribedRpeMax: null,
+				rpe: null,
+				setDuration: null,
+				restDuration: null,
 				isMainLift: false,
 				isAmrap: false,
 			});

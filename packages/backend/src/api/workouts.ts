@@ -79,8 +79,8 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					const plan = generateWorkoutPlan(
 						lifts,
 						cycle.cycleNumber,
-						round as 1 | 2 | 3 | 4,
-						day as 1 | 2 | 3 | 4,
+						round,
+						day,
 					);
 
 					// Fetch preferred weights and build lookup
@@ -176,22 +176,7 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					yield* workoutService.validateWorkout(workoutEntity, ctx.params.id);
 					const setEntity = yield* workoutService.createSetEntity(
 						ctx.params.id,
-						{
-							exerciseName: ctx.payload.exerciseName,
-							setNumber: ctx.payload.setNumber,
-							prescribedWeight: ctx.payload.prescribedWeight ?? undefined,
-							actualWeight: ctx.payload.actualWeight ?? undefined,
-							prescribedReps: ctx.payload.prescribedReps ?? undefined,
-							actualReps: ctx.payload.actualReps ?? undefined,
-							rpe: ctx.payload.rpe ?? undefined,
-							prescribedRpeMin: ctx.payload.prescribedRpeMin ?? undefined,
-							prescribedRpeMax: ctx.payload.prescribedRpeMax ?? undefined,
-							isMainLift: ctx.payload.isMainLift,
-							isAmrap: ctx.payload.isAmrap,
-							category: ctx.payload.category ?? undefined,
-							setDuration: ctx.payload.setDuration ?? undefined,
-							restDuration: ctx.payload.restDuration ?? undefined,
-						},
+						ctx.payload,
 					);
 					const row = yield* insertWorkoutSet(
 						db,

@@ -103,19 +103,20 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 }
 
 // Standalone Schema.Struct for logging a new set (input from client)
+// Uses NullOr to match entity fields — callers send null, not undefined
 export const LogSetInput = Schema.Struct({
 	exerciseName: Schema.String,
-	category: Schema.optional(Schema.String),
+	category: Schema.NullOr(Schema.String),
 	setNumber: Schema.Int,
-	prescribedWeight: Schema.optional(Schema.Number),
-	actualWeight: Schema.optional(Schema.Number),
-	prescribedReps: Schema.optional(Schema.Int),
-	actualReps: Schema.optional(Schema.Int),
-	prescribedRpeMin: Schema.optional(Schema.Number),
-	prescribedRpeMax: Schema.optional(Schema.Number),
-	rpe: Schema.optional(Schema.Number),
-	setDuration: Schema.optional(Schema.Int),
-	restDuration: Schema.optional(Schema.Int),
+	prescribedWeight: Schema.NullOr(Schema.Number),
+	actualWeight: Schema.NullOr(Schema.Number),
+	prescribedReps: Schema.NullOr(Schema.Int),
+	actualReps: Schema.NullOr(Schema.Int),
+	prescribedRpeMin: Schema.NullOr(Schema.Number),
+	prescribedRpeMax: Schema.NullOr(Schema.Number),
+	rpe: Schema.NullOr(Schema.Number),
+	setDuration: Schema.NullOr(Schema.Int),
+	restDuration: Schema.NullOr(Schema.Int),
 	isMainLift: Schema.Boolean,
 	isAmrap: Schema.Boolean,
 });
