@@ -19,6 +19,7 @@ interface RpeSet {
 interface ExerciseSlot {
 	category: string;
 	defaultExercise: string;
+	preferredWeight?: number | null;
 	sets: RpeSet[];
 }
 
@@ -47,6 +48,7 @@ export interface FlatSet {
 	};
 	isMainLift: boolean;
 	isAmrap: boolean;
+	preferredWeight?: number;
 }
 
 export type WorkoutPhase =
@@ -56,6 +58,7 @@ export type WorkoutPhase =
 	| "logging"
 	| "resting"
 	| "exercise-break"
+	| "weight-feedback"
 	| "complete";
 
 const LIFT_DISPLAY_NAMES: Record<string, string> = {
@@ -70,6 +73,11 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [selections, setSelections] = useState<Record<string, string>>({});
 	const [resumeIndex, setResumeIndex] = useState<number | null>(null);
+	const [lastExerciseWeight, setLastExerciseWeight] = useState<{
+		exerciseName: string;
+		weight: number | null;
+		unit: string;
+	} | null>(null);
 
 	const flatSets = useMemo(() => {
 		if (!plan) return [];
@@ -109,6 +117,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 				},
 				isMainLift: false,
 				isAmrap: false,
+				preferredWeight: plan.variation.preferredWeight ?? undefined,
 			});
 		}
 
@@ -129,6 +138,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 					},
 					isMainLift: false,
 					isAmrap: false,
+					preferredWeight: slot.preferredWeight ?? undefined,
 				});
 			}
 		});
@@ -189,13 +199,40 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 
 	const logSet = useCallback(() => {
 		if (isLastSet) {
-			setPhase("complete");
+			if (currentSet && !currentSet.isMainLift) {
+				setLastExerciseWeight({
+					exerciseName: currentSet.exerciseName,
+					weight: null,
+					unit: "lbs",
+				});
+				setPhase("weight-feedback");
+			} else {
+				setPhase("complete");
+			}
 		} else if (isExerciseChanging) {
-			setPhase("exercise-break");
+			if (currentSet && !currentSet.isMainLift) {
+				setLastExerciseWeight({
+					exerciseName: currentSet.exerciseName,
+					weight: null,
+					unit: "lbs",
+				});
+				setPhase("weight-feedback");
+			} else {
+				setPhase("exercise-break");
+			}
 		} else {
 			setPhase("resting");
 		}
-	}, [isLastSet, isExerciseChanging]);
+	}, [isLastSet, isExerciseChanging, currentSet]);
+
+	const dismissFeedback = useCallback(() => {
+		if (isLastSet) {
+			setPhase("complete");
+		} else {
+			setPhase("exercise-break");
+		}
+		setLastExerciseWeight(null);
+	}, [isLastSet]);
 
 	const startNextSet = useCallback(() => {
 		setCurrentIndex((i) => i + 1);
@@ -208,12 +245,14 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		totalSets,
 		isLastSet,
 		nextExerciseName,
+		lastExerciseWeight,
 		progress: { current: currentIndex + 1, total: totalSets },
 		startWorkout,
 		initializeAt,
 		startSet,
 		completeSet,
 		logSet,
+		dismissFeedback,
 		startNextSet,
 	};
 }

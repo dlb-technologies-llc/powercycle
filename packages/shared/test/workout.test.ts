@@ -188,3 +188,47 @@ describe("generateWorkoutPlan", () => {
 		expect(categories).toContain("bicep");
 	});
 });
+
+describe("generateWorkoutPlan with null 1RM", () => {
+	it("returns empty mainLiftSets when day's main lift 1RM is null", () => {
+		const liftsWithNullSquat: UserLifts = {
+			squat: null,
+			bench: 235,
+			deadlift: 405,
+			ohp: 150,
+			unit: "lbs",
+		};
+		const plan = generateWorkoutPlan(liftsWithNullSquat, 1, 1, 1); // day 1 = squat
+		expect(plan.mainLift).toBe("squat");
+		expect(plan.mainLiftSets).toHaveLength(0);
+		// Variation and accessories should still be generated
+		expect(plan.variation).toBeDefined();
+		expect(plan.accessories.length).toBeGreaterThan(0);
+	});
+
+	it("generates main lift sets normally when another lift is null", () => {
+		const liftsWithNullBench: UserLifts = {
+			squat: 315,
+			bench: null,
+			deadlift: 405,
+			ohp: 150,
+			unit: "lbs",
+		};
+		// Day 1 = squat, bench being null shouldn't matter
+		const plan = generateWorkoutPlan(liftsWithNullBench, 1, 1, 1);
+		expect(plan.mainLiftSets).toHaveLength(6);
+	});
+
+	it("handles all null 1RMs", () => {
+		const allNull: UserLifts = {
+			squat: null,
+			bench: null,
+			deadlift: null,
+			ohp: null,
+			unit: "lbs",
+		};
+		const plan = generateWorkoutPlan(allNull, 1, 1, 1);
+		expect(plan.mainLiftSets).toHaveLength(0);
+		expect(plan.variation).toBeDefined();
+	});
+});

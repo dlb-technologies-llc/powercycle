@@ -11,6 +11,14 @@ const testLifts = {
 	unit: "lbs",
 };
 
+const testLiftsWithNulls = {
+	squat: 315,
+	bench: null,
+	deadlift: 405,
+	ohp: null,
+	unit: "lbs",
+};
+
 describe("cycles handler logic", () => {
 	it.effect("creates cycle entity with correct defaults", () =>
 		Effect.gen(function* () {
@@ -20,6 +28,21 @@ describe("cycles handler logic", () => {
 			expect(entity.currentRound).toBe(1);
 			expect(entity.currentDay).toBe(1);
 			expect(entity.completedAt).toBeNull();
+		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect("creates cycle entity with nullable 1RMs", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const entity = yield* service.createEntity(
+				"user-1",
+				testLiftsWithNulls,
+				1,
+			);
+			expect(entity.squat1rm).toBe(315);
+			expect(entity.bench1rm).toBeNull();
+			expect(entity.deadlift1rm).toBe(405);
+			expect(entity.ohp1rm).toBeNull();
 		}).pipe(Effect.provide(CycleLive)),
 	);
 
@@ -63,6 +86,21 @@ describe("cycles handler logic", () => {
 			);
 			expect(cycle.cycleNumber).toBe(2);
 			expect(cycle.squat1rm).toBe(320);
+		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect("next cycle handler works with nullable 1RMs", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const cycle = yield* service.createEntity(
+				"user-1",
+				{ squat: 320, bench: null, deadlift: 410, ohp: null, unit: "lbs" },
+				2,
+			);
+			expect(cycle.cycleNumber).toBe(2);
+			expect(cycle.squat1rm).toBe(320);
+			expect(cycle.bench1rm).toBeNull();
+			expect(cycle.ohp1rm).toBeNull();
 		}).pipe(Effect.provide(CycleLive)),
 	);
 });

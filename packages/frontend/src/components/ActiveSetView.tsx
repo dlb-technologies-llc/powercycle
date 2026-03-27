@@ -9,6 +9,7 @@ interface ActiveSetViewProps {
 	isLastSet: boolean;
 	nextExerciseName: string | null;
 	unit: string;
+	preferredWeight?: number;
 	onStartSet: () => void;
 	onDone: () => void;
 	onConfirm: (data: {
@@ -40,6 +41,7 @@ export function ActiveSetView({
 	isLastSet: _isLastSet,
 	nextExerciseName,
 	unit,
+	preferredWeight,
 	onStartSet,
 	onDone,
 	onConfirm,
@@ -48,7 +50,9 @@ export function ActiveSetView({
 	const [weight, setWeight] = useState<string>(
 		set.isMainLift && set.prescribed.weight != null
 			? String(set.prescribed.weight)
-			: "",
+			: preferredWeight != null
+				? String(preferredWeight)
+				: "",
 	);
 	const [reps, setReps] = useState<string>(
 		set.isMainLift && set.prescribed.reps != null
@@ -129,6 +133,11 @@ export function ActiveSetView({
 							className="w-full text-xl bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
 							placeholder="Weight"
 						/>
+						{!set.isMainLift && preferredWeight != null && (
+							<span className="text-xs text-zinc-500">
+								Last: {preferredWeight} {unit}
+							</span>
+						)}
 					</label>
 					<label className="block">
 						<span className="block text-sm text-zinc-400 mb-1 text-left">

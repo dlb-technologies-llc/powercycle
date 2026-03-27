@@ -4,7 +4,9 @@ import { Effect } from "effect";
 import {
 	cycles,
 	exercisePreferences,
+	exerciseWeights,
 	type NewCycle,
+	type NewExerciseWeight,
 	type NewWorkout,
 	type NewWorkoutSet,
 	workoutSets,
@@ -149,3 +151,71 @@ export const upsertExercisePreference = (
 				.returning(),
 		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
 	}).pipe(Effect.map((rows) => rows[0]!));
+
+export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.select()
+				.from(exerciseWeights)
+				.where(eq(exerciseWeights.userId, userId)),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	});
+
+export const findExerciseWeight = (
+	db: Database,
+	userId: string,
+	exerciseName: string,
+) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.select()
+				.from(exerciseWeights)
+				.where(
+					and(
+						eq(exerciseWeights.userId, userId),
+						eq(exerciseWeights.exerciseName, exerciseName),
+					),
+				)
+				.limit(1),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	}).pipe(Effect.map((rows) => rows[0] ?? null));
+
+export const upsertExerciseWeight = (db: Database, data: NewExerciseWeight) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.insert(exerciseWeights)
+				.values(data)
+				.onConflictDoUpdate({
+					target: [exerciseWeights.userId, exerciseWeights.exerciseName],
+					set: {
+						weight: data.weight,
+						unit: data.unit,
+						rpe: data.rpe,
+						updatedAt: new Date(),
+					},
+				})
+				.returning(),
+		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
+	}).pipe(Effect.map((rows) => rows[0]!));
+
+export const deleteExerciseWeight = (
+	db: Database,
+	userId: string,
+	exerciseName: string,
+) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.delete(exerciseWeights)
+				.where(
+					and(
+						eq(exerciseWeights.userId, userId),
+						eq(exerciseWeights.exerciseName, exerciseName),
+					),
+				)
+				.returning(),
+		catch: (error) => new InternalError({ message: `Delete failed: ${error}` }),
+	}).pipe(Effect.map((rows) => rows.length > 0));

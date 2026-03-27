@@ -1,5 +1,8 @@
+import { useAtomSet } from "@effect/atom-react";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
+import { Exit } from "effect";
 import { useEffect, useState } from "react";
+import { update1rmAtom } from "../atoms/cycles";
 
 const LIFT_DISPLAY_NAMES: Record<string, string> = {
 	squat: "Squat",
@@ -24,6 +27,7 @@ interface WorkoutOverviewProps {
 		variation: {
 			category: string;
 			defaultExercise: string;
+			preferredWeight?: number | null;
 			sets: Array<{
 				setNumber: number;
 				rpeMin: number;
@@ -35,6 +39,7 @@ interface WorkoutOverviewProps {
 		accessories: Array<{
 			category: string;
 			defaultExercise: string;
+			preferredWeight?: number | null;
 			sets: Array<{
 				setNumber: number;
 				rpeMin: number;
@@ -113,6 +118,37 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 	};
 
 	const mainLiftName = LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;
+
+	const [oneRmInput, setOneRmInput] = useState("");
+	const [oneRmError, setOneRmError] = useState("");
+	const [isSubmitting1rm, setIsSubmitting1rm] = useState(false);
+	const update1rm = useAtomSet(update1rmAtom, { mode: "promiseExit" });
+
+	const handleSubmit1rm = async () => {
+		const value = Number(oneRmInput);
+		if (!value || value <= 0) {
+			setOneRmError("Enter a valid weight");
+			return;
+		}
+		setIsSubmitting1rm(true);
+		setOneRmError("");
+		const exit = await update1rm({
+			payload: {
+				lift: plan.mainLift as "squat" | "bench" | "deadlift" | "ohp",
+				value,
+			},
+		});
+		Exit.match(exit, {
+			onFailure: () => {
+				setOneRmError("Failed to save");
+				setIsSubmitting1rm(false);
+			},
+			onSuccess: () => {
+				window.location.reload();
+			},
+		});
+	};
+
 	const variationOptions =
 		(EXERCISE_OPTIONS as Record<string, readonly string[]>)[
 			plan.variation.category
@@ -127,27 +163,58 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				<p className="text-zinc-400 text-lg mt-1">{mainLiftName}</p>
 			</div>
 
-			<div className="space-y-3">
-				<h2 className="text-lg font-semibold text-zinc-100">{mainLiftName}</h2>
-				<div className="space-y-1">
-					{plan.mainLiftSets.map((s) => (
-						<div
-							key={s.setNumber}
-							className="flex items-center justify-between text-sm text-zinc-300 py-1"
+			{plan.mainLiftSets.length === 0 ? (
+				<div className="space-y-3">
+					<h2 className="text-lg font-semibold text-zinc-100">
+						{mainLiftName}
+					</h2>
+					<p className="text-zinc-400 text-sm">
+						Enter your 1RM for {mainLiftName} to calculate your sets.
+					</p>
+					<div className="flex gap-3">
+						<input
+							type="number"
+							value={oneRmInput}
+							onChange={(e) => setOneRmInput(e.target.value)}
+							placeholder={`1RM in ${unit}`}
+							className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
+						/>
+						<button
+							type="button"
+							onClick={handleSubmit1rm}
+							disabled={isSubmitting1rm}
+							className="px-6 py-2 bg-zinc-100 text-zinc-900 font-bold rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
 						>
-							<span>
-								Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
-								{s.isAmrap ? "+" : ""}
-							</span>
-							{s.isAmrap && (
-								<span className="text-xs font-semibold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-									AMRAP
-								</span>
-							)}
-						</div>
-					))}
+							{isSubmitting1rm ? "Saving..." : "Save"}
+						</button>
+					</div>
+					{oneRmError && <p className="text-red-400 text-sm">{oneRmError}</p>}
 				</div>
-			</div>
+			) : (
+				<div className="space-y-3">
+					<h2 className="text-lg font-semibold text-zinc-100">
+						{mainLiftName}
+					</h2>
+					<div className="space-y-1">
+						{plan.mainLiftSets.map((s) => (
+							<div
+								key={s.setNumber}
+								className="flex items-center justify-between text-sm text-zinc-300 py-1"
+							>
+								<span>
+									Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
+									{s.isAmrap ? "+" : ""}
+								</span>
+								{s.isAmrap && (
+									<span className="text-xs font-semibold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+										AMRAP
+									</span>
+								)}
+							</div>
+						))}
+					</div>
+				</div>
+			)}
 
 			<div className="space-y-3">
 				<h2 className="text-lg font-semibold text-zinc-100">Variation</h2>
@@ -176,6 +243,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 						</div>
 					))}
 				</div>
+				{plan.variation.preferredWeight != null && (
+					<p className="text-xs text-zinc-500">
+						Last weight: {plan.variation.preferredWeight} {unit}
+					</p>
+				)}
 			</div>
 
 			{plan.accessories.map((acc, i) => {
@@ -212,6 +284,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 								</div>
 							))}
 						</div>
+						{acc.preferredWeight != null && (
+							<p className="text-xs text-zinc-500">
+								Last weight: {acc.preferredWeight} {unit}
+							</p>
+						)}
 					</div>
 				);
 			})}

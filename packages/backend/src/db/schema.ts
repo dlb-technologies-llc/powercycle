@@ -16,10 +16,10 @@ export const cycles = pgTable(
 		id: uuid("id").defaultRandom().primaryKey(),
 		userId: uuid("user_id").notNull(),
 		cycleNumber: integer("cycle_number").notNull(),
-		squat1rm: numeric("squat_1rm").notNull(),
-		bench1rm: numeric("bench_1rm").notNull(),
-		deadlift1rm: numeric("deadlift_1rm").notNull(),
-		ohp1rm: numeric("ohp_1rm").notNull(),
+		squat1rm: numeric("squat_1rm"),
+		bench1rm: numeric("bench_1rm"),
+		deadlift1rm: numeric("deadlift_1rm"),
+		ohp1rm: numeric("ohp_1rm"),
 		unit: text("unit").notNull().default("lbs"),
 		currentRound: integer("current_round").notNull().default(1),
 		currentDay: integer("current_day").notNull().default(1),
@@ -89,6 +89,26 @@ export const exercisePreferences = pgTable(
 	],
 );
 
+export const exerciseWeights = pgTable(
+	"exercise_weights",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		userId: uuid("user_id").notNull(),
+		exerciseName: text("exercise_name").notNull(),
+		weight: numeric("weight").notNull(),
+		unit: text("unit").notNull().default("lbs"),
+		rpe: numeric("rpe"),
+		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+	},
+	(table) => [
+		index("exercise_weights_user_id_idx").on(table.userId),
+		unique("exercise_weights_user_exercise").on(
+			table.userId,
+			table.exerciseName,
+		),
+	],
+);
+
 // Type exports
 export type Cycle = typeof cycles.$inferSelect;
 export type NewCycle = typeof cycles.$inferInsert;
@@ -98,3 +118,5 @@ export type WorkoutSet = typeof workoutSets.$inferSelect;
 export type NewWorkoutSet = typeof workoutSets.$inferInsert;
 export type ExercisePreference = typeof exercisePreferences.$inferSelect;
 export type NewExercisePreference = typeof exercisePreferences.$inferInsert;
+export type ExerciseWeight = typeof exerciseWeights.$inferSelect;
+export type NewExerciseWeight = typeof exerciseWeights.$inferInsert;

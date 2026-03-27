@@ -12,10 +12,10 @@ export const PLATE_INCREMENT: Record<Unit, number> = {
 };
 
 export const UserLifts = Schema.Struct({
-	squat: Schema.Number,
-	bench: Schema.Number,
-	deadlift: Schema.Number,
-	ohp: Schema.Number,
+	squat: Schema.NullOr(Schema.Number),
+	bench: Schema.NullOr(Schema.Number),
+	deadlift: Schema.NullOr(Schema.Number),
+	ohp: Schema.NullOr(Schema.Number),
 	unit: Unit,
 });
 export type UserLifts = typeof UserLifts.Type;
