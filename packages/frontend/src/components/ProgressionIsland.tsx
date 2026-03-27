@@ -95,7 +95,7 @@ export default function ProgressionIsland() {
 				bench: progression.bench?.newMax ?? null,
 				deadlift: progression.deadlift?.newMax ?? null,
 				ohp: progression.ohp?.newMax ?? null,
-				unit: (cycle.unit || "lbs") as "lbs" | "kg",
+				unit: cycle.unit,
 			},
 		});
 		Exit.match(exit, {

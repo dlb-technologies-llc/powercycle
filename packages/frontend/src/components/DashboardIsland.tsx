@@ -91,8 +91,8 @@ export default function DashboardIsland() {
 		const exit = await startWorkout({
 			payload: {
 				cycleId: cycle.id,
-				round: cycle.currentRound as 1 | 2 | 3 | 4,
-				day: cycle.currentDay as 1 | 2 | 3 | 4,
+				round: cycle.currentRound,
+				day: cycle.currentDay,
 			},
 		});
 		Exit.match(exit, {
