@@ -1,0 +1,191 @@
+import { useCallback, useMemo, useState } from "react";
+
+interface PrescribedSet {
+	setNumber: number;
+	weight: number;
+	reps: number;
+	percentage: number;
+	isAmrap: boolean;
+}
+
+interface RpeSet {
+	setNumber: number;
+	rpeMin: number;
+	rpeMax: number;
+	repMin: number;
+	repMax: number;
+}
+
+interface ExerciseSlot {
+	category: string;
+	defaultExercise: string;
+	sets: RpeSet[];
+}
+
+interface WorkoutPlan {
+	day: number;
+	round: number;
+	cycle: number;
+	mainLift: string;
+	mainLiftSets: PrescribedSet[];
+	variation: ExerciseSlot;
+	accessories: ExerciseSlot[];
+}
+
+export interface FlatSet {
+	exerciseName: string;
+	category: string | null;
+	setNumber: number;
+	prescribed: {
+		weight?: number;
+		reps?: number;
+		percentage?: number;
+		rpeMin?: number;
+		rpeMax?: number;
+		repMin?: number;
+		repMax?: number;
+	};
+	isMainLift: boolean;
+	isAmrap: boolean;
+}
+
+export type WorkoutPhase =
+	| "overview"
+	| "ready"
+	| "active"
+	| "logging"
+	| "resting"
+	| "exercise-break"
+	| "complete";
+
+const LIFT_DISPLAY_NAMES: Record<string, string> = {
+	squat: "Squat",
+	bench: "Bench Press",
+	deadlift: "Deadlift",
+	ohp: "Overhead Press",
+};
+
+export function useWorkoutFlow(plan: WorkoutPlan | null) {
+	const [phase, setPhase] = useState<WorkoutPhase>("overview");
+	const [currentIndex, setCurrentIndex] = useState(0);
+	const [selections, setSelections] = useState<Record<string, string>>({});
+
+	const flatSets = useMemo(() => {
+		if (!plan) return [];
+		const sets: FlatSet[] = [];
+
+		// Main lift sets
+		const mainLiftName = LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;
+		for (const s of plan.mainLiftSets) {
+			sets.push({
+				exerciseName: mainLiftName,
+				category: null,
+				setNumber: s.setNumber,
+				prescribed: {
+					weight: s.weight,
+					reps: s.reps,
+					percentage: s.percentage,
+				},
+				isMainLift: true,
+				isAmrap: s.isAmrap,
+			});
+		}
+
+		// Variation sets
+		const variationKey = `${plan.variation.category}-variation`;
+		const variationName =
+			selections[variationKey] || plan.variation.defaultExercise;
+		for (const s of plan.variation.sets) {
+			sets.push({
+				exerciseName: variationName,
+				category: plan.variation.category,
+				setNumber: s.setNumber,
+				prescribed: {
+					rpeMin: s.rpeMin,
+					rpeMax: s.rpeMax,
+					repMin: s.repMin,
+					repMax: s.repMax,
+				},
+				isMainLift: false,
+				isAmrap: false,
+			});
+		}
+
+		// Accessory sets
+		plan.accessories.forEach((slot, slotIndex) => {
+			const accKey = `${slot.category}-${slotIndex}`;
+			const accName = selections[accKey] || slot.defaultExercise;
+			for (const s of slot.sets) {
+				sets.push({
+					exerciseName: accName,
+					category: slot.category,
+					setNumber: s.setNumber,
+					prescribed: {
+						rpeMin: s.rpeMin,
+						rpeMax: s.rpeMax,
+						repMin: s.repMin,
+						repMax: s.repMax,
+					},
+					isMainLift: false,
+					isAmrap: false,
+				});
+			}
+		});
+
+		return sets;
+	}, [plan, selections]);
+
+	const currentSet = flatSets[currentIndex] ?? null;
+	const totalSets = flatSets.length;
+	const isLastSet = currentIndex === totalSets - 1;
+	const nextSet = flatSets[currentIndex + 1] ?? null;
+	const nextExerciseName = nextSet?.exerciseName ?? null;
+	const isExerciseChanging =
+		nextSet !== null && nextSet.exerciseName !== currentSet?.exerciseName;
+
+	const startWorkout = useCallback(
+		(exerciseSelections: Record<string, string>) => {
+			setSelections(exerciseSelections);
+			setCurrentIndex(0);
+			setPhase("ready");
+		},
+		[],
+	);
+
+	const startSet = useCallback(() => {
+		setPhase("active");
+	}, []);
+
+	const completeSet = useCallback(() => {
+		setPhase("logging");
+	}, []);
+
+	const logSet = useCallback(() => {
+		if (isLastSet) {
+			setPhase("complete");
+		} else if (isExerciseChanging) {
+			setPhase("exercise-break");
+		} else {
+			setPhase("resting");
+		}
+	}, [isLastSet, isExerciseChanging]);
+
+	const startNextSet = useCallback(() => {
+		setCurrentIndex((i) => i + 1);
+		setPhase("ready");
+	}, []);
+
+	return {
+		phase,
+		currentSet,
+		totalSets,
+		isLastSet,
+		nextExerciseName,
+		progress: { current: currentIndex + 1, total: totalSets },
+		startWorkout,
+		startSet,
+		completeSet,
+		logSet,
+		startNextSet,
+	};
+}
