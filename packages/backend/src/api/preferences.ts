@@ -1,3 +1,4 @@
+import { ExercisePreference } from "@powercycle/shared/schema/entities/exercise-preference";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import {
@@ -20,10 +21,10 @@ export const PreferencesLive = HttpApiBuilder.group(
 			.handle("getExercises", () =>
 				Effect.gen(function* () {
 					const rows = yield* findExercisePreferences(db, userId);
-					return rows.map((r) => ({
-						slotKey: r.slotKey,
-						exerciseName: r.exerciseName,
-					}));
+					const entities = yield* Effect.forEach(rows, (r) =>
+						ExercisePreference.decodeRow(r),
+					);
+					return entities.map(ExercisePreference.toResponse);
 				}),
 			)
 			.handle("setExercise", (ctx) =>
@@ -34,10 +35,8 @@ export const PreferencesLive = HttpApiBuilder.group(
 						ctx.payload.slotKey,
 						ctx.payload.exerciseName,
 					);
-					return {
-						slotKey: row.slotKey,
-						exerciseName: row.exerciseName,
-					};
+					const entity = yield* ExercisePreference.decodeRow(row);
+					return ExercisePreference.toResponse(entity);
 				}),
 			);
 	}),

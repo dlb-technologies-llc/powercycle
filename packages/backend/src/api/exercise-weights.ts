@@ -1,6 +1,6 @@
+import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import type { ExerciseWeight } from "../db/schema.js";
 import {
 	deleteExerciseWeight,
 	findExerciseWeightsByUserId,
@@ -10,19 +10,6 @@ import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
 
 const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
-
-const toExerciseWeightResponse = (row: ExerciseWeight) => ({
-	id: row.id,
-	userId: row.userId,
-	exerciseName: row.exerciseName,
-	weight: Number(row.weight),
-	unit: row.unit,
-	rpe: row.rpe ? Number(row.rpe) : null,
-	updatedAt:
-		row.updatedAt instanceof Date
-			? row.updatedAt.toISOString()
-			: String(row.updatedAt),
-});
 
 export const ExerciseWeightsLive = HttpApiBuilder.group(
 	PowerCycleApi,
@@ -35,7 +22,10 @@ export const ExerciseWeightsLive = HttpApiBuilder.group(
 				Effect.gen(function* () {
 					const userId = DEFAULT_USER_ID;
 					const rows = yield* findExerciseWeightsByUserId(db, userId);
-					return rows.map(toExerciseWeightResponse);
+					const entities = yield* Effect.forEach(rows, (row) =>
+						ExerciseWeight.decodeRow(row),
+					);
+					return entities.map(ExerciseWeight.toResponse);
 				}),
 			)
 			.handle("upsert", (ctx) =>
@@ -48,7 +38,8 @@ export const ExerciseWeightsLive = HttpApiBuilder.group(
 						unit: ctx.payload.unit,
 						rpe: ctx.payload.rpe != null ? String(ctx.payload.rpe) : null,
 					});
-					return toExerciseWeightResponse(row);
+					const entity = yield* ExerciseWeight.decodeRow(row);
+					return ExerciseWeight.toResponse(entity);
 				}),
 			)
 			.handle("remove", (ctx) =>

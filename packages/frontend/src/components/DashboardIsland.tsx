@@ -23,13 +23,13 @@ const ROUND_NAMES: Record<number, string> = {
 interface CycleData {
 	id: string;
 	cycleNumber: number;
-	currentRound: number;
-	currentDay: number;
+	currentRound: 1 | 2 | 3 | 4;
+	currentDay: 1 | 2 | 3 | 4;
 	squat1rm: number | null;
 	bench1rm: number | null;
 	deadlift1rm: number | null;
 	ohp1rm: number | null;
-	unit: string;
+	unit: "lbs" | "kg";
 	completedAt: string | null;
 }
 

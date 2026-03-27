@@ -18,7 +18,8 @@ import {
 	WorkoutResponse,
 	WorkoutWithSetsResponse,
 } from "../schema/api.js";
-import { MainLift } from "../schema/lifts.js";
+import { MainLift, Unit } from "../schema/lifts.js";
+import { Round, TrainingDay } from "../schema/program.js";
 
 export class HealthGroup extends HttpApiGroup.make("health").add(
 	HttpApiEndpoint.get("check", "/api/health", {
@@ -42,7 +43,7 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				bench: Schema.NullOr(Schema.Number),
 				deadlift: Schema.NullOr(Schema.Number),
 				ohp: Schema.NullOr(Schema.Number),
-				unit: Schema.String,
+				unit: Unit,
 			}),
 			success: CycleResponse,
 			error: [InternalError.pipe(HttpApiSchema.status(500))],
@@ -82,7 +83,7 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				bench: Schema.NullOr(Schema.Number),
 				deadlift: Schema.NullOr(Schema.Number),
 				ohp: Schema.NullOr(Schema.Number),
-				unit: Schema.String,
+				unit: Unit,
 			}),
 			success: CycleResponse,
 			error: [InternalError.pipe(HttpApiSchema.status(500))],
@@ -114,8 +115,8 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 	HttpApiEndpoint.post("start", "/api/workouts", {
 		payload: Schema.Struct({
 			cycleId: Schema.String,
-			round: Schema.Number,
-			day: Schema.Number,
+			round: Round,
+			day: TrainingDay,
 		}),
 		success: WorkoutResponse,
 		error: [InternalError.pipe(HttpApiSchema.status(500))],
