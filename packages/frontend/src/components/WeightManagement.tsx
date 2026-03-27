@@ -1,8 +1,8 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
-import { update1rmAtom } from "../atoms/cycles";
+import { currentCycleAtom, update1rmAtom } from "../atoms/cycles";
 import {
 	deleteExerciseWeightAtom,
 	exerciseWeightsAtom,
@@ -59,6 +59,7 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 
 function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 	const update1rm = useAtomSet(update1rmAtom, { mode: "promiseExit" });
+	const refreshCycle = useAtomRefresh(currentCycleAtom);
 	const [editingLift, setEditingLift] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
@@ -85,7 +86,9 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 				setIsSaving(false);
 			},
 			onSuccess: () => {
-				window.location.reload();
+				refreshCycle();
+				setEditingLift(null);
+				setIsSaving(false);
 			},
 		});
 	};
@@ -155,6 +158,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 
 function SavedWeightsSection() {
 	const result = useAtomValue(exerciseWeightsAtom);
+	const refreshWeights = useAtomRefresh(exerciseWeightsAtom);
 	const deleteWeight = useAtomSet(deleteExerciseWeightAtom, {
 		mode: "promiseExit",
 	});
@@ -171,7 +175,8 @@ function SavedWeightsSection() {
 				setDeletingName(null);
 			},
 			onSuccess: () => {
-				window.location.reload();
+				refreshWeights();
+				setDeletingName(null);
 			},
 		});
 	};

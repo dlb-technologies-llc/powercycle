@@ -1,8 +1,9 @@
-import { useAtomSet } from "@effect/atom-react";
+import { useAtomRefresh, useAtomSet } from "@effect/atom-react";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
 import { useEffect, useState } from "react";
 import { update1rmAtom } from "../atoms/cycles";
+import { nextWorkoutAtom } from "../atoms/workouts";
 
 const LIFT_DISPLAY_NAMES: Record<string, string> = {
 	squat: "Squat",
@@ -123,6 +124,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 	const [oneRmError, setOneRmError] = useState("");
 	const [isSubmitting1rm, setIsSubmitting1rm] = useState(false);
 	const update1rm = useAtomSet(update1rmAtom, { mode: "promiseExit" });
+	const refreshWorkout = useAtomRefresh(nextWorkoutAtom);
 
 	const handleSubmit1rm = async () => {
 		const value = Number(oneRmInput);
@@ -144,7 +146,9 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				setIsSubmitting1rm(false);
 			},
 			onSuccess: () => {
-				window.location.reload();
+				refreshWorkout();
+				setOneRmInput("");
+				setIsSubmitting1rm(false);
 			},
 		});
 	};
