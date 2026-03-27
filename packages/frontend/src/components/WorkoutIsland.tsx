@@ -128,6 +128,8 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				prescribedReps: number | null;
 				actualReps: number | null;
 				rpe: number | null;
+				prescribedRpeMin: number | null;
+				prescribedRpeMax: number | null;
 				isMainLift: boolean;
 				isAmrap: boolean;
 			},

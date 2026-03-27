@@ -18,6 +18,7 @@
         "@powercycle/shared": "workspace:*",
         "drizzle-orm": "^0.45.1",
         "effect": "4.0.0-beta.40",
+        "ioredis": "^5.6.1",
         "postgres": "^3.4.7",
       },
       "devDependencies": {

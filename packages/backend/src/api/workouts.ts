@@ -4,6 +4,7 @@ import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { Workout, WorkoutSet } from "../db/schema.js";
 import {
 	findActiveCycle,
+	findInProgressWorkout,
 	findSetsByWorkoutId,
 	findWorkoutById,
 	findWorkoutHistory,
@@ -113,6 +114,15 @@ export const WorkoutsLive = HttpApiBuilder.group(
 			.handle("start", (ctx) =>
 				Effect.gen(function* () {
 					const userId = DEFAULT_USER_ID;
+					const existing = yield* findInProgressWorkout(
+						db,
+						ctx.payload.cycleId,
+						ctx.payload.round,
+						ctx.payload.day,
+					);
+					if (existing) {
+						return toWorkoutResponse(existing);
+					}
 					const entity = yield* workoutService.createEntity(
 						userId,
 						ctx.payload.cycleId,
@@ -142,6 +152,8 @@ export const WorkoutsLive = HttpApiBuilder.group(
 							prescribedReps: ctx.payload.prescribedReps ?? undefined,
 							actualReps: ctx.payload.actualReps ?? undefined,
 							rpe: ctx.payload.rpe ?? undefined,
+							prescribedRpeMin: ctx.payload.prescribedRpeMin ?? undefined,
+							prescribedRpeMax: ctx.payload.prescribedRpeMax ?? undefined,
 							isMainLift: ctx.payload.isMainLift,
 							isAmrap: ctx.payload.isAmrap,
 						},

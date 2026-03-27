@@ -1,15 +1,12 @@
 import { createServer } from "node:http";
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
-import { drizzle } from "drizzle-orm/postgres-js";
 import { Layer } from "effect";
 import { HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import postgres from "postgres";
 import { CyclesLive } from "./api/cycles.js";
 import { HealthLive } from "./api/health.js";
 import { PowerCycleApi } from "./api/index.js";
 import { WorkoutsLive } from "./api/workouts.js";
-import { users } from "./db/schema.js";
 import { ConfigLive } from "./services/ConfigService.js";
 import { CycleLive } from "./services/CycleService.js";
 import { DatabaseService } from "./services/DatabaseService.js";
@@ -19,15 +16,6 @@ const PORT = Number(process.env.API_PORT) || 3000;
 const DATABASE_URL =
 	process.env.DATABASE_URL ??
 	"postgres://powercycle:powercycle@localhost:5432/powercycle";
-
-// Ensure default user exists on startup
-const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const sql = postgres(DATABASE_URL);
-const db = drizzle(sql);
-await db
-	.insert(users)
-	.values({ id: DEFAULT_USER_ID, username: "default", passwordHash: "none" })
-	.onConflictDoNothing();
 
 const configLayer = ConfigLive({
 	DATABASE_URL,

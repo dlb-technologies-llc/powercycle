@@ -85,6 +85,8 @@ export function VariationSection({
 								actualWeight: data.actualWeight ?? null,
 								actualReps: data.actualReps,
 								rpe: data.rpe ?? null,
+								prescribedRpeMin: set.rpeMin,
+								prescribedRpeMax: set.rpeMax,
 								isMainLift: false,
 								isAmrap: false,
 							});

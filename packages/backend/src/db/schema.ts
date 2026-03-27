@@ -9,20 +9,11 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-	id: uuid("id").defaultRandom().primaryKey(),
-	username: text("username").notNull().unique(),
-	passwordHash: text("password_hash").notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
 export const cycles = pgTable(
 	"cycles",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		userId: uuid("user_id")
-			.notNull()
-			.references(() => users.id),
+		userId: uuid("user_id").notNull(),
 		cycleNumber: integer("cycle_number").notNull(),
 		squat1rm: numeric("squat_1rm").notNull(),
 		bench1rm: numeric("bench_1rm").notNull(),
@@ -41,9 +32,7 @@ export const workouts = pgTable(
 	"workouts",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		userId: uuid("user_id")
-			.notNull()
-			.references(() => users.id),
+		userId: uuid("user_id").notNull(),
 		cycleId: uuid("cycle_id")
 			.notNull()
 			.references(() => cycles.id),
@@ -83,8 +72,6 @@ export const workoutSets = pgTable(
 );
 
 // Type exports
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
 export type Cycle = typeof cycles.$inferSelect;
 export type NewCycle = typeof cycles.$inferInsert;
 export type Workout = typeof workouts.$inferSelect;
