@@ -130,7 +130,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (!id || !plan || resumeChecked) return;
 
 		fetch(`/api/workouts/${id}/sets`)
-			.then((res) => res.json())
+			.then((res) => {
+				if (!res.ok) throw new Error("Failed to fetch sets");
+				return res.json();
+			})
 			.then((sets: unknown[]) => {
 				if (sets.length > 0) {
 					const selections = buildSelectionsFromLocalStorage(plan);

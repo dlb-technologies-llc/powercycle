@@ -163,16 +163,20 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 
 	// Effect: once flatSets recomputes after selections change, apply the resume index
 	useEffect(() => {
-		if (resumeIndex !== null && flatSets.length > 0) {
-			if (resumeIndex >= flatSets.length) {
-				setCurrentIndex(flatSets.length - 1);
-				setPhase("complete");
-			} else {
-				setCurrentIndex(resumeIndex);
-				setPhase("ready");
-			}
+		if (resumeIndex === null) return;
+		if (flatSets.length === 0) {
+			// Plan has no sets or flatSets not yet computed — clear and stay on overview
 			setResumeIndex(null);
+			return;
 		}
+		if (resumeIndex >= flatSets.length) {
+			setCurrentIndex(flatSets.length - 1);
+			setPhase("complete");
+		} else {
+			setCurrentIndex(resumeIndex);
+			setPhase("ready");
+		}
+		setResumeIndex(null);
 	}, [resumeIndex, flatSets.length]);
 
 	const startSet = useCallback(() => {
