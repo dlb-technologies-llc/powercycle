@@ -1,10 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { Effect } from "effect";
-import {
-	type CycleData,
-	CycleLive,
-	CycleService,
-} from "../../src/services/CycleService.js";
+import { CycleLive, CycleService } from "../../src/services/CycleService.js";
+
+const TEST_USER_ID = "00000000-0000-4000-a000-000000000001";
 
 const testLifts = {
 	squat: 315,
@@ -34,10 +33,10 @@ describe("CycleService", () => {
 	it.effect("createEntity generates correct defaults", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLifts, 1);
+			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 
 			expect(cycle.id).toBeDefined();
-			expect(cycle.userId).toBe("user-1");
+			expect(cycle.userId).toBe(TEST_USER_ID);
 			expect(cycle.cycleNumber).toBe(1);
 			expect(cycle.squat1rm).toBe(315);
 			expect(cycle.bench1rm).toBe(235);
@@ -54,7 +53,11 @@ describe("CycleService", () => {
 	it.effect("createEntity with null 1RMs stores null", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLiftsAllNull, 1);
+			const cycle = yield* service.createEntity(
+				TEST_USER_ID,
+				testLiftsAllNull,
+				1,
+			);
 
 			expect(cycle.squat1rm).toBeNull();
 			expect(cycle.bench1rm).toBeNull();
@@ -68,7 +71,7 @@ describe("CycleService", () => {
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const cycle = yield* service.createEntity(
-				"user-1",
+				TEST_USER_ID,
 				testLiftsWithNulls,
 				1,
 			);
@@ -83,7 +86,7 @@ describe("CycleService", () => {
 	it.effect("advancePosition: day 1 to day 2", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLifts, 1);
+			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			const advanced = yield* service.advancePosition(cycle);
 
 			expect(advanced.currentDay).toBe(2);
@@ -94,10 +97,11 @@ describe("CycleService", () => {
 	it.effect("advancePosition: day 3 to day 4", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle: CycleData = {
-				...(yield* service.createEntity("user-1", testLifts, 1)),
-				currentDay: 3,
-			};
+			const base = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const cycle = new Cycle({
+				...base,
+				currentDay: 3 as never,
+			});
 			const advanced = yield* service.advancePosition(cycle);
 
 			expect(advanced.currentDay).toBe(4);
@@ -108,11 +112,12 @@ describe("CycleService", () => {
 	it.effect("advancePosition: day 4 advances to next round day 1", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle: CycleData = {
-				...(yield* service.createEntity("user-1", testLifts, 1)),
-				currentDay: 4,
-				currentRound: 2,
-			};
+			const base = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const cycle = new Cycle({
+				...base,
+				currentDay: 4 as never,
+				currentRound: 2 as never,
+			});
 			const advanced = yield* service.advancePosition(cycle);
 
 			expect(advanced.currentRound).toBe(3);
@@ -123,11 +128,12 @@ describe("CycleService", () => {
 	it.effect("advancePosition: round 4 day 4 sets completedAt", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle: CycleData = {
-				...(yield* service.createEntity("user-1", testLifts, 1)),
-				currentRound: 4,
-				currentDay: 4,
-			};
+			const base = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const cycle = new Cycle({
+				...base,
+				currentRound: 4 as never,
+				currentDay: 4 as never,
+			});
 			const advanced = yield* service.advancePosition(cycle);
 
 			expect(advanced.completedAt).toBeInstanceOf(Date);
@@ -139,7 +145,7 @@ describe("CycleService", () => {
 	it.effect("advancePosition returns a new object (immutability)", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const original = yield* service.createEntity("user-1", testLifts, 1);
+			const original = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			const advanced = yield* service.advancePosition(original);
 
 			expect(advanced).not.toBe(original);
@@ -151,7 +157,7 @@ describe("CycleService", () => {
 	it.effect("isComplete: false for active cycle", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLifts, 1);
+			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			expect(service.isComplete(cycle)).toBe(false);
 		}).pipe(Effect.provide(CycleLive)),
 	);
@@ -159,10 +165,11 @@ describe("CycleService", () => {
 	it.effect("isComplete: true for completed cycle", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle: CycleData = {
-				...(yield* service.createEntity("user-1", testLifts, 1)),
+			const base = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
+			const cycle = new Cycle({
+				...base,
 				completedAt: new Date(),
-			};
+			});
 			expect(service.isComplete(cycle)).toBe(true);
 		}).pipe(Effect.provide(CycleLive)),
 	);
@@ -170,7 +177,7 @@ describe("CycleService", () => {
 	it.effect("validateActiveCycle returns cycle when not null", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLifts, 1);
+			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			const validated = yield* service.validateActiveCycle(cycle);
 
 			expect(validated).toEqual(cycle);
@@ -180,19 +187,10 @@ describe("CycleService", () => {
 	it.effect("validateActiveCycle fails with NotFoundError when null", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const result = yield* service.validateActiveCycle(null).pipe(
-				Effect.matchEffect({
-					onFailure: (error) =>
-						Effect.sync(() => {
-							expect(error._tag).toBe("NotFoundError");
-							expect(error.message).toBe("No active cycle found");
-							expect(error.resource).toBe("cycle");
-							return "caught";
-						}),
-					onSuccess: () => Effect.die("Expected failure"),
-				}),
-			);
-			expect(result).toBe("caught");
+			const error = yield* service.validateActiveCycle(null).pipe(Effect.flip);
+			expect(error._tag).toBe("NotFoundError");
+			expect(error.message).toBe("No active cycle found");
+			expect(error.resource).toBe("cycle");
 		}).pipe(Effect.provide(CycleLive)),
 	);
 });

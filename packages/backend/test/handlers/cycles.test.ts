@@ -3,6 +3,8 @@ import { calculateCycleProgression } from "@powercycle/shared";
 import { Effect } from "effect";
 import { CycleLive, CycleService } from "../../src/services/CycleService.js";
 
+const TEST_USER_ID = "00000000-0000-4000-a000-000000000001";
+
 const testLifts = {
 	squat: 315,
 	bench: 235,
@@ -23,7 +25,7 @@ describe("cycles handler logic", () => {
 	it.effect("creates cycle entity with correct defaults", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const entity = yield* service.createEntity("user-1", testLifts, 1);
+			const entity = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			expect(entity.cycleNumber).toBe(1);
 			expect(entity.currentRound).toBe(1);
 			expect(entity.currentDay).toBe(1);
@@ -35,7 +37,7 @@ describe("cycles handler logic", () => {
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const entity = yield* service.createEntity(
-				"user-1",
+				TEST_USER_ID,
 				testLiftsWithNulls,
 				1,
 			);
@@ -49,7 +51,7 @@ describe("cycles handler logic", () => {
 	it.effect("validates active cycle — returns cycle when found", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
-			const cycle = yield* service.createEntity("user-1", testLifts, 1);
+			const cycle = yield* service.createEntity(TEST_USER_ID, testLifts, 1);
 			const result = yield* service.validateActiveCycle(cycle);
 			expect(result.id).toBe(cycle.id);
 		}).pipe(Effect.provide(CycleLive)),
@@ -80,7 +82,7 @@ describe("cycles handler logic", () => {
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const cycle = yield* service.createEntity(
-				"user-1",
+				TEST_USER_ID,
 				{ squat: 320, bench: 240, deadlift: 410, ohp: 155, unit: "lbs" },
 				2,
 			);
@@ -93,7 +95,7 @@ describe("cycles handler logic", () => {
 		Effect.gen(function* () {
 			const service = yield* CycleService;
 			const cycle = yield* service.createEntity(
-				"user-1",
+				TEST_USER_ID,
 				{ squat: 320, bench: null, deadlift: 410, ohp: null, unit: "lbs" },
 				2,
 			);

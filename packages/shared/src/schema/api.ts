@@ -1,51 +1,52 @@
 import { Schema } from "effect";
+import { Cycle } from "./entities/cycle.js";
+import { ExercisePreference } from "./entities/exercise-preference.js";
+import { ExerciseWeight } from "./entities/exercise-weight.js";
+import { Workout } from "./entities/workout.js";
+import { WorkoutSet } from "./entities/workout-set.js";
 import { MainLift } from "./lifts.js";
+import { PrescribedSet, RpeSet } from "./workout.js";
+
+// --- Cycle ---
 
 export const CycleResponse = Schema.Struct({
-	id: Schema.String,
-	userId: Schema.String,
-	cycleNumber: Schema.Number,
-	squat1rm: Schema.NullOr(Schema.Number),
-	bench1rm: Schema.NullOr(Schema.Number),
-	deadlift1rm: Schema.NullOr(Schema.Number),
-	ohp1rm: Schema.NullOr(Schema.Number),
-	unit: Schema.String,
-	currentRound: Schema.Number,
-	currentDay: Schema.Number,
+	...Cycle.fields,
+	// Date → String for JSON serialization
 	startedAt: Schema.String,
 	completedAt: Schema.NullOr(Schema.String),
+	// Literal → Number for JSON serialization
+	currentRound: Schema.Number,
+	currentDay: Schema.Number,
+	// Literal → String for JSON serialization
+	unit: Schema.String,
 });
 
 export const NullableCycleResponse = Schema.NullOr(CycleResponse);
 
+// --- WorkoutSet ---
+
 export const SetResponse = Schema.Struct({
-	id: Schema.String,
-	workoutId: Schema.String,
-	exerciseName: Schema.String,
-	category: Schema.NullOr(Schema.String),
+	...WorkoutSet.fields,
+	// Date → String for JSON serialization
+	completedAt: Schema.NullOr(Schema.String),
+	// Int → Number for JSON serialization
 	setNumber: Schema.Number,
-	prescribedWeight: Schema.NullOr(Schema.Number),
-	actualWeight: Schema.NullOr(Schema.Number),
 	prescribedReps: Schema.NullOr(Schema.Number),
 	actualReps: Schema.NullOr(Schema.Number),
-	prescribedRpeMin: Schema.NullOr(Schema.Number),
-	prescribedRpeMax: Schema.NullOr(Schema.Number),
-	rpe: Schema.NullOr(Schema.Number),
-	isMainLift: Schema.Boolean,
-	isAmrap: Schema.Boolean,
 	setDuration: Schema.NullOr(Schema.Number),
 	restDuration: Schema.NullOr(Schema.Number),
-	completedAt: Schema.NullOr(Schema.String),
 });
 
+// --- Workout ---
+
 export const WorkoutResponse = Schema.Struct({
-	id: Schema.String,
-	userId: Schema.String,
-	cycleId: Schema.String,
-	round: Schema.Number,
-	day: Schema.Number,
+	...Workout.fields,
+	// Date → String for JSON serialization
 	startedAt: Schema.String,
 	completedAt: Schema.NullOr(Schema.String),
+	// Literal → Number for JSON serialization
+	round: Schema.Number,
+	day: Schema.Number,
 });
 
 export const WorkoutWithSetsResponse = Schema.Struct({
@@ -53,21 +54,11 @@ export const WorkoutWithSetsResponse = Schema.Struct({
 	sets: Schema.Array(SetResponse),
 });
 
-export const PrescribedSetSchema = Schema.Struct({
-	setNumber: Schema.Number,
-	weight: Schema.Number,
-	reps: Schema.Number,
-	percentage: Schema.Number,
-	isAmrap: Schema.Boolean,
-});
+// --- Value object schemas (derived from workout.ts) ---
 
-export const RpeSetSchema = Schema.Struct({
-	setNumber: Schema.Number,
-	rpeMin: Schema.Number,
-	rpeMax: Schema.Number,
-	repMin: Schema.Number,
-	repMax: Schema.Number,
-});
+export const PrescribedSetSchema = PrescribedSet;
+
+export const RpeSetSchema = RpeSet;
 
 export const LastSessionSchema = Schema.Struct({
 	weight: Schema.NullOr(Schema.Number),
@@ -93,6 +84,8 @@ export const WorkoutPlanResponse = Schema.Struct({
 	accessories: Schema.Array(ExerciseSlotSchema),
 });
 
+// --- Progression (computed result, no entity) ---
+
 export const ProgressionResponse = Schema.Struct({
 	squat: Schema.Struct({
 		currentMax: Schema.Number,
@@ -116,24 +109,26 @@ export const ProgressionResponse = Schema.Struct({
 	}),
 });
 
+// --- ExercisePreference ---
+
 export const ExercisePreferenceResponse = Schema.Struct({
-	slotKey: Schema.String,
-	exerciseName: Schema.String,
+	slotKey: ExercisePreference.fields.slotKey,
+	exerciseName: ExercisePreference.fields.exerciseName,
 });
 
+// --- ExerciseWeight ---
+
 export const ExerciseWeightResponse = Schema.Struct({
-	id: Schema.String,
-	userId: Schema.String,
-	exerciseName: Schema.String,
-	weight: Schema.Number,
-	unit: Schema.String,
-	rpe: Schema.NullOr(Schema.Number),
+	...ExerciseWeight.fields,
+	// Date → String for JSON serialization
 	updatedAt: Schema.String,
+	// Literal → String for JSON serialization
+	unit: Schema.String,
 });
 
 export const ExerciseWeightInput = Schema.Struct({
-	exerciseName: Schema.String,
-	weight: Schema.Number,
+	exerciseName: ExerciseWeight.fields.exerciseName,
+	weight: ExerciseWeight.fields.weight,
 	unit: Schema.String,
-	rpe: Schema.NullOr(Schema.Number),
+	rpe: ExerciseWeight.fields.rpe,
 });
