@@ -1,5 +1,5 @@
 {
-	"id": "a13e297f-75f8-4fdd-a4ae-517d6ef84cef",
+	"id": "d9d44539-4d07-4757-bce6-c89f23dcbdb0",
 	"prevId": "00000000-0000-0000-0000-000000000000",
 	"version": "7",
 	"dialect": "postgresql",
@@ -31,25 +31,25 @@
 					"name": "squat_1rm",
 					"type": "numeric",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": false
 				},
 				"bench_1rm": {
 					"name": "bench_1rm",
 					"type": "numeric",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": false
 				},
 				"deadlift_1rm": {
 					"name": "deadlift_1rm",
 					"type": "numeric",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": false
 				},
 				"ohp_1rm": {
 					"name": "ohp_1rm",
 					"type": "numeric",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": false
 				},
 				"unit": {
 					"name": "unit",
@@ -103,25 +103,15 @@
 					"with": {}
 				}
 			},
-			"foreignKeys": {
-				"cycles_user_id_users_id_fk": {
-					"name": "cycles_user_id_users_id_fk",
-					"tableFrom": "cycles",
-					"tableTo": "users",
-					"columnsFrom": ["user_id"],
-					"columnsTo": ["id"],
-					"onDelete": "no action",
-					"onUpdate": "no action"
-				}
-			},
+			"foreignKeys": {},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {},
 			"policies": {},
 			"checkConstraints": {},
 			"isRLSEnabled": false
 		},
-		"public.users": {
-			"name": "users",
+		"public.exercise_preferences": {
+			"name": "exercise_preferences",
 			"schema": "",
 			"columns": {
 				"id": {
@@ -131,34 +121,136 @@
 					"notNull": true,
 					"default": "gen_random_uuid()"
 				},
-				"username": {
-					"name": "username",
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"slot_key": {
+					"name": "slot_key",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": true
 				},
-				"password_hash": {
-					"name": "password_hash",
+				"exercise_name": {
+					"name": "exercise_name",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": true
 				},
-				"created_at": {
-					"name": "created_at",
+				"updated_at": {
+					"name": "updated_at",
 					"type": "timestamp",
 					"primaryKey": false,
 					"notNull": true,
 					"default": "now()"
 				}
 			},
-			"indexes": {},
+			"indexes": {
+				"exercise_prefs_user_id_idx": {
+					"name": "exercise_prefs_user_id_idx",
+					"columns": [
+						{
+							"expression": "user_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
 			"foreignKeys": {},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {
-				"users_username_unique": {
-					"name": "users_username_unique",
+				"exercise_prefs_user_slot_key": {
+					"name": "exercise_prefs_user_slot_key",
 					"nullsNotDistinct": false,
-					"columns": ["username"]
+					"columns": ["user_id", "slot_key"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.exercise_weights": {
+			"name": "exercise_weights",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"exercise_name": {
+					"name": "exercise_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"weight": {
+					"name": "weight",
+					"type": "numeric",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"unit": {
+					"name": "unit",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'lbs'"
+				},
+				"rpe": {
+					"name": "rpe",
+					"type": "numeric",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"exercise_weights_user_id_idx": {
+					"name": "exercise_weights_user_id_idx",
+					"columns": [
+						{
+							"expression": "user_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"exercise_weights_user_exercise": {
+					"name": "exercise_weights_user_exercise",
+					"nullsNotDistinct": false,
+					"columns": ["user_id", "exercise_name"]
 				}
 			},
 			"policies": {},
@@ -255,6 +347,18 @@
 					"primaryKey": false,
 					"notNull": true,
 					"default": false
+				},
+				"set_duration": {
+					"name": "set_duration",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"rest_duration": {
+					"name": "rest_duration",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
 				},
 				"completed_at": {
 					"name": "completed_at",
@@ -379,15 +483,6 @@
 				}
 			},
 			"foreignKeys": {
-				"workouts_user_id_users_id_fk": {
-					"name": "workouts_user_id_users_id_fk",
-					"tableFrom": "workouts",
-					"tableTo": "users",
-					"columnsFrom": ["user_id"],
-					"columnsTo": ["id"],
-					"onDelete": "no action",
-					"onUpdate": "no action"
-				},
 				"workouts_cycle_id_cycles_id_fk": {
 					"name": "workouts_cycle_id_cycles_id_fk",
 					"tableFrom": "workouts",
