@@ -6,6 +6,7 @@ import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { CyclesLive } from "./api/cycles.js";
 import { HealthLive } from "./api/health.js";
 import { PowerCycleApi } from "./api/index.js";
+import { PreferencesLive } from "./api/preferences.js";
 import { WorkoutsLive } from "./api/workouts.js";
 import { ConfigLive } from "./services/ConfigService.js";
 import { CycleLive } from "./services/CycleService.js";
@@ -31,6 +32,7 @@ const ServiceLive = Layer.mergeAll(
 const HandlerLive = Layer.mergeAll(
 	Layer.provide(CyclesLive, ServiceLive),
 	Layer.provide(WorkoutsLive, ServiceLive),
+	Layer.provide(PreferencesLive, ServiceLive),
 	HealthLive,
 );
 

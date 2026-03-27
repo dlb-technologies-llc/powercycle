@@ -1,5 +1,5 @@
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const LIFT_DISPLAY_NAMES: Record<string, string> = {
 	squat: "Squat",
@@ -73,11 +73,43 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		return initial;
 	});
 
+	useEffect(() => {
+		fetch("/api/preferences/exercises")
+			.then((res) => res.json())
+			.then((prefs: Array<{ slotKey: string; exerciseName: string }>) => {
+				if (prefs.length > 0) {
+					const updates: Record<string, string> = {};
+					for (const p of prefs) {
+						updates[p.slotKey] = p.exerciseName;
+						// Sync API → localStorage
+						if (typeof window !== "undefined") {
+							localStorage.setItem(
+								`exercise-pref-${p.slotKey}`,
+								p.exerciseName,
+							);
+						}
+					}
+					setSelections((prev) => ({ ...prev, ...updates }));
+				}
+			})
+			.catch(() => {
+				// Silently fall back to localStorage
+			});
+	}, []);
+
 	const updateSelection = (key: string, storageKey: string, value: string) => {
 		setSelections((prev) => ({ ...prev, [key]: value }));
 		if (typeof window !== "undefined") {
 			localStorage.setItem(`exercise-pref-${storageKey}`, value);
 		}
+		// Persist to API (fire-and-forget)
+		fetch("/api/preferences/exercises", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ slotKey: key, exerciseName: value }),
+		}).catch(() => {
+			// Silently fall back to localStorage only
+		});
 	};
 
 	const mainLiftName = LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;

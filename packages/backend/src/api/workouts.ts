@@ -236,6 +236,14 @@ export const WorkoutsLive = HttpApiBuilder.group(
 
 					return toWorkoutResponse(row);
 				}),
+			)
+			.handle("sets", (ctx) =>
+				Effect.gen(function* () {
+					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
+					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
+					const sets = yield* findSetsByWorkoutId(db, ctx.params.id);
+					return sets.map(toSetResponse);
+				}),
 			);
 	}),
 );

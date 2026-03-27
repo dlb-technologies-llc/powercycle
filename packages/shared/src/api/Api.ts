@@ -8,6 +8,7 @@ import {
 import { InternalError, NotFoundError } from "../errors/index.js";
 import {
 	CycleResponse,
+	ExercisePreferenceResponse,
 	NullableCycleResponse,
 	ProgressionResponse,
 	SetResponse,
@@ -139,9 +140,35 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 			InternalError.pipe(HttpApiSchema.status(500)),
 		],
 	}),
+	HttpApiEndpoint.get("sets", "/api/workouts/:id/sets", {
+		params: {
+			id: Schema.String,
+		},
+		success: Schema.Array(SetResponse),
+		error: [
+			NotFoundError.pipe(HttpApiSchema.status(404)),
+			InternalError.pipe(HttpApiSchema.status(500)),
+		],
+	}),
+) {}
+
+export class PreferencesGroup extends HttpApiGroup.make("preferences").add(
+	HttpApiEndpoint.get("getExercises", "/api/preferences/exercises", {
+		success: Schema.Array(ExercisePreferenceResponse),
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
+	}),
+	HttpApiEndpoint.post("setExercise", "/api/preferences/exercises", {
+		payload: Schema.Struct({
+			slotKey: Schema.String,
+			exerciseName: Schema.String,
+		}),
+		success: ExercisePreferenceResponse,
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
+	}),
 ) {}
 
 export class PowerCycleApi extends HttpApi.make("PowerCycleApi")
 	.add(HealthGroup)
 	.add(CyclesGroup)
-	.add(WorkoutsGroup) {}
+	.add(WorkoutsGroup)
+	.add(PreferencesGroup) {}

@@ -3,6 +3,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import {
 	cycles,
+	exercisePreferences,
 	type NewCycle,
 	type NewWorkout,
 	type NewWorkoutSet,
@@ -119,3 +120,32 @@ export const countCyclesByUserId = (db: Database, userId: string) =>
 		try: () => db.select().from(cycles).where(eq(cycles.userId, userId)),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	}).pipe(Effect.map((rows) => rows.length));
+
+export const findExercisePreferences = (db: Database, userId: string) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.select()
+				.from(exercisePreferences)
+				.where(eq(exercisePreferences.userId, userId)),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	});
+
+export const upsertExercisePreference = (
+	db: Database,
+	userId: string,
+	slotKey: string,
+	exerciseName: string,
+) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.insert(exercisePreferences)
+				.values({ userId, slotKey, exerciseName })
+				.onConflictDoUpdate({
+					target: [exercisePreferences.userId, exercisePreferences.slotKey],
+					set: { exerciseName, updatedAt: new Date() },
+				})
+				.returning(),
+		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
+	}).pipe(Effect.map((rows) => rows[0]!));
