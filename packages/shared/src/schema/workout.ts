@@ -1,6 +1,6 @@
 import { Schema } from "effect";
-import type { MainLift } from "./lifts.js";
-import type { Round, TrainingDay } from "./program.js";
+import { MainLift } from "./lifts.js";
+import { Round, TrainingDay } from "./program.js";
 
 export const ExerciseCategory = Schema.Literals([
 	"squat_variation",
@@ -67,34 +67,38 @@ export const EXERCISE_OPTIONS: Record<ExerciseCategory, readonly string[]> = {
 	],
 };
 
-export interface PrescribedSet {
-	readonly setNumber: number;
-	readonly weight: number;
-	readonly reps: number;
-	readonly percentage: number;
-	readonly isAmrap: boolean;
-}
+export const PrescribedSet = Schema.Struct({
+	setNumber: Schema.Number,
+	weight: Schema.Number,
+	reps: Schema.Number,
+	percentage: Schema.Number,
+	isAmrap: Schema.Boolean,
+});
+export type PrescribedSet = typeof PrescribedSet.Type;
 
-export interface RpeSet {
-	readonly setNumber: number;
-	readonly rpeMin: number;
-	readonly rpeMax: number;
-	readonly repMin: number;
-	readonly repMax: number;
-}
+export const RpeSet = Schema.Struct({
+	setNumber: Schema.Number,
+	rpeMin: Schema.Number,
+	rpeMax: Schema.Number,
+	repMin: Schema.Number,
+	repMax: Schema.Number,
+});
+export type RpeSet = typeof RpeSet.Type;
 
-export interface ExerciseSlot {
-	readonly category: ExerciseCategory;
-	readonly defaultExercise: string;
-	readonly sets: readonly RpeSet[];
-}
+export const ExerciseSlot = Schema.Struct({
+	category: ExerciseCategory,
+	defaultExercise: Schema.String,
+	sets: Schema.Array(RpeSet),
+});
+export type ExerciseSlot = typeof ExerciseSlot.Type;
 
-export interface WorkoutPlan {
-	readonly day: TrainingDay;
-	readonly round: Round;
-	readonly cycle: number;
-	readonly mainLift: MainLift;
-	readonly mainLiftSets: readonly PrescribedSet[];
-	readonly variation: ExerciseSlot;
-	readonly accessories: readonly ExerciseSlot[];
-}
+export const WorkoutPlan = Schema.Struct({
+	day: TrainingDay,
+	round: Round,
+	cycle: Schema.Number,
+	mainLift: MainLift,
+	mainLiftSets: Schema.Array(PrescribedSet),
+	variation: ExerciseSlot,
+	accessories: Schema.Array(ExerciseSlot),
+});
+export type WorkoutPlan = typeof WorkoutPlan.Type;

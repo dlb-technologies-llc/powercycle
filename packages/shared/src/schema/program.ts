@@ -14,11 +14,12 @@ export const DAY_LIFT_MAP = {
 	4: "ohp",
 } as const satisfies Record<TrainingDay, MainLift>;
 
-export interface SetConfig {
-	readonly percentage: number;
-	readonly reps: number;
-	readonly isAmrap: boolean;
-}
+export const SetConfig = Schema.Struct({
+	percentage: Schema.Number,
+	reps: Schema.Number,
+	isAmrap: Schema.Boolean,
+});
+export type SetConfig = typeof SetConfig.Type;
 
 // The exact set configurations from the PRIME Powerbuilding spreadsheet
 export const ROUND_CONFIGS: Record<Round, readonly SetConfig[]> = {
