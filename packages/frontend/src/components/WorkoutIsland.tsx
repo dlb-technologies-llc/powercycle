@@ -129,14 +129,26 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	useEffect(() => {
 		if (!id || !plan || resumeChecked) return;
 
-		fetch(`/api/workouts/${id}/sets`)
-			.then((res) => {
+		Promise.all([
+			fetch(`/api/workouts/${id}/sets`).then((res) => {
 				if (!res.ok) throw new Error("Failed to fetch sets");
-				return res.json();
-			})
-			.then((sets: unknown[]) => {
+				return res.json() as Promise<unknown[]>;
+			}),
+			fetch("/api/preferences/exercises")
+				.then((res) => {
+					if (!res.ok) return [];
+					return res.json() as Promise<
+						Array<{ slotKey: string; exerciseName: string }>
+					>;
+				})
+				.catch(() => [] as Array<{ slotKey: string; exerciseName: string }>),
+		])
+			.then(([sets, prefs]) => {
 				if (sets.length > 0) {
 					const selections = buildSelectionsFromLocalStorage(plan);
+					for (const p of prefs) {
+						selections[p.slotKey] = p.exerciseName;
+					}
 					flow.initializeAt(sets.length, selections);
 				}
 				setResumeChecked(true);
