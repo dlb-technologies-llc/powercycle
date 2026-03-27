@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const BASE_URL = "http://localhost:3000";
+// API requests use Playwright's baseURL from config (relative paths)
 
 interface CycleResponse {
 	id: string;
@@ -51,11 +51,7 @@ interface WorkoutResponse {
 	day: number;
 }
 
-/**
- * Create a cycle and start a workout via API calls.
- * Returns the workout ID and the workout plan.
- */
-async function setupWorkout(request: {
+type ApiRequest = {
 	post: (
 		url: string,
 		options?: { data?: unknown },
@@ -63,9 +59,15 @@ async function setupWorkout(request: {
 	get: (
 		url: string,
 	) => Promise<{ ok: () => boolean; json: () => Promise<unknown> }>;
-}) {
+};
+
+/**
+ * Create a cycle and start a workout via API calls.
+ * Returns the workout ID and the workout plan.
+ */
+async function setupWorkout(request: ApiRequest) {
 	// Step 1: Create a cycle with 1RM values
-	const cycleRes = await request.post(`${BASE_URL}/api/cycles`, {
+	const cycleRes = await request.post(`/api/cycles`, {
 		data: {
 			squat: 300,
 			bench: 225,
@@ -78,13 +80,13 @@ async function setupWorkout(request: {
 	const cycle = (await cycleRes.json()) as CycleResponse;
 
 	// Step 2: Fetch the workout plan
-	const planRes = await request.get(`${BASE_URL}/api/workouts/next`);
+	const planRes = await request.get(`/api/workouts/next`);
 	expect(planRes.ok()).toBeTruthy();
 	const plan = (await planRes.json()) as WorkoutPlan;
 	expect(plan).not.toBeNull();
 
 	// Step 3: Start a workout
-	const workoutRes = await request.post(`${BASE_URL}/api/workouts`, {
+	const workoutRes = await request.post(`/api/workouts`, {
 		data: {
 			cycleId: cycle.id,
 			round: plan.round,
@@ -97,194 +99,191 @@ async function setupWorkout(request: {
 	return { cycle, plan, workout };
 }
 
-test.describe
-	.serial("Workout Flow", () => {
-		let workoutId: string;
-		let plan: WorkoutPlan;
+/** Navigate through overview to ready phase */
+async function startWorkoutFromOverview(
+	page: import("@playwright/test").Page,
+	workoutId: string,
+) {
+	await page.goto(`/workout?id=${workoutId}`);
+	const startWorkoutBtn = page.getByRole("button", {
+		name: "Start Workout",
+	});
+	await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
+	await startWorkoutBtn.click();
+}
 
-		test.beforeAll(async ({ request }) => {
-			const setup = await setupWorkout(
-				request as unknown as Parameters<typeof setupWorkout>[0],
-			);
-			workoutId = setup.workout.id;
-			plan = setup.plan;
-		});
+/** Complete one set cycle: Ready (if first) → Active → Resting → fill reps → Next */
+async function completeOneSet(
+	page: import("@playwright/test").Page,
+	options: { isFirstOfExercise: boolean; reps?: string },
+) {
+	if (options.isFirstOfExercise) {
+		const startSetBtn = page.getByRole("button", { name: "Start Set" });
+		await expect(startSetBtn).toBeVisible();
+		await startSetBtn.click();
+	}
 
-		test("phase transitions: overview -> ready -> active -> resting", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
+	const doneBtn = page.getByRole("button", { name: "Done" });
+	await expect(doneBtn).toBeVisible();
+	await doneBtn.click();
 
-			// Wait for overview to load — should see the "Start Workout" button
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
+	await expect(page.getByText("Rest Timer")).toBeVisible();
+	const repsInput = page.getByPlaceholder("Reps");
+	await repsInput.fill(options.reps ?? "5");
 
-			// Click Start Workout to enter Ready phase
-			await startWorkoutBtn.click();
+	const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
+	await expect(nextBtn).toBeVisible();
+	await nextBtn.click();
+}
 
-			// Ready phase: should see exercise name and "Start Set" button
-			const startSetBtn = page.getByRole("button", { name: "Start Set" });
-			await expect(startSetBtn).toBeVisible();
+// Each test creates its own workout to avoid shared state contamination
+test.describe("Workout Flow", () => {
+	test("phase transitions: overview -> ready -> active -> resting", async ({
+		page,
+		request,
+	}) => {
+		const { workout } = await setupWorkout(request as unknown as ApiRequest);
+		await startWorkoutFromOverview(page, workout.id);
 
-			// Click Start Set to enter Active phase
-			await startSetBtn.click();
+		// Ready phase: should see "Start Set" button
+		const startSetBtn = page.getByRole("button", { name: "Start Set" });
+		await expect(startSetBtn).toBeVisible();
+		await startSetBtn.click();
 
-			// Active phase: should see "Set Timer" label and "Done" button
-			await expect(page.getByText("Set Timer")).toBeVisible();
+		// Active phase: should see "Set Timer" label and "Done" button
+		await expect(page.getByText("Set Timer")).toBeVisible();
+		const doneBtn = page.getByRole("button", { name: "Done" });
+		await expect(doneBtn).toBeVisible();
+		await doneBtn.click();
+
+		// Resting phase: should see "Rest Timer" and input fields
+		await expect(page.getByText("Rest Timer")).toBeVisible();
+		await expect(page.getByPlaceholder("Weight")).toBeVisible();
+		await expect(page.getByPlaceholder("Reps")).toBeVisible();
+	});
+
+	test("exercise transition shows NEXT UP label", async ({ page, request }) => {
+		const { workout, plan } = await setupWorkout(
+			request as unknown as ApiRequest,
+		);
+		await startWorkoutFromOverview(page, workout.id);
+
+		// Complete all main lift sets to trigger exercise transition
+		const mainLiftSetCount = plan.mainLiftSets.length;
+		for (let i = 0; i < mainLiftSetCount; i++) {
+			await completeOneSet(page, { isFirstOfExercise: i === 0 });
+		}
+
+		// After completing all main lift sets, should see "Next Up" for variation
+		await expect(page.getByText("Next Up")).toBeVisible();
+	});
+
+	test("timer labels: SET TIMER in active, REST TIMER in resting", async ({
+		page,
+		request,
+	}) => {
+		const { workout } = await setupWorkout(request as unknown as ApiRequest);
+		await startWorkoutFromOverview(page, workout.id);
+
+		// Ready -> Active
+		const startSetBtn = page.getByRole("button", { name: "Start Set" });
+		await expect(startSetBtn).toBeVisible();
+		await startSetBtn.click();
+
+		// Active: verify "Set Timer" label
+		await expect(page.getByText("Set Timer")).toBeVisible();
+
+		// Active -> Resting
+		const doneBtn = page.getByRole("button", { name: "Done" });
+		await doneBtn.click();
+
+		// Resting: verify "Rest Timer" label
+		await expect(page.getByText("Rest Timer")).toBeVisible();
+	});
+
+	test("RPE validation shows error for out-of-range value", async ({
+		page,
+		request,
+	}) => {
+		const { workout, plan } = await setupWorkout(
+			request as unknown as ApiRequest,
+		);
+		await startWorkoutFromOverview(page, workout.id);
+
+		// Navigate through main lift sets to reach variation (which has RPE inputs)
+		const mainLiftSetCount = plan.mainLiftSets.length;
+		for (let i = 0; i < mainLiftSetCount; i++) {
+			await completeOneSet(page, { isFirstOfExercise: i === 0 });
+		}
+
+		// Now at variation Ready phase with "Next Up"
+		await expect(page.getByText("Next Up")).toBeVisible();
+		const startSetBtn = page.getByRole("button", { name: "Start Set" });
+		await startSetBtn.click();
+
+		// Active phase for variation
+		const doneBtn = page.getByRole("button", { name: "Done" });
+		await expect(doneBtn).toBeVisible();
+		await doneBtn.click();
+
+		// Resting phase — should have RPE input
+		await expect(page.getByText("Rest Timer")).toBeVisible();
+		const rpeInput = page.getByPlaceholder("RPE");
+		await expect(rpeInput).toBeVisible();
+
+		// Enter out-of-range RPE
+		await rpeInput.fill("15");
+
+		// Verify error message
+		await expect(page.getByText(/RPE must be 1-10/)).toBeVisible();
+	});
+
+	test("save weight toggle visible on last set of accessory", async ({
+		page,
+		request,
+	}) => {
+		const { workout, plan } = await setupWorkout(
+			request as unknown as ApiRequest,
+		);
+		await startWorkoutFromOverview(page, workout.id);
+
+		// Navigate through main lift sets
+		for (let i = 0; i < plan.mainLiftSets.length; i++) {
+			await completeOneSet(page, { isFirstOfExercise: i === 0 });
+		}
+
+		// Navigate through variation sets
+		for (let i = 0; i < plan.variation.sets.length; i++) {
+			if (i === 0) {
+				const startSetBtn = page.getByRole("button", { name: "Start Set" });
+				await expect(startSetBtn).toBeVisible();
+				await startSetBtn.click();
+			}
 			const doneBtn = page.getByRole("button", { name: "Done" });
 			await expect(doneBtn).toBeVisible();
-
-			// Click Done to enter Resting phase
 			await doneBtn.click();
+			const repsInput = page.getByPlaceholder("Reps");
+			await repsInput.fill("8");
 
-			// Resting phase: should see "Rest Timer" and input fields
-			await expect(page.getByText("Rest Timer")).toBeVisible();
-			await expect(page.getByPlaceholder("Weight")).toBeVisible();
-			await expect(page.getByPlaceholder("Reps")).toBeVisible();
-		});
-
-		test("exercise transition shows NEXT UP label", async ({ page }) => {
-			await page.goto(`/workout?id=${workoutId}`);
-
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-			await startWorkoutBtn.click();
-
-			// We need to go through all sets of the first exercise (main lift)
-			// to trigger an exercise transition to the next exercise.
-			const mainLiftSetCount = plan.mainLiftSets.length;
-
-			// Complete each main lift set
-			for (let i = 0; i < mainLiftSetCount; i++) {
-				// Ready phase on first set, Active on subsequent (same exercise skips ready)
-				if (i === 0) {
-					const startSetBtn = page.getByRole("button", { name: "Start Set" });
-					await expect(startSetBtn).toBeVisible();
-					await startSetBtn.click();
-				}
-
-				// Active phase
-				const doneBtn = page.getByRole("button", { name: "Done" });
-				await expect(doneBtn).toBeVisible();
-				await doneBtn.click();
-
-				// Resting phase — fill in reps and continue
-				await expect(page.getByText("Rest Timer")).toBeVisible();
-				const repsInput = page.getByPlaceholder("Reps");
-				await repsInput.fill("5");
-
-				const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
-				await expect(nextBtn).toBeVisible();
-				await nextBtn.click();
+			// On the last set of the variation (non-main-lift), check for save weight toggle
+			if (i === plan.variation.sets.length - 1) {
+				await expect(page.getByText(/Save weight for next time/)).toBeVisible();
 			}
 
-			// After completing all main lift sets, we should be at the variation exercise
-			// which is a new exercise — should show "Next Up" label
-			await expect(page.getByText("Next Up")).toBeVisible();
-		});
+			const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
+			await nextBtn.click();
+		}
 
-		test("timer labels: SET TIMER in active, REST TIMER in resting", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
+		// If there are accessories, navigate to the last set of the first accessory
+		if (plan.accessories.length > 0) {
+			const firstAccessory = plan.accessories[0];
+			const accSetCount = firstAccessory.sets.length;
 
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-			await startWorkoutBtn.click();
-
-			// Ready -> Active
-			const startSetBtn = page.getByRole("button", { name: "Start Set" });
-			await expect(startSetBtn).toBeVisible();
-			await startSetBtn.click();
-
-			// Active: verify "Set Timer" label
-			await expect(page.getByText("Set Timer")).toBeVisible();
-
-			// Active -> Resting
-			const doneBtn = page.getByRole("button", { name: "Done" });
-			await doneBtn.click();
-
-			// Resting: verify "Rest Timer" label
-			await expect(page.getByText("Rest Timer")).toBeVisible();
-		});
-
-		test("RPE validation shows error for out-of-range value", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
-
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-			await startWorkoutBtn.click();
-
-			// Navigate through main lift sets to reach a variation/accessory set
-			// which has RPE inputs
-			const mainLiftSetCount = plan.mainLiftSets.length;
-
-			for (let i = 0; i < mainLiftSetCount; i++) {
+			for (let i = 0; i < accSetCount; i++) {
 				if (i === 0) {
-					const startSetBtn = page.getByRole("button", { name: "Start Set" });
-					await expect(startSetBtn).toBeVisible();
-					await startSetBtn.click();
-				}
-
-				const doneBtn = page.getByRole("button", { name: "Done" });
-				await expect(doneBtn).toBeVisible();
-				await doneBtn.click();
-
-				const repsInput = page.getByPlaceholder("Reps");
-				await repsInput.fill("5");
-
-				const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
-				await nextBtn.click();
-			}
-
-			// Now at the variation exercise (Ready phase with "Next Up")
-			await expect(page.getByText("Next Up")).toBeVisible();
-			const startSetBtn = page.getByRole("button", { name: "Start Set" });
-			await startSetBtn.click();
-
-			// Active phase for variation
-			const doneBtn = page.getByRole("button", { name: "Done" });
-			await expect(doneBtn).toBeVisible();
-			await doneBtn.click();
-
-			// Resting phase — should have RPE input for variation/accessory exercises
-			await expect(page.getByText("Rest Timer")).toBeVisible();
-			const rpeInput = page.getByPlaceholder("RPE");
-			await expect(rpeInput).toBeVisible();
-
-			// Enter an out-of-range RPE value
-			await rpeInput.fill("15");
-
-			// Verify error message appears
-			await expect(page.getByText(/RPE must be 1-10/)).toBeVisible();
-		});
-
-		test("save weight toggle visible on last set of accessory", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
-
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-			await startWorkoutBtn.click();
-
-			// Navigate through main lift sets
-			const mainLiftSetCount = plan.mainLiftSets.length;
-			for (let i = 0; i < mainLiftSetCount; i++) {
-				if (i === 0) {
-					const startSetBtn = page.getByRole("button", { name: "Start Set" });
+					const startSetBtn = page.getByRole("button", {
+						name: "Start Set",
+					});
 					await expect(startSetBtn).toBeVisible();
 					await startSetBtn.click();
 				}
@@ -292,212 +291,146 @@ test.describe
 				await expect(doneBtn).toBeVisible();
 				await doneBtn.click();
 				const repsInput = page.getByPlaceholder("Reps");
-				await repsInput.fill("5");
-				const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
-				await nextBtn.click();
-			}
+				await repsInput.fill("10");
 
-			// Navigate through variation sets
-			const variationSetCount = plan.variation.sets.length;
-			for (let i = 0; i < variationSetCount; i++) {
-				if (i === 0) {
-					// First variation set shows Ready with "Next Up"
-					const startSetBtn = page.getByRole("button", { name: "Start Set" });
-					await expect(startSetBtn).toBeVisible();
-					await startSetBtn.click();
-				}
-				const doneBtn = page.getByRole("button", { name: "Done" });
-				await expect(doneBtn).toBeVisible();
-				await doneBtn.click();
-				const repsInput = page.getByPlaceholder("Reps");
-				await repsInput.fill("8");
-
-				// On the last set of the variation (non-main-lift), check for save weight toggle
-				if (i === variationSetCount - 1) {
+				if (i === accSetCount - 1) {
 					await expect(
 						page.getByText(/Save weight for next time/),
 					).toBeVisible();
 				}
 
-				const nextBtn = page.getByRole("button", { name: /Next Set|Finish/ });
+				const nextBtn = page.getByRole("button", {
+					name: /Next Set|Finish/,
+				});
 				await nextBtn.click();
 			}
-
-			// If there are accessories, navigate to the last set of the first accessory
-			if (plan.accessories.length > 0) {
-				const firstAccessory = plan.accessories[0];
-				const accSetCount = firstAccessory.sets.length;
-
-				for (let i = 0; i < accSetCount; i++) {
-					if (i === 0) {
-						const startSetBtn = page.getByRole("button", {
-							name: "Start Set",
-						});
-						await expect(startSetBtn).toBeVisible();
-						await startSetBtn.click();
-					}
-					const doneBtn = page.getByRole("button", { name: "Done" });
-					await expect(doneBtn).toBeVisible();
-					await doneBtn.click();
-					const repsInput = page.getByPlaceholder("Reps");
-					await repsInput.fill("10");
-
-					if (i === accSetCount - 1) {
-						// Last set of accessory — should show save weight toggle
-						await expect(
-							page.getByText(/Save weight for next time/),
-						).toBeVisible();
-					}
-
-					const nextBtn = page.getByRole("button", {
-						name: /Next Set|Finish/,
-					});
-					await nextBtn.click();
-				}
-			}
-		});
-
-		test("progress bar shows Set X of Y and updates after completing a set", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
-
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-			await startWorkoutBtn.click();
-
-			// Ready -> Active -> Resting (first set)
-			const startSetBtn = page.getByRole("button", { name: "Start Set" });
-			await expect(startSetBtn).toBeVisible();
-			await startSetBtn.click();
-
-			const doneBtn = page.getByRole("button", { name: "Done" });
-			await doneBtn.click();
-
-			// In Resting phase, the progress bar should be visible
-			// It shows "Set X of Y" — first set should show "Set 1 of N"
-			await expect(page.getByText(/Set 1 of \d+/)).toBeVisible();
-
-			// Complete the first set and move to the second
-			const repsInput = page.getByPlaceholder("Reps");
-			await repsInput.fill("5");
-			const nextBtn = page.getByRole("button", { name: /Next Set/ });
-			await nextBtn.click();
-
-			// Second set — should go directly to Active for same exercise
-			// Then Done -> Resting
-			const doneBtn2 = page.getByRole("button", { name: "Done" });
-			await expect(doneBtn2).toBeVisible();
-			await doneBtn2.click();
-
-			// Progress should now show "Set 2 of N"
-			await expect(page.getByText(/Set 2 of \d+/)).toBeVisible();
-		});
-
-		test("data pre-fill: main lifts show prescribed weight/reps in set breakdown", async ({
-			page,
-		}) => {
-			await page.goto(`/workout?id=${workoutId}`);
-
-			const startWorkoutBtn = page.getByRole("button", {
-				name: "Start Workout",
-			});
-			await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
-
-			// In the overview, the main lift sets should display weight and reps
-			// e.g., "Set 1: 195 lbs x 5"
-			if (plan.mainLiftSets.length > 0) {
-				const firstSet = plan.mainLiftSets[0];
-				// The overview shows "Set N: WEIGHT lbs x REPS" format
-				await expect(
-					page.getByText(
-						new RegExp(
-							`Set ${firstSet.setNumber}.*${firstSet.weight}.*${firstSet.reps}`,
-						),
-					),
-				).toBeVisible();
-			}
-
-			// Also verify in the Ready phase after starting the workout
-			await startWorkoutBtn.click();
-
-			// Ready phase should show set breakdown with weight/reps
-			if (plan.mainLiftSets.length > 0) {
-				const firstSet = plan.mainLiftSets[0];
-				await expect(
-					page.getByText(
-						new RegExp(
-							`Set ${firstSet.setNumber}.*${firstSet.weight}.*${firstSet.reps}`,
-						),
-					),
-				).toBeVisible();
-			}
-		});
+		}
 	});
+
+	test("progress bar shows Set X of Y and updates after completing a set", async ({
+		page,
+		request,
+	}) => {
+		const { workout } = await setupWorkout(request as unknown as ApiRequest);
+		await startWorkoutFromOverview(page, workout.id);
+
+		// Ready -> Active -> Resting (first set)
+		const startSetBtn = page.getByRole("button", { name: "Start Set" });
+		await expect(startSetBtn).toBeVisible();
+		await startSetBtn.click();
+
+		const doneBtn = page.getByRole("button", { name: "Done" });
+		await doneBtn.click();
+
+		// In Resting phase, progress bar should show "Set 1 of N"
+		await expect(page.getByText(/Set 1 of \d+/)).toBeVisible();
+
+		// Complete the first set and move to the second
+		const repsInput = page.getByPlaceholder("Reps");
+		await repsInput.fill("5");
+		const nextBtn = page.getByRole("button", { name: /Next Set/ });
+		await nextBtn.click();
+
+		// Second set — same exercise skips Ready, goes to Active
+		const doneBtn2 = page.getByRole("button", { name: "Done" });
+		await expect(doneBtn2).toBeVisible();
+		await doneBtn2.click();
+
+		// Progress should now show "Set 2 of N"
+		await expect(page.getByText(/Set 2 of \d+/)).toBeVisible();
+	});
+
+	test("data pre-fill: main lifts show prescribed weight/reps in set breakdown", async ({
+		page,
+		request,
+	}) => {
+		const { workout, plan } = await setupWorkout(
+			request as unknown as ApiRequest,
+		);
+		await page.goto(`/workout?id=${workout.id}`);
+
+		const startWorkoutBtn = page.getByRole("button", {
+			name: "Start Workout",
+		});
+		await expect(startWorkoutBtn).toBeVisible({ timeout: 15000 });
+
+		// In overview, main lift sets should display weight and reps
+		if (plan.mainLiftSets.length > 0) {
+			const firstSet = plan.mainLiftSets[0];
+			await expect(
+				page.getByText(
+					new RegExp(
+						`Set ${firstSet.setNumber}.*${firstSet.weight}.*${firstSet.reps}`,
+					),
+				),
+			).toBeVisible();
+		}
+
+		// Also verify in Ready phase
+		await startWorkoutBtn.click();
+		if (plan.mainLiftSets.length > 0) {
+			const firstSet = plan.mainLiftSets[0];
+			await expect(
+				page.getByText(
+					new RegExp(
+						`Set ${firstSet.setNumber}.*${firstSet.weight}.*${firstSet.reps}`,
+					),
+				),
+			).toBeVisible();
+		}
+	});
+});
 
 test.describe("Workout Resume", () => {
 	test("resumes at next unlogged set after page reload", async ({
 		page,
 		request,
 	}) => {
-		// Create a fresh workout for the resume test
-		const setup = await setupWorkout(
-			request as unknown as Parameters<typeof setupWorkout>[0],
-		);
+		const setup = await setupWorkout(request as unknown as ApiRequest);
 		const { workout, plan: workoutPlan } = setup;
 
 		// Log 2 sets via API before navigating
 		for (let i = 0; i < 2; i++) {
 			const mainSet = workoutPlan.mainLiftSets[i];
 			if (!mainSet) break;
-			const logRes = await request.post(
-				`${BASE_URL}/api/workouts/${workout.id}/sets`,
-				{
-					data: {
-						exerciseName:
-							workoutPlan.mainLift === "squat"
-								? "Squat"
-								: workoutPlan.mainLift === "bench"
-									? "Bench Press"
-									: workoutPlan.mainLift === "deadlift"
-										? "Deadlift"
-										: "Overhead Press",
-						setNumber: mainSet.setNumber,
-						prescribedWeight: mainSet.weight,
-						actualWeight: mainSet.weight,
-						prescribedReps: mainSet.reps,
-						actualReps: mainSet.reps,
-						rpe: null,
-						prescribedRpeMin: null,
-						prescribedRpeMax: null,
-						isMainLift: true,
-						isAmrap: mainSet.isAmrap,
-						setDuration: 30,
-						restDuration: 60,
-						category: null,
-					},
+			const logRes = await request.post(`/api/workouts/${workout.id}/sets`, {
+				data: {
+					exerciseName:
+						workoutPlan.mainLift === "squat"
+							? "Squat"
+							: workoutPlan.mainLift === "bench"
+								? "Bench Press"
+								: workoutPlan.mainLift === "deadlift"
+									? "Deadlift"
+									: "Overhead Press",
+					setNumber: mainSet.setNumber,
+					prescribedWeight: mainSet.weight,
+					actualWeight: mainSet.weight,
+					prescribedReps: mainSet.reps,
+					actualReps: mainSet.reps,
+					rpe: null,
+					prescribedRpeMin: null,
+					prescribedRpeMax: null,
+					isMainLift: true,
+					isAmrap: mainSet.isAmrap,
+					setDuration: 30,
+					restDuration: 60,
+					category: null,
 				},
-			);
+			});
 			expect(logRes.ok()).toBeTruthy();
 		}
 
 		// Navigate to the workout page
 		await page.goto(`/workout?id=${workout.id}`);
 
-		// It should resume and NOT show the overview (Start Workout button)
-		// Instead it should show a Ready or Active phase
-		// Since we logged 2 sets, it should be at set 3 (the next unlogged set)
-
-		// Wait for the page to finish loading and resume check
-		// Should NOT see "Start Workout" button (that's the overview phase)
-		// Should see either "Start Set" (ready) or "Set Timer"/"Done" (active)
+		// Should resume — NOT show overview. Should see Ready or Active phase
 		const startSetBtn = page.getByRole("button", { name: "Start Set" });
 		const setTimerLabel = page.getByText("Set Timer");
 
-		// Wait for either Ready or Active phase to appear
-		await expect(startSetBtn.or(setTimerLabel)).toBeVisible({ timeout: 15000 });
+		await expect(startSetBtn.or(setTimerLabel)).toBeVisible({
+			timeout: 15000,
+		});
 
 		// Confirm we are NOT at the overview
 		await expect(
