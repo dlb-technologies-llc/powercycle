@@ -18,14 +18,21 @@ export default function SetupIsland() {
 		e.preventDefault();
 		setError("");
 		const lifts = {
-			squat: Number(squat),
-			bench: Number(bench),
-			deadlift: Number(deadlift),
-			ohp: Number(ohp),
+			squat: squat ? Number(squat) : null,
+			bench: bench ? Number(bench) : null,
+			deadlift: deadlift ? Number(deadlift) : null,
+			ohp: ohp ? Number(ohp) : null,
 			unit,
 		};
-		if (Object.values(lifts).some((v) => typeof v === "number" && v <= 0)) {
-			setError("All weights must be greater than 0");
+		// Validate entered values are > 0
+		const entered = [
+			lifts.squat,
+			lifts.bench,
+			lifts.deadlift,
+			lifts.ohp,
+		].filter((v): v is number => v !== null);
+		if (entered.some((v) => v <= 0)) {
+			setError("Entered weights must be greater than 0");
 			return;
 		}
 		setIsPending(true);
@@ -48,7 +55,7 @@ export default function SetupIsland() {
 		<div>
 			<h1 className="text-2xl font-bold mb-2">Set Your Maxes</h1>
 			<p className="text-zinc-400 mb-8">
-				Enter your current 1 Rep Max for each lift to start your program.
+				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<div className="flex gap-2 mb-6">
@@ -87,12 +94,11 @@ export default function SetupIsland() {
 							<input
 								type="number"
 								min="0"
-								step="5"
+								step="any"
 								value={value}
 								onChange={(e) => setter(e.target.value)}
 								placeholder="0"
 								className={inputClass}
-								required
 							/>
 						</label>
 					</div>

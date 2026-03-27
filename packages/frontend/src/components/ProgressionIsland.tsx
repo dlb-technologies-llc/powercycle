@@ -11,10 +11,10 @@ interface CycleData {
 	cycleNumber: number;
 	currentRound: number;
 	currentDay: number;
-	squat1rm: number;
-	bench1rm: number;
-	deadlift1rm: number;
-	ohp1rm: number;
+	squat1rm: number | null;
+	bench1rm: number | null;
+	deadlift1rm: number | null;
+	ohp1rm: number | null;
 	unit: string;
 	completedAt: string | null;
 }
@@ -72,32 +72,28 @@ export default function ProgressionIsland() {
 		);
 	}
 
+	const liftsWithData = LIFTS.filter(
+		({ key }) => cycle[`${key}1rm` as keyof CycleData] != null,
+	);
+
 	const handleCalculate = () => {
-		const round3 = {
-			squat: {
-				weight: Number(results.squat.weight),
-				reps: Number(results.squat.reps),
-			},
-			bench: {
-				weight: Number(results.bench.weight),
-				reps: Number(results.bench.reps),
-			},
-			deadlift: {
-				weight: Number(results.deadlift.weight),
-				reps: Number(results.deadlift.reps),
-			},
-			ohp: {
-				weight: Number(results.ohp.weight),
-				reps: Number(results.ohp.reps),
-			},
-		};
-		const currentLifts = {
-			squat: cycle.squat1rm,
-			bench: cycle.bench1rm,
-			deadlift: cycle.deadlift1rm,
-			ohp: cycle.ohp1rm,
-		};
-		setProgression(calculateCycleProgression(round3, currentLifts));
+		const round3: Record<string, { weight: number; reps: number }> = {};
+		const currentLifts: Record<string, number> = {};
+		for (const { key } of LIFTS) {
+			const rm = cycle[`${key}1rm` as keyof CycleData] as number | null;
+			if (rm == null) continue;
+			round3[key] = {
+				weight: Number(results[key].weight),
+				reps: Number(results[key].reps),
+			};
+			currentLifts[key] = rm;
+		}
+		setProgression(
+			calculateCycleProgression(
+				round3 as Parameters<typeof calculateCycleProgression>[0],
+				currentLifts as Parameters<typeof calculateCycleProgression>[1],
+			),
+		);
 	};
 
 	const handleStartNext = async () => {
@@ -105,10 +101,10 @@ export default function ProgressionIsland() {
 		setIsStarting(true);
 		const exit = await startNextCycle({
 			payload: {
-				squat: progression.squat.newMax,
-				bench: progression.bench.newMax,
-				deadlift: progression.deadlift.newMax,
-				ohp: progression.ohp.newMax,
+				squat: progression.squat?.newMax ?? null,
+				bench: progression.bench?.newMax ?? null,
+				deadlift: progression.deadlift?.newMax ?? null,
+				ohp: progression.ohp?.newMax ?? null,
 				unit: cycle.unit || "lbs",
 			},
 		});
@@ -131,59 +127,70 @@ export default function ProgressionIsland() {
 			</p>
 
 			{!progression ? (
-				<div className="space-y-4">
-					{LIFTS.map(({ key, label }) => (
-						<div key={key} className="bg-zinc-900 rounded-lg p-4">
-							<p className="text-sm text-zinc-400 mb-2">
-								{label} (current 1RM: {cycle[`${key}1rm` as keyof CycleData]})
-							</p>
-							<div className="grid grid-cols-2 gap-3">
-								<label className="block">
-									<span className="text-xs text-zinc-500 block mb-1">
-										Weight @ 95%
-									</span>
-									<input
-										type="number"
-										value={results[key].weight}
-										onChange={(e) =>
-											setResults((r) => ({
-												...r,
-												[key]: { ...r[key], weight: e.target.value },
-											}))
-										}
-										className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
-									/>
-								</label>
-								<label className="block">
-									<span className="text-xs text-zinc-500 block mb-1">
-										Reps (1+)
-									</span>
-									<input
-										type="number"
-										value={results[key].reps}
-										onChange={(e) =>
-											setResults((r) => ({
-												...r,
-												[key]: { ...r[key], reps: e.target.value },
-											}))
-										}
-										className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
-									/>
-								</label>
+				liftsWithData.length === 0 ? (
+					<div className="text-center">
+						<p className="text-zinc-400">
+							No 1RMs recorded this cycle. Start a new cycle to begin tracking.
+						</p>
+						<a href="/" className="text-zinc-100 underline mt-4 inline-block">
+							Back to Dashboard
+						</a>
+					</div>
+				) : (
+					<div className="space-y-4">
+						{liftsWithData.map(({ key, label }) => (
+							<div key={key} className="bg-zinc-900 rounded-lg p-4">
+								<p className="text-sm text-zinc-400 mb-2">
+									{label} (current 1RM: {cycle[`${key}1rm` as keyof CycleData]})
+								</p>
+								<div className="grid grid-cols-2 gap-3">
+									<label className="block">
+										<span className="text-xs text-zinc-500 block mb-1">
+											Weight @ 95%
+										</span>
+										<input
+											type="number"
+											value={results[key].weight}
+											onChange={(e) =>
+												setResults((r) => ({
+													...r,
+													[key]: { ...r[key], weight: e.target.value },
+												}))
+											}
+											className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+										/>
+									</label>
+									<label className="block">
+										<span className="text-xs text-zinc-500 block mb-1">
+											Reps (1+)
+										</span>
+										<input
+											type="number"
+											value={results[key].reps}
+											onChange={(e) =>
+												setResults((r) => ({
+													...r,
+													[key]: { ...r[key], reps: e.target.value },
+												}))
+											}
+											className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100"
+										/>
+									</label>
+								</div>
 							</div>
-						</div>
-					))}
-					<button
-						type="button"
-						onClick={handleCalculate}
-						className="w-full py-4 bg-zinc-100 text-zinc-900 font-bold text-lg rounded-xl hover:bg-zinc-200 transition-colors"
-					>
-						Calculate New Maxes
-					</button>
-				</div>
+						))}
+						<button
+							type="button"
+							onClick={handleCalculate}
+							className="w-full py-4 bg-zinc-100 text-zinc-900 font-bold text-lg rounded-xl hover:bg-zinc-200 transition-colors"
+						>
+							Calculate New Maxes
+						</button>
+					</div>
+				)
 			) : (
 				<div className="space-y-4">
-					{LIFTS.map(({ key, label }) => {
+					{LIFTS.filter(({ key }) => progression[key]).map(({ key, label }) => {
 						const p = progression[key];
 						return (
 							<div

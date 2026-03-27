@@ -27,3 +27,8 @@ export const calculateProgressionAtom = ApiClient.mutation(
  * Start the next training cycle with updated maxes.
  */
 export const startNextCycleAtom = ApiClient.mutation("cycles", "next");
+
+/**
+ * Update a single 1RM for the current cycle.
+ */
+export const update1rmAtom = ApiClient.mutation("cycles", "update1rm");

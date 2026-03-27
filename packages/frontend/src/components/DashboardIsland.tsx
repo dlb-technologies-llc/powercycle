@@ -4,6 +4,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { currentCycleAtom } from "../atoms/cycles";
 import { startWorkoutAtom } from "../atoms/workouts";
+import WeightManagement from "./WeightManagement";
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -24,6 +25,11 @@ interface CycleData {
 	cycleNumber: number;
 	currentRound: number;
 	currentDay: number;
+	squat1rm: number | null;
+	bench1rm: number | null;
+	deadlift1rm: number | null;
+	ohp1rm: number | null;
+	unit: string;
 	completedAt: string | null;
 }
 
@@ -120,6 +126,7 @@ export default function DashboardIsland() {
 					{isStarting ? "Starting..." : "Start Workout"}
 				</button>
 			</div>
+			<WeightManagement cycle={cycle} />
 		</div>
 	);
 }

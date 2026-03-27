@@ -19,6 +19,7 @@ interface RpeSet {
 interface ExerciseSlot {
 	category: string;
 	defaultExercise: string;
+	preferredWeight?: number | null;
 	sets: RpeSet[];
 }
 
@@ -47,6 +48,7 @@ export interface FlatSet {
 	};
 	isMainLift: boolean;
 	isAmrap: boolean;
+	preferredWeight?: number;
 }
 
 export type WorkoutPhase =
@@ -109,6 +111,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 				},
 				isMainLift: false,
 				isAmrap: false,
+				preferredWeight: plan.variation.preferredWeight ?? undefined,
 			});
 		}
 
@@ -129,6 +132,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 					},
 					isMainLift: false,
 					isAmrap: false,
+					preferredWeight: slot.preferredWeight ?? undefined,
 				});
 			}
 		});

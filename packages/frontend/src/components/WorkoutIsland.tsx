@@ -53,6 +53,7 @@ interface WorkoutPlanData {
 	variation: {
 		category: string;
 		defaultExercise: string;
+		preferredWeight?: number | null;
 		sets: Array<{
 			setNumber: number;
 			rpeMin: number;
@@ -64,6 +65,7 @@ interface WorkoutPlanData {
 	accessories: Array<{
 		category: string;
 		defaultExercise: string;
+		preferredWeight?: number | null;
 		sets: Array<{
 			setNumber: number;
 			rpeMin: number;
@@ -347,6 +349,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				isLastSet={flow.isLastSet}
 				nextExerciseName={flow.nextExerciseName}
 				unit="lbs"
+				preferredWeight={flow.currentSet?.preferredWeight}
 				onStartSet={handleStartSet}
 				onDone={handleDone}
 				onConfirm={handleConfirm}
