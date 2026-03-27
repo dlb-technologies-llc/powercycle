@@ -1,7 +1,9 @@
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
+import { Cycle } from "@powercycle/shared/schema/entities/cycle";
+import { Workout } from "@powercycle/shared/schema/entities/workout";
+import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import type { Workout, WorkoutSet } from "../db/schema.js";
 import {
 	findActiveCycle,
 	findExerciseWeightsByUserId,
@@ -22,49 +24,6 @@ import { PowerCycleApi } from "./index.js";
 
 const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
-const toWorkoutResponse = (row: Workout) => ({
-	id: row.id,
-	userId: row.userId,
-	cycleId: row.cycleId,
-	round: row.round,
-	day: row.day,
-	startedAt:
-		row.startedAt instanceof Date
-			? row.startedAt.toISOString()
-			: String(row.startedAt),
-	completedAt:
-		row.completedAt instanceof Date
-			? row.completedAt.toISOString()
-			: row.completedAt
-				? String(row.completedAt)
-				: null,
-});
-
-const toSetResponse = (row: WorkoutSet) => ({
-	id: row.id,
-	workoutId: row.workoutId,
-	exerciseName: row.exerciseName,
-	category: row.category,
-	setNumber: row.setNumber,
-	prescribedWeight: row.prescribedWeight ? Number(row.prescribedWeight) : null,
-	actualWeight: row.actualWeight ? Number(row.actualWeight) : null,
-	prescribedReps: row.prescribedReps,
-	actualReps: row.actualReps,
-	prescribedRpeMin: row.prescribedRpeMin ? Number(row.prescribedRpeMin) : null,
-	prescribedRpeMax: row.prescribedRpeMax ? Number(row.prescribedRpeMax) : null,
-	rpe: row.rpe ? Number(row.rpe) : null,
-	isMainLift: row.isMainLift,
-	isAmrap: row.isAmrap,
-	setDuration: row.setDuration ?? null,
-	restDuration: row.restDuration ?? null,
-	completedAt:
-		row.completedAt instanceof Date
-			? row.completedAt.toISOString()
-			: row.completedAt
-				? String(row.completedAt)
-				: null,
-});
-
 export const WorkoutsLive = HttpApiBuilder.group(
 	PowerCycleApi,
 	"workouts",
@@ -80,10 +39,16 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					const rows = yield* findWorkoutHistory(db, userId);
 					const results = [];
 					for (const row of rows) {
-						const sets = yield* findSetsByWorkoutId(db, row.id);
+						const workout = yield* Workout.decodeRow(row);
+						const setRows = yield* findSetsByWorkoutId(db, row.id);
+						const sets = [];
+						for (const s of setRows) {
+							const setEntity = yield* WorkoutSet.decodeRow(s);
+							sets.push(WorkoutSet.toResponse(setEntity));
+						}
 						results.push({
-							...toWorkoutResponse(row),
-							sets: sets.map(toSetResponse),
+							...Workout.toResponse(workout),
+							sets,
 						});
 					}
 					return results;
@@ -167,7 +132,8 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						ctx.payload.day,
 					);
 					if (existing) {
-						return toWorkoutResponse(existing);
+						const workout = yield* Workout.decodeRow(existing);
+						return Workout.toResponse(workout);
 					}
 					const entity = yield* workoutService.createEntity(
 						userId,
@@ -175,19 +141,18 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						ctx.payload.round,
 						ctx.payload.day,
 					);
-					const row = yield* insertWorkout(db, {
-						userId: entity.userId,
-						cycleId: entity.cycleId,
-						round: entity.round,
-						day: entity.day,
-					});
-					return toWorkoutResponse(row);
+					const row = yield* insertWorkout(db, Workout.toDbInsert(entity));
+					const workout = yield* Workout.decodeRow(row);
+					return Workout.toResponse(workout);
 				}),
 			)
 			.handle("logSet", (ctx) =>
 				Effect.gen(function* () {
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
-					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
+					const workoutEntity = workoutRow
+						? yield* Workout.decodeRow(workoutRow)
+						: null;
+					yield* workoutService.validateWorkout(workoutEntity, ctx.params.id);
 					const setEntity = yield* workoutService.createSetEntity(
 						ctx.params.id,
 						{
@@ -207,86 +172,62 @@ export const WorkoutsLive = HttpApiBuilder.group(
 							restDuration: ctx.payload.restDuration ?? undefined,
 						},
 					);
-					const row = yield* insertWorkoutSet(db, {
-						workoutId: setEntity.workoutId,
-						exerciseName: setEntity.exerciseName,
-						category: setEntity.category,
-						setNumber: setEntity.setNumber,
-						prescribedWeight: setEntity.prescribedWeight
-							? String(setEntity.prescribedWeight)
-							: null,
-						actualWeight: setEntity.actualWeight
-							? String(setEntity.actualWeight)
-							: null,
-						prescribedReps: setEntity.prescribedReps,
-						actualReps: setEntity.actualReps,
-						prescribedRpeMin: setEntity.prescribedRpeMin
-							? String(setEntity.prescribedRpeMin)
-							: null,
-						prescribedRpeMax: setEntity.prescribedRpeMax
-							? String(setEntity.prescribedRpeMax)
-							: null,
-						rpe: setEntity.rpe ? String(setEntity.rpe) : null,
-						isMainLift: setEntity.isMainLift,
-						isAmrap: setEntity.isAmrap,
-						setDuration: setEntity.setDuration,
-						restDuration: setEntity.restDuration,
-					});
-					return toSetResponse(row);
+					const row = yield* insertWorkoutSet(
+						db,
+						WorkoutSet.toDbInsert(setEntity),
+					);
+					const inserted = yield* WorkoutSet.decodeRow(row);
+					return WorkoutSet.toResponse(inserted);
 				}),
 			)
 			.handle("complete", (ctx) =>
 				Effect.gen(function* () {
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
-					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
+					const workoutEntity = workoutRow
+						? yield* Workout.decodeRow(workoutRow)
+						: null;
+					yield* workoutService.validateWorkout(workoutEntity, ctx.params.id);
 
 					// Prevent double-completion
-					if (workoutRow!.completedAt) {
-						return toWorkoutResponse(workoutRow!);
+					if (workoutEntity!.completedAt) {
+						return Workout.toResponse(workoutEntity!);
 					}
 
-					const row = yield* updateWorkout(db, ctx.params.id, {
+					const updatedRow = yield* updateWorkout(db, ctx.params.id, {
 						completedAt: new Date(),
 					});
+					const updatedWorkout = yield* Workout.decodeRow(updatedRow);
 
 					// Advance cycle position only if workout belongs to the active cycle
 					const userId = DEFAULT_USER_ID;
-					const cycle = yield* findActiveCycle(db, userId);
-					if (cycle && cycle.id === workoutRow!.cycleId) {
-						const cycleData = {
-							id: cycle.id,
-							userId: cycle.userId,
-							cycleNumber: cycle.cycleNumber,
-							squat1rm: Number(cycle.squat1rm),
-							bench1rm: Number(cycle.bench1rm),
-							deadlift1rm: Number(cycle.deadlift1rm),
-							ohp1rm: Number(cycle.ohp1rm),
-							unit: cycle.unit,
-							currentRound: cycle.currentRound,
-							currentDay: cycle.currentDay,
-							startedAt:
-								cycle.startedAt instanceof Date
-									? cycle.startedAt
-									: new Date(String(cycle.startedAt)),
-							completedAt: cycle.completedAt,
-						};
-						const advanced = yield* cycleService.advancePosition(cycleData);
-						yield* updateCycle(db, cycle.id, {
+					const cycleRow = yield* findActiveCycle(db, userId);
+					if (cycleRow && cycleRow.id === workoutEntity!.cycleId) {
+						const cycleEntity = yield* Cycle.decodeRow(cycleRow);
+						const advanced = yield* cycleService.advancePosition(cycleEntity);
+						yield* updateCycle(db, cycleRow.id, {
 							currentRound: advanced.currentRound,
 							currentDay: advanced.currentDay,
 							completedAt: advanced.completedAt,
 						});
 					}
 
-					return toWorkoutResponse(row);
+					return Workout.toResponse(updatedWorkout);
 				}),
 			)
 			.handle("sets", (ctx) =>
 				Effect.gen(function* () {
 					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
-					yield* workoutService.validateWorkout(workoutRow, ctx.params.id);
-					const sets = yield* findSetsByWorkoutId(db, ctx.params.id);
-					return sets.map(toSetResponse);
+					const workoutEntity = workoutRow
+						? yield* Workout.decodeRow(workoutRow)
+						: null;
+					yield* workoutService.validateWorkout(workoutEntity, ctx.params.id);
+					const setRows = yield* findSetsByWorkoutId(db, ctx.params.id);
+					const sets = [];
+					for (const s of setRows) {
+						const setEntity = yield* WorkoutSet.decodeRow(s);
+						sets.push(WorkoutSet.toResponse(setEntity));
+					}
+					return sets;
 				}),
 			);
 	}),

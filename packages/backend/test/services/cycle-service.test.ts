@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
-import { Effect } from "effect";
+import { UserLifts } from "@powercycle/shared/schema/lifts";
+import { Effect, Schema } from "effect";
 import { CycleLive, CycleService } from "../../src/services/CycleService.js";
 
 const TEST_USER_ID = "00000000-0000-4000-a000-000000000001";
@@ -192,5 +193,30 @@ describe("CycleService", () => {
 			expect(error.message).toBe("No active cycle found");
 			expect(error.resource).toBe("cycle");
 		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect.prop(
+		"createEntity always starts at round 1, day 1",
+		{
+			lifts: Schema.toArbitrary(UserLifts),
+			cycleNum: Schema.toArbitrary(
+				Schema.Int.check(
+					Schema.isGreaterThanOrEqualTo(1),
+					Schema.isLessThanOrEqualTo(100),
+				),
+			),
+		},
+		({ lifts, cycleNum }) =>
+			Effect.gen(function* () {
+				const service = yield* CycleService;
+				const cycle = yield* service.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					cycleNum,
+				);
+				expect(cycle.currentRound).toBe(1);
+				expect(cycle.currentDay).toBe(1);
+				expect(cycle.completedAt).toBeNull();
+			}).pipe(Effect.provide(CycleLive)),
 	);
 });

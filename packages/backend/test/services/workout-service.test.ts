@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
-import { Effect } from "effect";
+import { Round, TrainingDay } from "@powercycle/shared/schema/program";
+import { Effect, Schema } from "effect";
 import {
 	WorkoutLive,
 	WorkoutService,
@@ -140,5 +141,27 @@ describe("WorkoutService", () => {
 			expect(error.message).toBe(`Workout not found: ${TEST_WORKOUT_ID}`);
 			expect(error.resource).toBe("workout");
 		}).pipe(Effect.provide(WorkoutLive)),
+	);
+
+	it.effect.prop(
+		"createEntity always generates unique IDs",
+		{ round: Schema.toArbitrary(Round), day: Schema.toArbitrary(TrainingDay) },
+		({ round, day }) =>
+			Effect.gen(function* () {
+				const service = yield* WorkoutService;
+				const w1 = yield* service.createEntity(
+					crypto.randomUUID(),
+					crypto.randomUUID(),
+					round,
+					day,
+				);
+				const w2 = yield* service.createEntity(
+					crypto.randomUUID(),
+					crypto.randomUUID(),
+					round,
+					day,
+				);
+				expect(w1.id).not.toBe(w2.id);
+			}).pipe(Effect.provide(WorkoutLive)),
 	);
 });
