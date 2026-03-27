@@ -38,21 +38,33 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 
 	return (
 		<div className="w-full max-w-md mx-auto mt-8">
-			<button
-				type="button"
-				onClick={() => setIsOpen(!isOpen)}
-				className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900 rounded-xl text-zinc-100 hover:bg-zinc-800 transition-colors"
-			>
-				<span className="font-semibold">Weight Management</span>
-				<span className="text-zinc-400">{isOpen ? "\u25B2" : "\u25BC"}</span>
-			</button>
+			<div className="glass-card overflow-hidden">
+				<button
+					type="button"
+					onClick={() => setIsOpen(!isOpen)}
+					className="w-full flex items-center justify-between px-6 py-4 text-zinc-100 hover:bg-white/5 transition-colors"
+				>
+					<span className="font-[family-name:var(--font-heading)] uppercase tracking-wider font-bold">
+						WEIGHT MANAGEMENT
+					</span>
+					<span
+						className="text-zinc-400 transition-transform duration-300"
+						style={{
+							display: "inline-block",
+							transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+						}}
+					>
+						&#x25BC;
+					</span>
+				</button>
 
-			{isOpen && (
-				<div className="mt-2 space-y-4">
-					<OneRmSection cycle={cycle} />
-					<SavedWeightsSection />
-				</div>
-			)}
+				{isOpen && (
+					<div className="px-6 pb-6 space-y-4 animate-fade-in">
+						<OneRmSection cycle={cycle} />
+						<SavedWeightsSection />
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -94,8 +106,10 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 	};
 
 	return (
-		<div className="bg-zinc-900 rounded-xl p-4">
-			<h3 className="text-sm font-semibold text-zinc-400 mb-3">Your 1RMs</h3>
+		<div>
+			<h3 className="text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider text-zinc-400 mb-3">
+				YOUR 1RMS
+			</h3>
 			<div className="space-y-2">
 				{LIFTS.map(({ key, label, field }) => {
 					const value = cycle[field];
@@ -104,7 +118,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 					return (
 						<div
 							key={key}
-							className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
 						>
 							<span className="text-zinc-100 text-sm">{label}</span>
 							{isEditing ? (
@@ -113,7 +127,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 										type="number"
 										value={editValue}
 										onChange={(e) => setEditValue(e.target.value)}
-										className="w-20 px-2 py-1 bg-zinc-800 text-zinc-100 rounded text-sm text-right"
+										className="w-20 px-2 py-1 bg-zinc-800 text-zinc-100 rounded text-sm text-right font-[family-name:var(--font-mono)] focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:outline-none"
 										min={0}
 										step={0.5}
 									/>
@@ -122,7 +136,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 										type="button"
 										onClick={() => handleSave(key)}
 										disabled={isSaving}
-										className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500 disabled:opacity-50"
+										className="px-2 py-1 bg-accent-cyan text-white text-xs rounded hover:brightness-110 disabled:opacity-50 transition-all"
 									>
 										{isSaving ? "..." : "Save"}
 									</button>
@@ -136,13 +150,13 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 								</div>
 							) : (
 								<div className="flex items-center gap-2">
-									<span className="text-zinc-300 text-sm">
+									<span className="text-zinc-300 text-sm font-[family-name:var(--font-mono)] font-bold">
 										{value != null ? `${value} ${cycle.unit}` : "Not set"}
 									</span>
 									<button
 										type="button"
 										onClick={() => handleEdit(key, value)}
-										className="px-2 py-1 bg-zinc-800 text-zinc-400 text-xs rounded hover:bg-zinc-700 hover:text-zinc-200"
+										className="px-2 py-1 bg-zinc-800 text-zinc-400 text-xs rounded hover:bg-zinc-700 hover:text-zinc-200 min-h-[48px] min-w-[48px] flex items-center justify-center"
 									>
 										Edit
 									</button>
@@ -183,9 +197,9 @@ function SavedWeightsSection() {
 
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
-			<div className="bg-zinc-900 rounded-xl p-4">
-				<h3 className="text-sm font-semibold text-zinc-400 mb-3">
-					Saved Weights
+			<div>
+				<h3 className="text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider text-zinc-400 mb-3">
+					SAVED WEIGHTS
 				</h3>
 				<p className="text-zinc-500 text-sm">Loading...</p>
 			</div>
@@ -194,11 +208,11 @@ function SavedWeightsSection() {
 
 	if (AsyncResult.isFailure(result)) {
 		return (
-			<div className="bg-zinc-900 rounded-xl p-4">
-				<h3 className="text-sm font-semibold text-zinc-400 mb-3">
-					Saved Weights
+			<div>
+				<h3 className="text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider text-zinc-400 mb-3">
+					SAVED WEIGHTS
 				</h3>
-				<p className="text-red-400 text-sm">Failed to load saved weights.</p>
+				<p className="text-zinc-400 text-sm">Failed to load saved weights.</p>
 			</div>
 		);
 	}
@@ -214,9 +228,9 @@ function SavedWeightsSection() {
 	).slice();
 
 	return (
-		<div className="bg-zinc-900 rounded-xl p-4">
-			<h3 className="text-sm font-semibold text-zinc-400 mb-3">
-				Saved Weights
+		<div>
+			<h3 className="text-xs font-[family-name:var(--font-heading)] uppercase tracking-wider text-zinc-400 mb-3">
+				SAVED WEIGHTS
 			</h3>
 			{weights.length === 0 ? (
 				<p className="text-zinc-500 text-sm">
@@ -227,20 +241,20 @@ function SavedWeightsSection() {
 					{weights.map((w) => (
 						<div
 							key={w.id}
-							className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-zinc-800/50 last:border-0"
 						>
 							<span className="text-zinc-100 text-sm">{w.exerciseName}</span>
 							<div className="flex items-center gap-2">
-								<span className="text-zinc-300 text-sm">
+								<span className="text-zinc-300 text-sm font-[family-name:var(--font-mono)] font-bold">
 									{w.weight} {w.unit}
 								</span>
 								<button
 									type="button"
 									onClick={() => handleDelete(w.exerciseName)}
 									disabled={deletingName === w.exerciseName}
-									className="px-2 py-1 bg-red-900/50 text-red-400 text-xs rounded hover:bg-red-900 hover:text-red-300 disabled:opacity-50"
+									className="w-8 h-8 min-h-[48px] min-w-[48px] flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-900/30 rounded transition-colors disabled:opacity-50"
 								>
-									{deletingName === w.exerciseName ? "..." : "Delete"}
+									{deletingName === w.exerciseName ? "..." : "\u00D7"}
 								</button>
 							</div>
 						</div>

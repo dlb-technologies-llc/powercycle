@@ -1,5 +1,5 @@
 import { InternalError } from "@powercycle/shared/errors/index";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import {
 	cycles,
@@ -219,3 +219,23 @@ export const deleteExerciseWeight = (
 				.returning(),
 		catch: (error) => new InternalError({ message: `Delete failed: ${error}` }),
 	}).pipe(Effect.map((rows) => rows.length > 0));
+
+export const findLastSessionSets = (db: Database, userId: string) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.select({
+					exerciseName: workoutSets.exerciseName,
+					actualWeight: workoutSets.actualWeight,
+					actualReps: workoutSets.actualReps,
+					rpe: workoutSets.rpe,
+					completedAt: workouts.completedAt,
+				})
+				.from(workoutSets)
+				.innerJoin(workouts, eq(workoutSets.workoutId, workouts.id))
+				.where(
+					and(eq(workouts.userId, userId), isNotNull(workouts.completedAt)),
+				)
+				.orderBy(desc(workouts.completedAt)),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	});

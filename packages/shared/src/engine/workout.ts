@@ -15,6 +15,9 @@ import {
 } from "../schema/workout.js";
 import { calculateWeight } from "./calculations.js";
 
+export const RPE_MIN = 1;
+export const RPE_MAX = 10;
+
 export const generateMainLiftSets = (
 	oneRepMax: number,
 	round: Round,

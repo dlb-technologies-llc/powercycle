@@ -3,6 +3,13 @@ import { Exit } from "effect";
 import { useState } from "react";
 import { createCycleAtom } from "../atoms/cycles";
 
+const lifts = [
+	{ label: "Squat", delay: 0 },
+	{ label: "Bench Press", delay: 100 },
+	{ label: "Deadlift", delay: 200 },
+	{ label: "Overhead Press", delay: 300 },
+] as const;
+
 export default function SetupIsland() {
 	const [squat, setSquat] = useState("");
 	const [bench, setBench] = useState("");
@@ -17,7 +24,7 @@ export default function SetupIsland() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError("");
-		const lifts = {
+		const liftValues = {
 			squat: squat ? Number(squat) : null,
 			bench: bench ? Number(bench) : null,
 			deadlift: deadlift ? Number(deadlift) : null,
@@ -26,17 +33,17 @@ export default function SetupIsland() {
 		};
 		// Validate entered values are > 0
 		const entered = [
-			lifts.squat,
-			lifts.bench,
-			lifts.deadlift,
-			lifts.ohp,
+			liftValues.squat,
+			liftValues.bench,
+			liftValues.deadlift,
+			liftValues.ohp,
 		].filter((v): v is number => v !== null);
 		if (entered.some((v) => v <= 0)) {
 			setError("Entered weights must be greater than 0");
 			return;
 		}
 		setIsPending(true);
-		const exit = await createCycle({ payload: lifts });
+		const exit = await createCycle({ payload: liftValues });
 		Exit.match(exit, {
 			onFailure: () => {
 				setError("Failed to create cycle");
@@ -48,24 +55,30 @@ export default function SetupIsland() {
 		});
 	};
 
-	const inputClass =
-		"w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-100 text-lg focus:outline-none focus:border-zinc-500";
+	const liftState = [
+		{ value: squat, setter: setSquat },
+		{ value: bench, setter: setBench },
+		{ value: deadlift, setter: setDeadlift },
+		{ value: ohp, setter: setOhp },
+	];
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold mb-2">Set Your Maxes</h1>
+			<h1 className="text-3xl font-[family-name:var(--font-heading)] font-bold uppercase tracking-wider gradient-text-cyan mb-2">
+				Set Your Maxes
+			</h1>
 			<p className="text-zinc-400 mb-8">
 				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
-			<form onSubmit={handleSubmit} className="space-y-6">
-				<div className="flex gap-2 mb-6">
+			<form onSubmit={handleSubmit} className="space-y-4">
+				<div className="inline-flex rounded-full bg-zinc-800/50 border border-zinc-700/50 p-1 mb-6">
 					<button
 						type="button"
 						onClick={() => setUnit("lbs")}
-						className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+						className={`px-5 py-2 rounded-full font-medium transition-all duration-200 ${
 							unit === "lbs"
-								? "bg-zinc-100 text-zinc-900"
-								: "bg-zinc-800 text-zinc-400"
+								? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white"
+								: "bg-transparent text-zinc-500"
 						}`}
 					>
 						lbs
@@ -73,32 +86,33 @@ export default function SetupIsland() {
 					<button
 						type="button"
 						onClick={() => setUnit("kg")}
-						className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+						className={`px-5 py-2 rounded-full font-medium transition-all duration-200 ${
 							unit === "kg"
-								? "bg-zinc-100 text-zinc-900"
-								: "bg-zinc-800 text-zinc-400"
+								? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white"
+								: "bg-transparent text-zinc-500"
 						}`}
 					>
 						kg
 					</button>
 				</div>
-				{[
-					{ label: "Squat", value: squat, setter: setSquat },
-					{ label: "Bench Press", value: bench, setter: setBench },
-					{ label: "Deadlift", value: deadlift, setter: setDeadlift },
-					{ label: "Overhead Press", value: ohp, setter: setOhp },
-				].map(({ label, value, setter }) => (
-					<div key={label}>
-						<label className="block text-sm text-zinc-400 mb-1">
-							{label} ({unit})
+				{lifts.map(({ label, delay }, i) => (
+					<div
+						key={label}
+						className="glass-card p-5 animate-fade-in"
+						style={{ animationDelay: `${delay}ms` }}
+					>
+						<label className="block">
+							<span className="block text-sm font-[family-name:var(--font-heading)] uppercase tracking-wide text-zinc-400 mb-2">
+								{label} ({unit})
+							</span>
 							<input
 								type="number"
 								min="0"
 								step="any"
-								value={value}
-								onChange={(e) => setter(e.target.value)}
-								placeholder="0"
-								className={inputClass}
+								value={liftState[i].value}
+								onChange={(e) => liftState[i].setter(e.target.value)}
+								placeholder="—"
+								className="w-full px-4 py-4 text-2xl font-[family-name:var(--font-mono)] bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
 							/>
 						</label>
 					</div>
@@ -107,7 +121,7 @@ export default function SetupIsland() {
 				<button
 					type="submit"
 					disabled={isPending}
-					className="w-full py-4 bg-zinc-100 text-zinc-900 font-bold text-lg rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+					className="w-full min-h-16 text-xl rounded-2xl btn-gradient-cyan disabled:opacity-50"
 				>
 					{isPending ? "Starting..." : "Start Program"}
 				</button>

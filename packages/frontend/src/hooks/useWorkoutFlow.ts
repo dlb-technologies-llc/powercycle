@@ -20,6 +20,11 @@ interface ExerciseSlot {
 	category: string;
 	defaultExercise: string;
 	preferredWeight?: number | null;
+	lastSession?: {
+		weight: number | null;
+		reps: number | null;
+		rpe: number | null;
+	} | null;
 	sets: RpeSet[];
 }
 
@@ -49,16 +54,18 @@ export interface FlatSet {
 	isMainLift: boolean;
 	isAmrap: boolean;
 	preferredWeight?: number;
+	lastSession?: {
+		weight: number | null;
+		reps: number | null;
+		rpe: number | null;
+	};
 }
 
 export type WorkoutPhase =
 	| "overview"
 	| "ready"
 	| "active"
-	| "logging"
 	| "resting"
-	| "exercise-break"
-	| "weight-feedback"
 	| "complete";
 
 const LIFT_DISPLAY_NAMES: Record<string, string> = {
@@ -73,11 +80,6 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [selections, setSelections] = useState<Record<string, string>>({});
 	const [resumeIndex, setResumeIndex] = useState<number | null>(null);
-	const [lastExerciseWeight, setLastExerciseWeight] = useState<{
-		exerciseName: string;
-		weight: number | null;
-		unit: string;
-	} | null>(null);
 
 	const flatSets = useMemo(() => {
 		if (!plan) return [];
@@ -118,6 +120,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 				isMainLift: false,
 				isAmrap: false,
 				preferredWeight: plan.variation.preferredWeight ?? undefined,
+				lastSession: plan.variation.lastSession ?? undefined,
 			});
 		}
 
@@ -139,6 +142,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 					isMainLift: false,
 					isAmrap: false,
 					preferredWeight: slot.preferredWeight ?? undefined,
+					lastSession: slot.lastSession ?? undefined,
 				});
 			}
 		});
@@ -151,8 +155,30 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	const isLastSet = currentIndex === totalSets - 1;
 	const nextSet = flatSets[currentIndex + 1] ?? null;
 	const nextExerciseName = nextSet?.exerciseName ?? null;
-	const isExerciseChanging =
-		nextSet !== null && nextSet.exerciseName !== currentSet?.exerciseName;
+	const previousSet = currentIndex > 0 ? flatSets[currentIndex - 1] : null;
+
+	// True when the current exercise is different from the previous one (exercise transition)
+	const isExerciseTransition =
+		previousSet === null ||
+		previousSet.exerciseName !== currentSet?.exerciseName;
+
+	// All sets for the current exercise
+	const allSetsForCurrentExercise = useMemo(() => {
+		if (!currentSet) return [];
+		return flatSets.filter((s) => s.exerciseName === currentSet.exerciseName);
+	}, [flatSets, currentSet]);
+
+	// Number of completed sets for the current exercise (sets before currentIndex with same name)
+	const completedSetsForCurrentExercise = useMemo(() => {
+		if (!currentSet) return 0;
+		let count = 0;
+		for (let i = 0; i < currentIndex; i++) {
+			if (flatSets[i].exerciseName === currentSet.exerciseName) {
+				count++;
+			}
+		}
+		return count;
+	}, [flatSets, currentIndex, currentSet]);
 
 	const startWorkout = useCallback(
 		(exerciseSelections: Record<string, string>) => {
@@ -194,50 +220,25 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	}, []);
 
 	const completeSet = useCallback(() => {
-		setPhase("logging");
+		setPhase("resting");
 	}, []);
 
-	const logSet = useCallback(() => {
-		if (isLastSet) {
-			if (currentSet && !currentSet.isMainLift) {
-				setLastExerciseWeight({
-					exerciseName: currentSet.exerciseName,
-					weight: null,
-					unit: "lbs",
-				});
-				setPhase("weight-feedback");
-			} else {
-				setPhase("complete");
-			}
-		} else if (isExerciseChanging) {
-			if (currentSet && !currentSet.isMainLift) {
-				setLastExerciseWeight({
-					exerciseName: currentSet.exerciseName,
-					weight: null,
-					unit: "lbs",
-				});
-				setPhase("weight-feedback");
-			} else {
-				setPhase("exercise-break");
-			}
-		} else {
-			setPhase("resting");
-		}
-	}, [isLastSet, isExerciseChanging, currentSet]);
-
-	const dismissFeedback = useCallback(() => {
+	const confirmAndNext = useCallback(() => {
 		if (isLastSet) {
 			setPhase("complete");
 		} else {
-			setPhase("exercise-break");
+			const next = flatSets[currentIndex + 1];
+			if (next && next.exerciseName === currentSet?.exerciseName) {
+				// Same exercise — go straight to active (skip ready)
+				setCurrentIndex((i) => i + 1);
+				setPhase("active");
+			} else {
+				// New exercise — show ready screen
+				setCurrentIndex((i) => i + 1);
+				setPhase("ready");
+			}
 		}
-		setLastExerciseWeight(null);
-	}, [isLastSet]);
-
-	const startNextSet = useCallback(() => {
-		setCurrentIndex((i) => i + 1);
-		setPhase("ready");
-	}, []);
+	}, [isLastSet, flatSets, currentIndex, currentSet]);
 
 	return {
 		phase,
@@ -245,14 +246,14 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		totalSets,
 		isLastSet,
 		nextExerciseName,
-		lastExerciseWeight,
+		isExerciseTransition,
+		allSetsForCurrentExercise,
+		completedSetsForCurrentExercise,
 		progress: { current: currentIndex + 1, total: totalSets },
 		startWorkout,
 		initializeAt,
 		startSet,
 		completeSet,
-		logSet,
-		dismissFeedback,
-		startNextSet,
+		confirmAndNext,
 	};
 }
