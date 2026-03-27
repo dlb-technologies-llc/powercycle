@@ -39,6 +39,29 @@ export const updateCycle = (
 		catch: (error) => new InternalError({ message: `Update failed: ${error}` }),
 	}).pipe(Effect.map((rows) => rows[0]!));
 
+export const findInProgressWorkout = (
+	db: Database,
+	cycleId: string,
+	round: number,
+	day: number,
+) =>
+	Effect.tryPromise({
+		try: () =>
+			db
+				.select()
+				.from(workouts)
+				.where(
+					and(
+						eq(workouts.cycleId, cycleId),
+						eq(workouts.round, round),
+						eq(workouts.day, day),
+						isNull(workouts.completedAt),
+					),
+				)
+				.limit(1),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	}).pipe(Effect.map((rows) => rows[0] ?? null));
+
 export const findWorkoutById = (db: Database, workoutId: string) =>
 	Effect.tryPromise({
 		try: () =>
