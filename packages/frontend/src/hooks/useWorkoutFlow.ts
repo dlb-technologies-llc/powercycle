@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface PrescribedSet {
 	setNumber: number;
@@ -69,6 +69,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	const [phase, setPhase] = useState<WorkoutPhase>("overview");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [selections, setSelections] = useState<Record<string, string>>({});
+	const [resumeIndex, setResumeIndex] = useState<number | null>(null);
 
 	const flatSets = useMemo(() => {
 		if (!plan) return [];
@@ -152,6 +153,28 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		[],
 	);
 
+	const initializeAt = useCallback(
+		(completedCount: number, exerciseSelections: Record<string, string>) => {
+			setSelections(exerciseSelections);
+			setResumeIndex(completedCount);
+		},
+		[],
+	);
+
+	// Effect: once flatSets recomputes after selections change, apply the resume index
+	useEffect(() => {
+		if (resumeIndex !== null && flatSets.length > 0) {
+			if (resumeIndex >= flatSets.length) {
+				setCurrentIndex(flatSets.length - 1);
+				setPhase("complete");
+			} else {
+				setCurrentIndex(resumeIndex);
+				setPhase("ready");
+			}
+			setResumeIndex(null);
+		}
+	}, [resumeIndex, flatSets.length]);
+
 	const startSet = useCallback(() => {
 		setPhase("active");
 	}, []);
@@ -183,6 +206,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		nextExerciseName,
 		progress: { current: currentIndex + 1, total: totalSets },
 		startWorkout,
+		initializeAt,
 		startSet,
 		completeSet,
 		logSet,

@@ -1,7 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	completeWorkoutAtom,
 	logSetAtom,
@@ -38,6 +38,65 @@ function buildSetPayload(
 	};
 }
 
+interface WorkoutPlanData {
+	day: number;
+	round: number;
+	cycle: number;
+	mainLift: string;
+	mainLiftSets: Array<{
+		setNumber: number;
+		weight: number;
+		reps: number;
+		percentage: number;
+		isAmrap: boolean;
+	}>;
+	variation: {
+		category: string;
+		defaultExercise: string;
+		sets: Array<{
+			setNumber: number;
+			rpeMin: number;
+			rpeMax: number;
+			repMin: number;
+			repMax: number;
+		}>;
+	};
+	accessories: Array<{
+		category: string;
+		defaultExercise: string;
+		sets: Array<{
+			setNumber: number;
+			rpeMin: number;
+			rpeMax: number;
+			repMin: number;
+			repMax: number;
+		}>;
+	}>;
+}
+
+function buildSelectionsFromLocalStorage(
+	plan: WorkoutPlanData,
+): Record<string, string> {
+	const selections: Record<string, string> = {};
+	if (typeof window === "undefined") return selections;
+
+	const variationKey = `${plan.variation.category}-variation`;
+	const stored = localStorage.getItem(
+		`exercise-pref-${plan.variation.category}-variation`,
+	);
+	selections[variationKey] = stored || plan.variation.defaultExercise;
+
+	plan.accessories.forEach((acc, i) => {
+		const accKey = `${acc.category}-${i}`;
+		const accStored = localStorage.getItem(
+			`exercise-pref-${acc.category}-${i}`,
+		);
+		selections[accKey] = accStored || acc.defaultExercise;
+	});
+
+	return selections;
+}
+
 export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const id =
 		workoutId ??
@@ -55,41 +114,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const plan = (() => {
 		if (AsyncResult.isInitial(result) || result.waiting) return undefined;
 		if (AsyncResult.isFailure(result)) return undefined;
-		return result.value as {
-			day: number;
-			round: number;
-			cycle: number;
-			mainLift: string;
-			mainLiftSets: Array<{
-				setNumber: number;
-				weight: number;
-				reps: number;
-				percentage: number;
-				isAmrap: boolean;
-			}>;
-			variation: {
-				category: string;
-				defaultExercise: string;
-				sets: Array<{
-					setNumber: number;
-					rpeMin: number;
-					rpeMax: number;
-					repMin: number;
-					repMax: number;
-				}>;
-			};
-			accessories: Array<{
-				category: string;
-				defaultExercise: string;
-				sets: Array<{
-					setNumber: number;
-					rpeMin: number;
-					rpeMax: number;
-					repMin: number;
-					repMax: number;
-				}>;
-			}>;
-		} | null;
+		return result.value as WorkoutPlanData | null;
 	})();
 
 	const flow = useWorkoutFlow(plan ?? null);
@@ -99,6 +124,24 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		data: Record<string, unknown>;
 		setDuration: number;
 	} | null>(null);
+	const [resumeChecked, setResumeChecked] = useState(false);
+
+	useEffect(() => {
+		if (!id || !plan || resumeChecked) return;
+
+		fetch(`/api/workouts/${id}/sets`)
+			.then((res) => res.json())
+			.then((sets: unknown[]) => {
+				if (sets.length > 0) {
+					const selections = buildSelectionsFromLocalStorage(plan);
+					flow.initializeAt(sets.length, selections);
+				}
+				setResumeChecked(true);
+			})
+			.catch(() => {
+				setResumeChecked(true);
+			});
+	}, [id, plan, resumeChecked, flow.initializeAt]);
 
 	if (!id) {
 		return (
@@ -137,6 +180,14 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				>
 					Back to Dashboard
 				</a>
+			</div>
+		);
+	}
+
+	if (plan && !resumeChecked) {
+		return (
+			<div className="flex items-center justify-center min-h-[60vh]">
+				<p className="text-zinc-400">Checking workout progress...</p>
 			</div>
 		);
 	}

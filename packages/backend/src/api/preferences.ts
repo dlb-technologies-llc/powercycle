@@ -1,5 +1,9 @@
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import {
+	findExercisePreferences,
+	upsertExercisePreference,
+} from "../lib/queries.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
 
@@ -9,22 +13,30 @@ export const PreferencesLive = HttpApiBuilder.group(
 	PowerCycleApi,
 	"preferences",
 	Effect.fnUntraced(function* (handlers) {
-		const { db: _db } = yield* DatabaseService;
-		const _userId = DEFAULT_USER_ID;
+		const { db } = yield* DatabaseService;
+		const userId = DEFAULT_USER_ID;
 
 		return handlers
 			.handle("getExercises", () =>
 				Effect.gen(function* () {
-					// TODO: implement with findExercisePreferences
-					return [] as Array<{ slotKey: string; exerciseName: string }>;
+					const rows = yield* findExercisePreferences(db, userId);
+					return rows.map((r) => ({
+						slotKey: r.slotKey,
+						exerciseName: r.exerciseName,
+					}));
 				}),
 			)
 			.handle("setExercise", (ctx) =>
 				Effect.gen(function* () {
-					// TODO: implement with upsertExercisePreference
+					const row = yield* upsertExercisePreference(
+						db,
+						userId,
+						ctx.payload.slotKey,
+						ctx.payload.exerciseName,
+					);
 					return {
-						slotKey: ctx.payload.slotKey,
-						exerciseName: ctx.payload.exerciseName,
+						slotKey: row.slotKey,
+						exerciseName: row.exerciseName,
 					};
 				}),
 			);
