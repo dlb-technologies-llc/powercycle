@@ -226,7 +226,8 @@ export const generateWorkoutPlan = (
 	const mainLift = DAY_LIFT_MAP[day];
 	const oneRepMax = lifts[mainLift];
 
-	const mainLiftSets = generateMainLiftSets(oneRepMax, round, lifts.unit);
+	const mainLiftSets =
+		oneRepMax != null ? generateMainLiftSets(oneRepMax, round, lifts.unit) : [];
 	const variation = getVariationSlot(day);
 	const accessories = getAccessorySlots(day);
 

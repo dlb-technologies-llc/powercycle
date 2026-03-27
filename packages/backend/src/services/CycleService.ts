@@ -5,10 +5,10 @@ export interface CycleData {
 	id: string;
 	userId: string;
 	cycleNumber: number;
-	squat1rm: number;
-	bench1rm: number;
-	deadlift1rm: number;
-	ohp1rm: number;
+	squat1rm: number | null;
+	bench1rm: number | null;
+	deadlift1rm: number | null;
+	ohp1rm: number | null;
 	unit: string;
 	currentRound: number;
 	currentDay: number;
@@ -22,10 +22,10 @@ export class CycleService extends ServiceMap.Service<
 		readonly createEntity: (
 			userId: string,
 			lifts: {
-				squat: number;
-				bench: number;
-				deadlift: number;
-				ohp: number;
+				squat: number | null;
+				bench: number | null;
+				deadlift: number | null;
+				ohp: number | null;
 				unit: string;
 			},
 			cycleNumber: number,

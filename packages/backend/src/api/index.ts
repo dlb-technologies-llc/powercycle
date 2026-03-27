@@ -1,5 +1,6 @@
 export {
 	CyclesGroup,
+	ExerciseWeightsGroup,
 	HealthGroup,
 	PowerCycleApi,
 	PreferencesGroup,

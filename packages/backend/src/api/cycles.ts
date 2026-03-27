@@ -2,7 +2,7 @@ import { calculateCycleProgression } from "@powercycle/shared";
 import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import type { Cycle } from "../db/schema.js";
+import type { Cycle, NewCycle } from "../db/schema.js";
 import {
 	countCyclesByUserId,
 	findActiveCycle,
@@ -15,14 +15,17 @@ import { PowerCycleApi } from "./index.js";
 
 const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
+const toDbString = (value: number | null): string | null =>
+	value != null ? String(value) : null;
+
 const toCycleResponse = (row: Cycle) => ({
 	id: row.id,
 	userId: row.userId,
 	cycleNumber: row.cycleNumber,
-	squat1rm: Number(row.squat1rm),
-	bench1rm: Number(row.bench1rm),
-	deadlift1rm: Number(row.deadlift1rm),
-	ohp1rm: Number(row.ohp1rm),
+	squat1rm: row.squat1rm != null ? Number(row.squat1rm) : null,
+	bench1rm: row.bench1rm != null ? Number(row.bench1rm) : null,
+	deadlift1rm: row.deadlift1rm != null ? Number(row.deadlift1rm) : null,
+	ohp1rm: row.ohp1rm != null ? Number(row.ohp1rm) : null,
 	unit: row.unit,
 	currentRound: row.currentRound,
 	currentDay: row.currentDay,
@@ -71,10 +74,10 @@ export const CyclesLive = HttpApiBuilder.group(
 					const row = yield* insertCycle(db, {
 						userId: entity.userId,
 						cycleNumber: entity.cycleNumber,
-						squat1rm: String(entity.squat1rm),
-						bench1rm: String(entity.bench1rm),
-						deadlift1rm: String(entity.deadlift1rm),
-						ohp1rm: String(entity.ohp1rm),
+						squat1rm: toDbString(entity.squat1rm),
+						bench1rm: toDbString(entity.bench1rm),
+						deadlift1rm: toDbString(entity.deadlift1rm),
+						ohp1rm: toDbString(entity.ohp1rm),
 						unit: entity.unit,
 						currentRound: entity.currentRound,
 						currentDay: entity.currentDay,
@@ -95,10 +98,10 @@ export const CyclesLive = HttpApiBuilder.group(
 						);
 					}
 					const currentLifts = {
-						squat: Number(row.squat1rm),
-						bench: Number(row.bench1rm),
-						deadlift: Number(row.deadlift1rm),
-						ohp: Number(row.ohp1rm),
+						squat: Number(row.squat1rm ?? 0),
+						bench: Number(row.bench1rm ?? 0),
+						deadlift: Number(row.deadlift1rm ?? 0),
+						ohp: Number(row.ohp1rm ?? 0),
 					};
 					return calculateCycleProgression(ctx.payload, currentLifts);
 				}),
@@ -127,15 +130,40 @@ export const CyclesLive = HttpApiBuilder.group(
 					const row = yield* insertCycle(db, {
 						userId: entity.userId,
 						cycleNumber: entity.cycleNumber,
-						squat1rm: String(entity.squat1rm),
-						bench1rm: String(entity.bench1rm),
-						deadlift1rm: String(entity.deadlift1rm),
-						ohp1rm: String(entity.ohp1rm),
+						squat1rm: toDbString(entity.squat1rm),
+						bench1rm: toDbString(entity.bench1rm),
+						deadlift1rm: toDbString(entity.deadlift1rm),
+						ohp1rm: toDbString(entity.ohp1rm),
 						unit: entity.unit,
 						currentRound: entity.currentRound,
 						currentDay: entity.currentDay,
 					});
 					return toCycleResponse(row);
+				}),
+			)
+			.handle("update1rm", (ctx) =>
+				Effect.gen(function* () {
+					const userId = DEFAULT_USER_ID;
+					const row = yield* findActiveCycle(db, userId);
+					if (!row) {
+						return yield* Effect.fail(
+							new NotFoundError({
+								message: "No active cycle found",
+								resource: "cycle",
+							}),
+						);
+					}
+					const columnMap: Record<string, keyof NewCycle> = {
+						squat: "squat1rm",
+						bench: "bench1rm",
+						deadlift: "deadlift1rm",
+						ohp: "ohp1rm",
+					};
+					const column = columnMap[ctx.payload.lift];
+					const updated = yield* updateCycle(db, row.id, {
+						[column]: String(ctx.payload.value),
+					} as Partial<NewCycle>);
+					return toCycleResponse(updated);
 				}),
 			);
 	}),

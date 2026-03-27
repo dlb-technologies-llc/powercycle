@@ -4,6 +4,7 @@ import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { Workout, WorkoutSet } from "../db/schema.js";
 import {
 	findActiveCycle,
+	findExerciseWeightsByUserId,
 	findInProgressWorkout,
 	findSetsByWorkoutId,
 	findWorkoutById,
@@ -98,19 +99,44 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					if (round < 1 || round > 4 || day < 1 || day > 4) return null;
 
 					const lifts = {
-						squat: Number(row.squat1rm),
-						bench: Number(row.bench1rm),
-						deadlift: Number(row.deadlift1rm),
-						ohp: Number(row.ohp1rm),
+						squat: row.squat1rm != null ? Number(row.squat1rm) : null,
+						bench: row.bench1rm != null ? Number(row.bench1rm) : null,
+						deadlift: row.deadlift1rm != null ? Number(row.deadlift1rm) : null,
+						ohp: row.ohp1rm != null ? Number(row.ohp1rm) : null,
 						unit: row.unit as "lbs" | "kg",
 					};
 
-					return generateWorkoutPlan(
+					const plan = generateWorkoutPlan(
 						lifts,
 						row.cycleNumber,
 						round as 1 | 2 | 3 | 4,
 						day as 1 | 2 | 3 | 4,
 					);
+
+					// Fetch preferred weights and build lookup
+					const exerciseWeightRows = yield* findExerciseWeightsByUserId(
+						db,
+						userId,
+					);
+					const weightMap = new Map(
+						exerciseWeightRows.map((ew) => [
+							ew.exerciseName,
+							Number(ew.weight),
+						]),
+					);
+
+					const addPreferredWeight = <T extends { defaultExercise: string }>(
+						slot: T,
+					) => ({
+						...slot,
+						preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
+					});
+
+					return {
+						...plan,
+						variation: addPreferredWeight(plan.variation),
+						accessories: plan.accessories.map(addPreferredWeight),
+					};
 				}),
 			)
 			.handle("start", (ctx) =>

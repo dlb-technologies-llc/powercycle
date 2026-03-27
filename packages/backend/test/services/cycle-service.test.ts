@@ -14,6 +14,22 @@ const testLifts = {
 	unit: "lbs",
 };
 
+const testLiftsWithNulls = {
+	squat: 315,
+	bench: null,
+	deadlift: 405,
+	ohp: null,
+	unit: "lbs",
+};
+
+const testLiftsAllNull = {
+	squat: null,
+	bench: null,
+	deadlift: null,
+	ohp: null,
+	unit: "lbs",
+};
+
 describe("CycleService", () => {
 	it.effect("createEntity generates correct defaults", () =>
 		Effect.gen(function* () {
@@ -32,6 +48,35 @@ describe("CycleService", () => {
 			expect(cycle.currentDay).toBe(1);
 			expect(cycle.startedAt).toBeInstanceOf(Date);
 			expect(cycle.completedAt).toBeNull();
+		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect("createEntity with null 1RMs stores null", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const cycle = yield* service.createEntity("user-1", testLiftsAllNull, 1);
+
+			expect(cycle.squat1rm).toBeNull();
+			expect(cycle.bench1rm).toBeNull();
+			expect(cycle.deadlift1rm).toBeNull();
+			expect(cycle.ohp1rm).toBeNull();
+			expect(cycle.unit).toBe("lbs");
+		}).pipe(Effect.provide(CycleLive)),
+	);
+
+	it.effect("createEntity with partial 1RMs (mix of numbers and nulls)", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const cycle = yield* service.createEntity(
+				"user-1",
+				testLiftsWithNulls,
+				1,
+			);
+
+			expect(cycle.squat1rm).toBe(315);
+			expect(cycle.bench1rm).toBeNull();
+			expect(cycle.deadlift1rm).toBe(405);
+			expect(cycle.ohp1rm).toBeNull();
 		}).pipe(Effect.provide(CycleLive)),
 	);
 

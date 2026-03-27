@@ -4,6 +4,7 @@ import { Layer } from "effect";
 import { HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { CyclesLive } from "./api/cycles.js";
+import { ExerciseWeightsLive } from "./api/exercise-weights.js";
 import { HealthLive } from "./api/health.js";
 import { PowerCycleApi } from "./api/index.js";
 import { PreferencesLive } from "./api/preferences.js";
@@ -33,6 +34,7 @@ const HandlerLive = Layer.mergeAll(
 	Layer.provide(CyclesLive, ServiceLive),
 	Layer.provide(WorkoutsLive, ServiceLive),
 	Layer.provide(PreferencesLive, ServiceLive),
+	Layer.provide(ExerciseWeightsLive, ServiceLive),
 	HealthLive,
 );
 
