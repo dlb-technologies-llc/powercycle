@@ -119,6 +119,9 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 			prescribedRpeMax: Schema.NullOr(Schema.Number),
 			isMainLift: Schema.Boolean,
 			isAmrap: Schema.Boolean,
+			setDuration: Schema.NullOr(Schema.Number),
+			restDuration: Schema.NullOr(Schema.Number),
+			category: Schema.NullOr(Schema.String),
 		}),
 		success: SetResponse,
 		error: [

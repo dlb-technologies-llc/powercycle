@@ -24,6 +24,8 @@ export interface SetData {
 	prescribedRpeMin: number | null;
 	prescribedRpeMax: number | null;
 	rpe: number | null;
+	setDuration: number | null;
+	restDuration: number | null;
 	isMainLift: boolean;
 	isAmrap: boolean;
 	completedAt: Date | null;
@@ -40,6 +42,8 @@ export interface LogSetInput {
 	prescribedRpeMin?: number;
 	prescribedRpeMax?: number;
 	rpe?: number;
+	setDuration?: number;
+	restDuration?: number;
 	isMainLift: boolean;
 	isAmrap: boolean;
 }
@@ -90,6 +94,8 @@ export const WorkoutLive = Layer.succeed(WorkoutService)({
 			prescribedRpeMin: input.prescribedRpeMin ?? null,
 			prescribedRpeMax: input.prescribedRpeMax ?? null,
 			rpe: input.rpe ?? null,
+			setDuration: input.setDuration ?? null,
+			restDuration: input.restDuration ?? null,
 			isMainLift: input.isMainLift,
 			isAmrap: input.isAmrap,
 			completedAt: new Date(),

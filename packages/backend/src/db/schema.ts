@@ -66,6 +66,8 @@ export const workoutSets = pgTable(
 		rpe: numeric("rpe"),
 		isMainLift: boolean("is_main_lift").notNull().default(false),
 		isAmrap: boolean("is_amrap").notNull().default(false),
+		setDuration: integer("set_duration"),
+		restDuration: integer("rest_duration"),
 		completedAt: timestamp("completed_at"),
 	},
 	(table) => [index("workout_sets_workout_id_idx").on(table.workoutId)],

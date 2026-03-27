@@ -83,6 +83,24 @@ describe("WorkoutService", () => {
 			expect(set.prescribedRpeMin).toBeNull();
 			expect(set.prescribedRpeMax).toBeNull();
 			expect(set.rpe).toBeNull();
+			expect(set.setDuration).toBeNull();
+			expect(set.restDuration).toBeNull();
+		}).pipe(Effect.provide(WorkoutLive)),
+	);
+
+	it.effect("createSetEntity maps timing fields correctly", () =>
+		Effect.gen(function* () {
+			const service = yield* WorkoutService;
+			const set = yield* service.createSetEntity("workout-1", {
+				exerciseName: "Squat",
+				setNumber: 1,
+				isMainLift: true,
+				isAmrap: false,
+				setDuration: 45,
+				restDuration: 90,
+			});
+			expect(set.setDuration).toBe(45);
+			expect(set.restDuration).toBe(90);
 		}).pipe(Effect.provide(WorkoutLive)),
 	);
 

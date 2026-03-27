@@ -59,6 +59,22 @@ describe("workouts handler logic", () => {
 		}).pipe(Effect.provide(WorkoutLive)),
 	);
 
+	it.effect("creates set entity with timing fields", () =>
+		Effect.gen(function* () {
+			const service = yield* WorkoutService;
+			const set = yield* service.createSetEntity("workout-1", {
+				exerciseName: "Squat",
+				setNumber: 1,
+				isMainLift: true,
+				isAmrap: false,
+				setDuration: 30,
+				restDuration: 120,
+			});
+			expect(set.setDuration).toBe(30);
+			expect(set.restDuration).toBe(120);
+		}).pipe(Effect.provide(WorkoutLive)),
+	);
+
 	it.effect("creates set entity with optional fields as null", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
@@ -71,6 +87,8 @@ describe("workouts handler logic", () => {
 			expect(set.prescribedWeight).toBeNull();
 			expect(set.actualWeight).toBeNull();
 			expect(set.rpe).toBeNull();
+			expect(set.setDuration).toBeNull();
+			expect(set.restDuration).toBeNull();
 		}).pipe(Effect.provide(WorkoutLive)),
 	);
 

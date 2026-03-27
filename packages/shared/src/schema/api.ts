@@ -33,6 +33,8 @@ export const SetResponse = Schema.Struct({
 	rpe: Schema.NullOr(Schema.Number),
 	isMainLift: Schema.Boolean,
 	isAmrap: Schema.Boolean,
+	setDuration: Schema.NullOr(Schema.Number),
+	restDuration: Schema.NullOr(Schema.Number),
 	completedAt: Schema.NullOr(Schema.String),
 });
 
