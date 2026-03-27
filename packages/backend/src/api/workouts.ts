@@ -53,6 +53,8 @@ const toSetResponse = (row: WorkoutSet) => ({
 	rpe: row.rpe ? Number(row.rpe) : null,
 	isMainLift: row.isMainLift,
 	isAmrap: row.isAmrap,
+	setDuration: row.setDuration ?? null,
+	restDuration: row.restDuration ?? null,
 	completedAt:
 		row.completedAt instanceof Date
 			? row.completedAt.toISOString()
@@ -156,6 +158,9 @@ export const WorkoutsLive = HttpApiBuilder.group(
 							prescribedRpeMax: ctx.payload.prescribedRpeMax ?? undefined,
 							isMainLift: ctx.payload.isMainLift,
 							isAmrap: ctx.payload.isAmrap,
+							category: ctx.payload.category ?? undefined,
+							setDuration: ctx.payload.setDuration ?? undefined,
+							restDuration: ctx.payload.restDuration ?? undefined,
 						},
 					);
 					const row = yield* insertWorkoutSet(db, {
@@ -180,6 +185,8 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						rpe: setEntity.rpe ? String(setEntity.rpe) : null,
 						isMainLift: setEntity.isMainLift,
 						isAmrap: setEntity.isAmrap,
+						setDuration: setEntity.setDuration,
+						restDuration: setEntity.restDuration,
 					});
 					return toSetResponse(row);
 				}),

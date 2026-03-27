@@ -132,6 +132,9 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				prescribedRpeMax: number | null;
 				isMainLift: boolean;
 				isAmrap: boolean;
+				setDuration: number | null;
+				restDuration: number | null;
+				category: string | null;
 			},
 		}).catch((err) => console.error("Failed to log set", err));
 	};

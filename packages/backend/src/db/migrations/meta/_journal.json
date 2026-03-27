@@ -15,6 +15,13 @@
 			"when": 1774624656280,
 			"tag": "0001_colorful_liz_osborn",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1774626505076,
+			"tag": "0002_cultured_husk",
+			"breakpoints": true
 		}
 	]
 }
