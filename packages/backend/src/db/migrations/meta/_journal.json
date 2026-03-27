@@ -8,6 +8,13 @@
 			"when": 1774469596836,
 			"tag": "0000_futuristic_daimon_hellstrom",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1774624656280,
+			"tag": "0001_colorful_liz_osborn",
+			"breakpoints": true
 		}
 	]
 }
