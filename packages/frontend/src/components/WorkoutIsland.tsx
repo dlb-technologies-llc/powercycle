@@ -2,6 +2,7 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useRef, useState } from "react";
+import { upsertExerciseWeightAtom } from "../atoms/exercise-weights";
 import {
 	completeWorkoutAtom,
 	logSetAtom,
@@ -106,10 +107,16 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			? new URLSearchParams(window.location.search).get("id")
 			: null);
 	const [isFinishing, setIsFinishing] = useState(false);
+	const [lastConfirmedWeight, setLastConfirmedWeight] = useState<number | null>(
+		null,
+	);
 
 	const result = useAtomValue(nextWorkoutAtom);
 	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
 	const completeWorkout = useAtomSet(completeWorkoutAtom, {
+		mode: "promiseExit",
+	});
+	const upsertWeight = useAtomSet(upsertExerciseWeightAtom, {
 		mode: "promiseExit",
 	});
 
@@ -274,6 +281,8 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			pendingSetRef.current = { data: apiData, setDuration };
 		}
 
+		setLastConfirmedWeight(data.actualWeight);
+
 		if (!flow.isLastSet) {
 			restTimer.reset();
 			restTimer.start();
@@ -317,6 +326,30 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		);
 	}
 
+	if (flow.phase === "weight-feedback") {
+		return (
+			<div className="space-y-8 pb-8">
+				<WeightFeedbackView
+					exerciseName={flow.lastExerciseWeight?.exerciseName ?? ""}
+					lastWeight={lastConfirmedWeight}
+					unit="lbs"
+					onConfirm={async (weight) => {
+						await upsertWeight({
+							payload: {
+								exerciseName: flow.lastExerciseWeight?.exerciseName ?? "",
+								weight,
+								unit: "lbs",
+								rpe: null,
+							},
+						});
+						flow.dismissFeedback();
+					}}
+					onSkip={() => flow.dismissFeedback()}
+				/>
+			</div>
+		);
+	}
+
 	if (flow.phase === "complete") {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
@@ -355,6 +388,93 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				onConfirm={handleConfirm}
 				onStartNextSet={handleStartNextSet}
 			/>
+		</div>
+	);
+}
+
+function WeightFeedbackView({
+	exerciseName,
+	lastWeight,
+	unit,
+	onConfirm,
+	onSkip,
+}: {
+	exerciseName: string;
+	lastWeight: number | null;
+	unit: string;
+	onConfirm: (weight: number) => void;
+	onSkip: () => void;
+}) {
+	const [adjusting, setAdjusting] = useState(false);
+	const [adjustedWeight, setAdjustedWeight] = useState(
+		lastWeight != null ? String(lastWeight) : "",
+	);
+
+	if (adjusting) {
+		return (
+			<div className="flex flex-col items-center text-center space-y-6">
+				<div>
+					<h2 className="text-xl font-bold text-zinc-100">{exerciseName}</h2>
+					<p className="text-zinc-400 mt-1">What weight for next time?</p>
+				</div>
+				<label className="w-full block">
+					<span className="block text-sm text-zinc-400 mb-1 text-left">
+						Weight ({unit})
+					</span>
+					<input
+						type="number"
+						value={adjustedWeight}
+						onChange={(e) => setAdjustedWeight(e.target.value)}
+						className="w-full text-xl bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
+					/>
+				</label>
+				<button
+					type="button"
+					disabled={!adjustedWeight || Number(adjustedWeight) <= 0}
+					onClick={() => onConfirm(Number(adjustedWeight))}
+					className="w-full min-h-[48px] bg-zinc-100 text-zinc-900 text-lg font-bold rounded-xl hover:bg-zinc-200 disabled:opacity-40 transition-colors"
+				>
+					Save
+				</button>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex flex-col items-center text-center space-y-6">
+			<div>
+				<h2 className="text-xl font-bold text-zinc-100">{exerciseName}</h2>
+				<p className="text-zinc-400 mt-1">
+					{lastWeight != null
+						? `You used ${lastWeight} ${unit}. Right weight?`
+						: "Save a weight for next time?"}
+				</p>
+			</div>
+			<div className="flex gap-4 w-full">
+				{lastWeight != null && (
+					<button
+						type="button"
+						onClick={() => onConfirm(lastWeight)}
+						className="flex-1 min-h-16 bg-green-600 text-white text-xl font-bold rounded-xl hover:bg-green-500 transition-colors"
+					>
+						{"👍"}
+					</button>
+				)}
+				<button
+					type="button"
+					onClick={() => setAdjusting(true)}
+					className="flex-1 min-h-16 bg-orange-600 text-white text-xl font-bold rounded-xl hover:bg-orange-500 transition-colors"
+				>
+					{lastWeight != null ? "👎" : "Enter Weight"}
+				</button>
+			</div>
+			<button
+				type="button"
+				onClick={onSkip}
+				className="text-zinc-500 text-sm hover:text-zinc-400 transition-colors"
+			>
+				Skip
+			</button>
 		</div>
 	);
 }

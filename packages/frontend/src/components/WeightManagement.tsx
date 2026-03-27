@@ -74,7 +74,10 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 
 		setIsSaving(true);
 		const exit = await update1rm({
-			payload: { lift: key as "squat" | "bench" | "deadlift" | "ohp", value: parsed },
+			payload: {
+				lift: key as "squat" | "bench" | "deadlift" | "ohp",
+				value: parsed,
+			},
 		});
 		Exit.match(exit, {
 			onFailure: () => {
@@ -195,13 +198,15 @@ function SavedWeightsSection() {
 		);
 	}
 
-	const weights = (result.value as readonly {
-		readonly id: string;
-		readonly exerciseName: string;
-		readonly weight: number;
-		readonly unit: string;
-		readonly rpe: number | null;
-	}[]).slice();
+	const weights = (
+		result.value as readonly {
+			readonly id: string;
+			readonly exerciseName: string;
+			readonly weight: number;
+			readonly unit: string;
+			readonly rpe: number | null;
+		}[]
+	).slice();
 
 	return (
 		<div className="bg-zinc-900 rounded-xl p-4">
