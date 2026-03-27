@@ -12,15 +12,10 @@ import {
 import type { FlatSet } from "../hooks/useWorkoutFlow";
 import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
+import type { DeepMutable } from "../lib/types";
 import { ActiveSetView } from "./ActiveSetView";
 import { WorkoutOverview } from "./WorkoutOverview";
 
-type DeepMutable<T> =
-	T extends ReadonlyArray<infer U>
-		? Array<DeepMutable<U>>
-		: T extends object
-			? { -readonly [K in keyof T]: DeepMutable<T[K]> }
-			: T;
 type WorkoutPlanData = DeepMutable<typeof WorkoutPlanResponse.Type>;
 
 interface WorkoutIslandProps {

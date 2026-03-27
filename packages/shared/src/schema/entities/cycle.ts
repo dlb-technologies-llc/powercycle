@@ -58,8 +58,8 @@ export class Cycle extends Schema.Class<Cycle>("Cycle")({
 			deadlift1rm: cycle.deadlift1rm,
 			ohp1rm: cycle.ohp1rm,
 			unit: cycle.unit,
-			currentRound: cycle.currentRound as number,
-			currentDay: cycle.currentDay as number,
+			currentRound: cycle.currentRound,
+			currentDay: cycle.currentDay,
 			startedAt: cycle.startedAt.toISOString(),
 			completedAt: cycle.completedAt?.toISOString() ?? null,
 		};

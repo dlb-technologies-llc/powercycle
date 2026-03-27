@@ -21,11 +21,6 @@ export const CycleResponse = Schema.Struct({
 	// Date → String for JSON serialization
 	startedAt: Schema.String,
 	completedAt: Schema.NullOr(Schema.String),
-	// Literal → Number for JSON serialization
-	currentRound: Schema.Number,
-	currentDay: Schema.Number,
-	// Literal → String for JSON serialization
-	unit: Schema.String,
 });
 
 export const NullableCycleResponse = Schema.NullOr(CycleResponse);
