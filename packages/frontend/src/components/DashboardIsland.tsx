@@ -1,10 +1,13 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import type { CycleResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { currentCycleAtom } from "../atoms/cycles";
 import { startWorkoutAtom } from "../atoms/workouts";
 import WeightManagement from "./WeightManagement";
+
+type CycleData = typeof CycleResponse.Type;
 
 const DAY_NAMES: Record<number, string> = {
 	1: "Squat",
@@ -19,19 +22,6 @@ const ROUND_NAMES: Record<number, string> = {
 	3: "Test",
 	4: "Deload",
 };
-
-interface CycleData {
-	id: string;
-	cycleNumber: number;
-	currentRound: 1 | 2 | 3 | 4;
-	currentDay: 1 | 2 | 3 | 4;
-	squat1rm: number | null;
-	bench1rm: number | null;
-	deadlift1rm: number | null;
-	ohp1rm: number | null;
-	unit: "lbs" | "kg";
-	completedAt: string | null;
-}
 
 export default function DashboardIsland() {
 	const [isStarting, setIsStarting] = useState(false);
@@ -101,8 +91,8 @@ export default function DashboardIsland() {
 		const exit = await startWorkout({
 			payload: {
 				cycleId: cycle.id,
-				round: cycle.currentRound,
-				day: cycle.currentDay,
+				round: cycle.currentRound as 1 | 2 | 3 | 4,
+				day: cycle.currentDay as 1 | 2 | 3 | 4,
 			},
 		});
 		Exit.match(exit, {

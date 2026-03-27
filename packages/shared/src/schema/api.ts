@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { RPE_MAX, RPE_MIN } from "../engine/workout.js";
 import { Cycle } from "./entities/cycle.js";
 import { ExercisePreference } from "./entities/exercise-preference.js";
 import { ExerciseWeight } from "./entities/exercise-weight.js";
@@ -6,6 +7,12 @@ import { Workout } from "./entities/workout.js";
 import { WorkoutSet } from "./entities/workout-set.js";
 import { MainLift } from "./lifts.js";
 import { PrescribedSet, RpeSet } from "./workout.js";
+
+// --- RPE validation ---
+
+export const RpeNumber = Schema.Number.check(
+	Schema.isBetween({ minimum: RPE_MIN, maximum: RPE_MAX }),
+);
 
 // --- Cycle ---
 
@@ -130,5 +137,5 @@ export const ExerciseWeightInput = Schema.Struct({
 	exerciseName: ExerciseWeight.fields.exerciseName,
 	weight: ExerciseWeight.fields.weight,
 	unit: Schema.String,
-	rpe: ExerciseWeight.fields.rpe,
+	rpe: Schema.NullOr(RpeNumber),
 });

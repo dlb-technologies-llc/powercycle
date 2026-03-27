@@ -1,4 +1,5 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +14,14 @@ import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { ActiveSetView } from "./ActiveSetView";
 import { WorkoutOverview } from "./WorkoutOverview";
+
+type DeepMutable<T> =
+	T extends ReadonlyArray<infer U>
+		? Array<DeepMutable<U>>
+		: T extends object
+			? { -readonly [K in keyof T]: DeepMutable<T[K]> }
+			: T;
+type WorkoutPlanData = DeepMutable<typeof WorkoutPlanResponse.Type>;
 
 interface WorkoutIslandProps {
 	workoutId?: string;
@@ -40,54 +49,6 @@ function buildSetPayload(
 		isAmrap: currentSet.isAmrap,
 		category: currentSet.category,
 	};
-}
-
-interface WorkoutPlanData {
-	day: number;
-	round: number;
-	cycle: number;
-	mainLift: string;
-	mainLiftSets: Array<{
-		setNumber: number;
-		weight: number;
-		reps: number;
-		percentage: number;
-		isAmrap: boolean;
-	}>;
-	variation: {
-		category: string;
-		defaultExercise: string;
-		preferredWeight?: number | null;
-		lastSession?: {
-			weight: number | null;
-			reps: number | null;
-			rpe: number | null;
-		} | null;
-		sets: Array<{
-			setNumber: number;
-			rpeMin: number;
-			rpeMax: number;
-			repMin: number;
-			repMax: number;
-		}>;
-	};
-	accessories: Array<{
-		category: string;
-		defaultExercise: string;
-		preferredWeight?: number | null;
-		lastSession?: {
-			weight: number | null;
-			reps: number | null;
-			rpe: number | null;
-		} | null;
-		sets: Array<{
-			setNumber: number;
-			rpeMin: number;
-			rpeMax: number;
-			repMin: number;
-			repMax: number;
-		}>;
-	}>;
 }
 
 function buildSelectionsFromLocalStorage(

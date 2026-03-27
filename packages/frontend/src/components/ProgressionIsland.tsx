@@ -1,23 +1,13 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { CycleProgressionResult } from "@powercycle/shared";
 import { calculateCycleProgression } from "@powercycle/shared";
+import type { CycleResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { currentCycleAtom, startNextCycleAtom } from "../atoms/cycles";
 
-interface CycleData {
-	id: string;
-	cycleNumber: number;
-	currentRound: 1 | 2 | 3 | 4;
-	currentDay: 1 | 2 | 3 | 4;
-	squat1rm: number | null;
-	bench1rm: number | null;
-	deadlift1rm: number | null;
-	ohp1rm: number | null;
-	unit: "lbs" | "kg";
-	completedAt: string | null;
-}
+type CycleData = typeof CycleResponse.Type;
 
 const LIFTS: Array<{
 	key: "squat" | "bench" | "deadlift" | "ohp";
@@ -105,7 +95,7 @@ export default function ProgressionIsland() {
 				bench: progression.bench?.newMax ?? null,
 				deadlift: progression.deadlift?.newMax ?? null,
 				ohp: progression.ohp?.newMax ?? null,
-				unit: cycle.unit || "lbs",
+				unit: (cycle.unit || "lbs") as "lbs" | "kg",
 			},
 		});
 		Exit.match(exit, {
