@@ -1,8 +1,10 @@
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
+import { InternalError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
+import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import {
 	findActiveCycle,
@@ -60,21 +62,23 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					const row = yield* findActiveCycle(db, userId);
 					if (!row) return null;
 
-					const round = row.currentRound;
-					const day = row.currentDay;
+					const cycle = yield* Cycle.decodeRow(row);
+
+					const round = cycle.currentRound;
+					const day = cycle.currentDay;
 					if (round < 1 || round > 4 || day < 1 || day > 4) return null;
 
 					const lifts = {
-						squat: row.squat1rm != null ? Number(row.squat1rm) : null,
-						bench: row.bench1rm != null ? Number(row.bench1rm) : null,
-						deadlift: row.deadlift1rm != null ? Number(row.deadlift1rm) : null,
-						ohp: row.ohp1rm != null ? Number(row.ohp1rm) : null,
-						unit: row.unit as "lbs" | "kg",
+						squat: cycle.squat1rm,
+						bench: cycle.bench1rm,
+						deadlift: cycle.deadlift1rm,
+						ohp: cycle.ohp1rm,
+						unit: cycle.unit,
 					};
 
 					const plan = generateWorkoutPlan(
 						lifts,
-						row.cycleNumber,
+						cycle.cycleNumber,
 						round as 1 | 2 | 3 | 4,
 						day as 1 | 2 | 3 | 4,
 					);
@@ -84,25 +88,42 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						db,
 						userId,
 					);
+					const exerciseWeights = yield* Effect.forEach(
+						exerciseWeightRows,
+						(r) => ExerciseWeight.decodeRow(r),
+					);
 					const weightMap = new Map(
-						exerciseWeightRows.map((ew) => [
-							ew.exerciseName,
-							Number(ew.weight),
-						]),
+						exerciseWeights.map((ew) => [ew.exerciseName, ew.weight]),
 					);
 
 					// Fetch last session data and build lookup
 					const lastSessionRows = yield* findLastSessionSets(db, userId);
+					const LastSessionRow = Schema.Struct({
+						exerciseName: Schema.String,
+						actualWeight: Schema.NullOr(Schema.NumberFromString),
+						actualReps: Schema.NullOr(Schema.Number),
+						rpe: Schema.NullOr(Schema.NumberFromString),
+					});
 					const lastSessionMap = new Map<
 						string,
 						{ weight: number | null; reps: number | null; rpe: number | null }
 					>();
-					for (const row of lastSessionRows) {
-						if (!lastSessionMap.has(row.exerciseName)) {
-							lastSessionMap.set(row.exerciseName, {
-								weight: row.actualWeight ? Number(row.actualWeight) : null,
-								reps: row.actualReps,
-								rpe: row.rpe ? Number(row.rpe) : null,
+					for (const raw of lastSessionRows) {
+						if (!lastSessionMap.has(raw.exerciseName)) {
+							const decoded = yield* Schema.decodeUnknownEffect(LastSessionRow)(
+								raw,
+							).pipe(
+								Effect.mapError(
+									(e) =>
+										new InternalError({
+											message: `LastSession decode failed: ${e}`,
+										}),
+								),
+							);
+							lastSessionMap.set(decoded.exerciseName, {
+								weight: decoded.actualWeight,
+								reps: decoded.actualReps,
+								rpe: decoded.rpe,
 							});
 						}
 					}
