@@ -206,8 +206,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			pendingSetRef.current = { data: apiData, setDuration };
 		}
 
-		restTimer.reset();
-		restTimer.start();
+		if (!flow.isLastSet) {
+			restTimer.reset();
+			restTimer.start();
+		}
 		flow.logSet();
 	};
 
@@ -271,6 +273,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				total={flow.progress.total}
 			/>
 			<ActiveSetView
+				key={`${flow.currentSet!.exerciseName}-${flow.currentSet!.setNumber}`}
 				set={flow.currentSet!}
 				phase={flow.phase}
 				setTimerSeconds={setTimer.seconds}

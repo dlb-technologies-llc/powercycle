@@ -159,14 +159,15 @@ export function ActiveSetView({
 				</div>
 				<button
 					type="button"
+					disabled={!reps}
 					onClick={() =>
 						onConfirm({
 							actualWeight: weight ? Number(weight) : null,
-							actualReps: reps ? Number(reps) : 0,
+							actualReps: Number(reps),
 							rpe: rpe ? Number(rpe) : null,
 						})
 					}
-					className="w-full min-h-[48px] bg-zinc-100 text-zinc-900 text-lg font-bold rounded-xl hover:bg-zinc-200 transition-colors"
+					className="w-full min-h-[48px] bg-zinc-100 text-zinc-900 text-lg font-bold rounded-xl hover:bg-zinc-200 disabled:opacity-40 transition-colors"
 				>
 					CONFIRM
 				</button>
