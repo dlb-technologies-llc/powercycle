@@ -12,6 +12,13 @@ const LIFT_DISPLAY_NAMES: Record<string, string> = {
 	ohp: "Overhead Press",
 };
 
+const DAY_NAMES: Record<string, string> = {
+	squat: "Squat Day",
+	bench: "Bench Day",
+	deadlift: "Deadlift Day",
+	ohp: "OHP Day",
+};
+
 interface WorkoutOverviewProps {
 	plan: {
 		day: number;
@@ -29,6 +36,11 @@ interface WorkoutOverviewProps {
 			category: string;
 			defaultExercise: string;
 			preferredWeight?: number | null;
+			lastSession?: {
+				weight: number | null;
+				reps: number | null;
+				rpe: number | null;
+			} | null;
 			sets: Array<{
 				setNumber: number;
 				rpeMin: number;
@@ -41,6 +53,11 @@ interface WorkoutOverviewProps {
 			category: string;
 			defaultExercise: string;
 			preferredWeight?: number | null;
+			lastSession?: {
+				weight: number | null;
+				reps: number | null;
+				rpe: number | null;
+			} | null;
 			sets: Array<{
 				setNumber: number;
 				rpeMin: number;
@@ -119,6 +136,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 	};
 
 	const mainLiftName = LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;
+	const dayName = DAY_NAMES[plan.mainLift] ?? `${mainLiftName} Day`;
 
 	const [oneRmInput, setOneRmInput] = useState("");
 	const [oneRmError, setOneRmError] = useState("");
@@ -158,18 +176,26 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			plan.variation.category
 		] ?? [];
 
+	// Determine the best weight to show for variation
+	const variationDisplayWeight =
+		plan.variation.lastSession?.weight ?? plan.variation.preferredWeight;
+
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 animate-fade-in">
+			{/* Title */}
 			<div>
-				<h1 className="text-2xl font-bold text-zinc-100">
-					Day {plan.day} &middot; Round {plan.round}
+				<h1 className="text-4xl font-[family-name:var(--font-heading)] uppercase gradient-text-cyan font-bold">
+					{dayName}
 				</h1>
-				<p className="text-zinc-400 text-lg mt-1">{mainLiftName}</p>
+				<p className="text-zinc-500 text-sm mt-1">
+					Cycle {plan.cycle} &middot; Round {plan.round}
+				</p>
 			</div>
 
+			{/* Main Lift Section */}
 			{plan.mainLiftSets.length === 0 ? (
-				<div className="space-y-3">
-					<h2 className="text-lg font-semibold text-zinc-100">
+				<div className="glass-card p-5 space-y-3">
+					<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
 						{mainLiftName}
 					</h2>
 					<p className="text-zinc-400 text-sm">
@@ -181,13 +207,13 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							value={oneRmInput}
 							onChange={(e) => setOneRmInput(e.target.value)}
 							placeholder={`1RM in ${unit}`}
-							className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
+							className="flex-1 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
 						/>
 						<button
 							type="button"
 							onClick={handleSubmit1rm}
 							disabled={isSubmitting1rm}
-							className="px-6 py-2 bg-zinc-100 text-zinc-900 font-bold rounded-lg hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+							className="btn-gradient-cyan px-6 py-2 rounded-xl disabled:opacity-50"
 						>
 							{isSubmitting1rm ? "Saving..." : "Save"}
 						</button>
@@ -195,22 +221,22 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					{oneRmError && <p className="text-red-400 text-sm">{oneRmError}</p>}
 				</div>
 			) : (
-				<div className="space-y-3">
-					<h2 className="text-lg font-semibold text-zinc-100">
+				<div className="glass-card p-5 space-y-3">
+					<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
 						{mainLiftName}
 					</h2>
 					<div className="space-y-1">
 						{plan.mainLiftSets.map((s) => (
 							<div
 								key={s.setNumber}
-								className="flex items-center justify-between text-sm text-zinc-300 py-1"
+								className="flex items-center justify-between text-sm text-zinc-300 py-1.5"
 							>
-								<span>
+								<span className="font-[family-name:var(--font-mono)]">
 									Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
 									{s.isAmrap ? "+" : ""}
 								</span>
 								{s.isAmrap && (
-									<span className="text-xs font-semibold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+									<span className="text-xs bg-red-500/20 text-red-400 rounded px-2 py-0.5">
 										AMRAP
 									</span>
 								)}
@@ -220,8 +246,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				</div>
 			)}
 
-			<div className="space-y-3">
-				<h2 className="text-lg font-semibold text-zinc-100">Variation</h2>
+			{/* Variation Section */}
+			<div className="glass-card p-5 space-y-3">
+				<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
+					Variation
+				</h2>
 				<select
 					value={selections[variationKey]}
 					onChange={(e) =>
@@ -231,7 +260,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							e.target.value,
 						)
 					}
-					className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
+					className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
 				>
 					{variationOptions.map((opt) => (
 						<option key={opt} value={opt}>
@@ -241,28 +270,33 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				</select>
 				<div className="space-y-1">
 					{plan.variation.sets.map((s) => (
-						<div key={s.setNumber} className="text-sm text-zinc-300 py-1">
+						<div
+							key={s.setNumber}
+							className="text-sm text-zinc-300 py-1 font-[family-name:var(--font-mono)]"
+						>
 							Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}-
 							{s.rpeMax}
 						</div>
 					))}
 				</div>
-				{plan.variation.preferredWeight != null && (
-					<p className="text-xs text-zinc-500">
-						Last weight: {plan.variation.preferredWeight} {unit}
+				{variationDisplayWeight != null && (
+					<p className="text-cyan-500 font-[family-name:var(--font-mono)] text-sm">
+						Last: {variationDisplayWeight} {unit}
 					</p>
 				)}
 			</div>
 
+			{/* Accessories */}
 			{plan.accessories.map((acc, i) => {
 				const accKey = `${acc.category}-${i}`;
 				const accOptions =
 					(EXERCISE_OPTIONS as Record<string, readonly string[]>)[
 						acc.category
 					] ?? [];
+				const accDisplayWeight = acc.lastSession?.weight ?? acc.preferredWeight;
 				return (
-					<div key={accKey} className="space-y-3">
-						<h2 className="text-lg font-semibold text-zinc-100">
+					<div key={accKey} className="glass-card p-5 space-y-3">
+						<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
 							{acc.category
 								.replace(/_/g, " ")
 								.replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -272,7 +306,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							onChange={(e) =>
 								updateSelection(accKey, `${acc.category}-${i}`, e.target.value)
 							}
-							className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
+							className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
 						>
 							{accOptions.map((opt) => (
 								<option key={opt} value={opt}>
@@ -282,25 +316,29 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 						</select>
 						<div className="space-y-1">
 							{acc.sets.map((s) => (
-								<div key={s.setNumber} className="text-sm text-zinc-300 py-1">
+								<div
+									key={s.setNumber}
+									className="text-sm text-zinc-300 py-1 font-[family-name:var(--font-mono)]"
+								>
 									Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}
 									-{s.rpeMax}
 								</div>
 							))}
 						</div>
-						{acc.preferredWeight != null && (
-							<p className="text-xs text-zinc-500">
-								Last weight: {acc.preferredWeight} {unit}
+						{accDisplayWeight != null && (
+							<p className="text-cyan-500 font-[family-name:var(--font-mono)] text-sm">
+								Last: {accDisplayWeight} {unit}
 							</p>
 						)}
 					</div>
 				);
 			})}
 
+			{/* Start Button */}
 			<button
 				type="button"
 				onClick={() => onStart(selections)}
-				className="w-full min-h-[48px] bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-500 transition-colors"
+				className="btn-gradient-cyan min-h-20 rounded-2xl text-xl w-full"
 			>
 				Start Workout
 			</button>

@@ -13,7 +13,6 @@ import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { ActiveSetView } from "./ActiveSetView";
 import { WorkoutOverview } from "./WorkoutOverview";
-import { WorkoutProgress } from "./WorkoutProgress";
 
 interface WorkoutIslandProps {
 	workoutId?: string;
@@ -21,7 +20,11 @@ interface WorkoutIslandProps {
 
 function buildSetPayload(
 	currentSet: FlatSet,
-	data: { actualWeight: number | null; actualReps: number; rpe: number | null },
+	data: {
+		actualWeight: number | null;
+		actualReps: number;
+		rpe: number | null;
+	},
 ) {
 	return {
 		exerciseName: currentSet.exerciseName,
@@ -55,6 +58,11 @@ interface WorkoutPlanData {
 		category: string;
 		defaultExercise: string;
 		preferredWeight?: number | null;
+		lastSession?: {
+			weight: number | null;
+			reps: number | null;
+			rpe: number | null;
+		} | null;
 		sets: Array<{
 			setNumber: number;
 			rpeMin: number;
@@ -67,6 +75,11 @@ interface WorkoutPlanData {
 		category: string;
 		defaultExercise: string;
 		preferredWeight?: number | null;
+		lastSession?: {
+			weight: number | null;
+			reps: number | null;
+			rpe: number | null;
+		} | null;
 		sets: Array<{
 			setNumber: number;
 			rpeMin: number;
@@ -107,9 +120,6 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 			? new URLSearchParams(window.location.search).get("id")
 			: null);
 	const [isFinishing, setIsFinishing] = useState(false);
-	const [lastConfirmedWeight, setLastConfirmedWeight] = useState<number | null>(
-		null,
-	);
 
 	const result = useAtomValue(nextWorkoutAtom);
 	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
@@ -134,6 +144,25 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		setDuration: number;
 	} | null>(null);
 	const [resumeChecked, setResumeChecked] = useState(false);
+
+	// Track previous phase to manage timer transitions
+	const prevPhaseRef = useRef(flow.phase);
+	useEffect(() => {
+		const prev = prevPhaseRef.current;
+		const curr = flow.phase;
+		prevPhaseRef.current = curr;
+
+		if (curr === "active" && prev !== "active") {
+			setTimer.reset();
+			setTimer.start();
+		}
+		if (curr === "resting" && prev !== "resting") {
+			restTimer.reset();
+			restTimer.start();
+		}
+		// Rest timer is stopped in handleDone to capture the rest duration
+		// before sending the pending set data to the API
+	}, [flow.phase, setTimer, restTimer]);
 
 	useEffect(() => {
 		if (!id || !plan || resumeChecked) return;
@@ -247,61 +276,76 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	};
 
 	const handleStartSet = () => {
-		setTimer.reset();
-		setTimer.start();
 		flow.startSet();
 	};
 
 	const handleDone = () => {
+		const setDuration = setTimer.stop();
+
+		// Send any pending set with its rest duration
+		if (pendingSetRef.current) {
+			const restDuration = restTimer.stop();
+			sendLogSet(
+				pendingSetRef.current.data,
+				pendingSetRef.current.setDuration,
+				restDuration,
+			);
+			pendingSetRef.current = null;
+		}
+
+		// Build payload for the current set — store it as pending
+		const apiData = buildSetPayload(flow.currentSet!, {
+			actualWeight: null,
+			actualReps: 0,
+			rpe: null,
+		});
+
+		// Store partially — we'll update with actual data in confirmAndNext
+		pendingSetRef.current = { data: apiData, setDuration };
+
 		flow.completeSet();
 	};
 
-	const handleConfirm = (data: {
+	const handleConfirmAndNext = (data: {
 		actualWeight: number | null;
 		actualReps: number;
 		rpe: number | null;
+		saveWeight?: boolean;
 	}) => {
-		const setDuration = setTimer.stop();
-
+		// Update the pending set with actual data from the rest screen
 		if (pendingSetRef.current) {
-			const restDuration = restTimer.stop();
+			const apiData = buildSetPayload(flow.currentSet!, data);
+			pendingSetRef.current = {
+				...pendingSetRef.current,
+				data: apiData,
+			};
+		}
+
+		// If this is the last set, send the pending set immediately with no rest
+		if (flow.isLastSet && pendingSetRef.current) {
 			sendLogSet(
 				pendingSetRef.current.data,
 				pendingSetRef.current.setDuration,
-				restDuration,
+				null,
 			);
 			pendingSetRef.current = null;
 		}
 
-		const apiData = buildSetPayload(flow.currentSet!, data);
-
-		if (flow.isLastSet) {
-			sendLogSet(apiData, setDuration, null);
-		} else {
-			pendingSetRef.current = { data: apiData, setDuration };
+		// Save weight if requested
+		if (data.saveWeight && flow.currentSet && data.actualWeight != null) {
+			upsertWeight({
+				payload: {
+					exerciseName: flow.currentSet.exerciseName,
+					weight: data.actualWeight,
+					unit: "lbs",
+					rpe: data.rpe,
+				},
+			}).catch(() => {
+				// Silently fail
+			});
 		}
 
-		setLastConfirmedWeight(data.actualWeight);
-
-		if (!flow.isLastSet) {
-			restTimer.reset();
-			restTimer.start();
-		}
-		flow.logSet();
-	};
-
-	const handleStartNextSet = () => {
-		if (pendingSetRef.current) {
-			const restDuration = restTimer.stop();
-			sendLogSet(
-				pendingSetRef.current.data,
-				pendingSetRef.current.setDuration,
-				restDuration,
-			);
-			pendingSetRef.current = null;
-		}
-		restTimer.reset();
-		flow.startNextSet();
+		flow.confirmAndNext();
 	};
 
 	const handleFinish = async () => {
@@ -326,40 +370,20 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		);
 	}
 
-	if (flow.phase === "weight-feedback") {
-		return (
-			<div className="space-y-8 pb-8">
-				<WeightFeedbackView
-					exerciseName={flow.lastExerciseWeight?.exerciseName ?? ""}
-					lastWeight={lastConfirmedWeight}
-					unit="lbs"
-					onConfirm={async (weight) => {
-						await upsertWeight({
-							payload: {
-								exerciseName: flow.lastExerciseWeight?.exerciseName ?? "",
-								weight,
-								unit: "lbs",
-								rpe: null,
-							},
-						});
-						flow.dismissFeedback();
-					}}
-					onSkip={() => flow.dismissFeedback()}
-				/>
-			</div>
-		);
-	}
-
 	if (flow.phase === "complete") {
 		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-				<h1 className="text-3xl font-bold text-zinc-100">Workout Complete!</h1>
-				<p className="text-zinc-400">All {flow.totalSets} sets finished</p>
+			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-fade-in">
+				<div className="glass-card p-8 space-y-4">
+					<h1 className="text-4xl font-[family-name:var(--font-heading)] font-bold gradient-text-green uppercase">
+						Workout Complete!
+					</h1>
+					<p className="text-zinc-400">All {flow.totalSets} sets finished</p>
+				</div>
 				<button
 					type="button"
 					onClick={handleFinish}
 					disabled={isFinishing}
-					className="w-full min-h-16 bg-green-600 text-white text-xl font-bold rounded-xl hover:bg-green-500 disabled:opacity-50 transition-colors"
+					className="btn-gradient-green min-h-20 rounded-2xl text-xl w-full disabled:opacity-50"
 				>
 					{isFinishing ? "Finishing..." : "Finish Workout"}
 				</button>
@@ -367,12 +391,9 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		);
 	}
 
+	// ready, active, resting phases
 	return (
 		<div className="space-y-8 pb-8">
-			<WorkoutProgress
-				current={flow.progress.current}
-				total={flow.progress.total}
-			/>
 			<ActiveSetView
 				key={`${flow.currentSet!.exerciseName}-${flow.currentSet!.setNumber}`}
 				set={flow.currentSet!}
@@ -380,101 +401,17 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				setTimerSeconds={setTimer.seconds}
 				restTimerSeconds={restTimer.seconds}
 				isLastSet={flow.isLastSet}
+				isExerciseTransition={flow.isExerciseTransition}
+				allSetsForExercise={flow.allSetsForCurrentExercise}
+				completedSetsForExercise={flow.completedSetsForCurrentExercise}
 				nextExerciseName={flow.nextExerciseName}
 				unit="lbs"
 				preferredWeight={flow.currentSet?.preferredWeight}
+				progress={flow.progress}
 				onStartSet={handleStartSet}
 				onDone={handleDone}
-				onConfirm={handleConfirm}
-				onStartNextSet={handleStartNextSet}
+				onConfirmAndNext={handleConfirmAndNext}
 			/>
-		</div>
-	);
-}
-
-function WeightFeedbackView({
-	exerciseName,
-	lastWeight,
-	unit,
-	onConfirm,
-	onSkip,
-}: {
-	exerciseName: string;
-	lastWeight: number | null;
-	unit: string;
-	onConfirm: (weight: number) => void;
-	onSkip: () => void;
-}) {
-	const [adjusting, setAdjusting] = useState(false);
-	const [adjustedWeight, setAdjustedWeight] = useState(
-		lastWeight != null ? String(lastWeight) : "",
-	);
-
-	if (adjusting) {
-		return (
-			<div className="flex flex-col items-center text-center space-y-6">
-				<div>
-					<h2 className="text-xl font-bold text-zinc-100">{exerciseName}</h2>
-					<p className="text-zinc-400 mt-1">What weight for next time?</p>
-				</div>
-				<label className="w-full block">
-					<span className="block text-sm text-zinc-400 mb-1 text-left">
-						Weight ({unit})
-					</span>
-					<input
-						type="number"
-						value={adjustedWeight}
-						onChange={(e) => setAdjustedWeight(e.target.value)}
-						className="w-full text-xl bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100"
-					/>
-				</label>
-				<button
-					type="button"
-					disabled={!adjustedWeight || Number(adjustedWeight) <= 0}
-					onClick={() => onConfirm(Number(adjustedWeight))}
-					className="w-full min-h-[48px] bg-zinc-100 text-zinc-900 text-lg font-bold rounded-xl hover:bg-zinc-200 disabled:opacity-40 transition-colors"
-				>
-					Save
-				</button>
-			</div>
-		);
-	}
-
-	return (
-		<div className="flex flex-col items-center text-center space-y-6">
-			<div>
-				<h2 className="text-xl font-bold text-zinc-100">{exerciseName}</h2>
-				<p className="text-zinc-400 mt-1">
-					{lastWeight != null
-						? `You used ${lastWeight} ${unit}. Right weight?`
-						: "Save a weight for next time?"}
-				</p>
-			</div>
-			<div className="flex gap-4 w-full">
-				{lastWeight != null && (
-					<button
-						type="button"
-						onClick={() => onConfirm(lastWeight)}
-						className="flex-1 min-h-16 bg-green-600 text-white text-xl font-bold rounded-xl hover:bg-green-500 transition-colors"
-					>
-						{"👍"}
-					</button>
-				)}
-				<button
-					type="button"
-					onClick={() => setAdjusting(true)}
-					className="flex-1 min-h-16 bg-orange-600 text-white text-xl font-bold rounded-xl hover:bg-orange-500 transition-colors"
-				>
-					{lastWeight != null ? "👎" : "Enter Weight"}
-				</button>
-			</div>
-			<button
-				type="button"
-				onClick={onSkip}
-				className="text-zinc-500 text-sm hover:text-zinc-400 transition-colors"
-			>
-				Skip
-			</button>
 		</div>
 	);
 }
