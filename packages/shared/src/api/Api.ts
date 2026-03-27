@@ -9,6 +9,8 @@ import { InternalError, NotFoundError } from "../errors/index.js";
 import {
 	CycleResponse,
 	ExercisePreferenceResponse,
+	ExerciseWeightInput,
+	ExerciseWeightResponse,
 	NullableCycleResponse,
 	ProgressionResponse,
 	SetResponse,
@@ -16,6 +18,7 @@ import {
 	WorkoutResponse,
 	WorkoutWithSetsResponse,
 } from "../schema/api.js";
+import { MainLift } from "../schema/lifts.js";
 
 export class HealthGroup extends HttpApiGroup.make("health").add(
 	HttpApiEndpoint.get("check", "/api/health", {
@@ -35,10 +38,10 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 	.add(
 		HttpApiEndpoint.post("create", "/api/cycles", {
 			payload: Schema.Struct({
-				squat: Schema.Number,
-				bench: Schema.Number,
-				deadlift: Schema.Number,
-				ohp: Schema.Number,
+				squat: Schema.NullOr(Schema.Number),
+				bench: Schema.NullOr(Schema.Number),
+				deadlift: Schema.NullOr(Schema.Number),
+				ohp: Schema.NullOr(Schema.Number),
 				unit: Schema.String,
 			}),
 			success: CycleResponse,
@@ -75,14 +78,27 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 	.add(
 		HttpApiEndpoint.post("next", "/api/cycles/next", {
 			payload: Schema.Struct({
-				squat: Schema.Number,
-				bench: Schema.Number,
-				deadlift: Schema.Number,
-				ohp: Schema.Number,
+				squat: Schema.NullOr(Schema.Number),
+				bench: Schema.NullOr(Schema.Number),
+				deadlift: Schema.NullOr(Schema.Number),
+				ohp: Schema.NullOr(Schema.Number),
 				unit: Schema.String,
 			}),
 			success: CycleResponse,
 			error: [InternalError.pipe(HttpApiSchema.status(500))],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.patch("update1rm", "/api/cycles/current/1rm", {
+			payload: Schema.Struct({
+				lift: MainLift,
+				value: Schema.Number,
+			}),
+			success: CycleResponse,
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
 		}),
 	) {}
 
@@ -167,8 +183,28 @@ export class PreferencesGroup extends HttpApiGroup.make("preferences").add(
 	}),
 ) {}
 
+export class ExerciseWeightsGroup extends HttpApiGroup.make(
+	"exerciseWeights",
+).add(
+	HttpApiEndpoint.get("list", "/api/exercise-weights", {
+		success: Schema.Array(ExerciseWeightResponse),
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
+	}),
+	HttpApiEndpoint.put("upsert", "/api/exercise-weights", {
+		payload: ExerciseWeightInput,
+		success: ExerciseWeightResponse,
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
+	}),
+	HttpApiEndpoint["delete"]("remove", "/api/exercise-weights/:exerciseName", {
+		params: { exerciseName: Schema.String },
+		success: Schema.Struct({ deleted: Schema.Boolean }),
+		error: [InternalError.pipe(HttpApiSchema.status(500))],
+	}),
+) {}
+
 export class PowerCycleApi extends HttpApi.make("PowerCycleApi")
 	.add(HealthGroup)
 	.add(CyclesGroup)
 	.add(WorkoutsGroup)
-	.add(PreferencesGroup) {}
+	.add(PreferencesGroup)
+	.add(ExerciseWeightsGroup) {}

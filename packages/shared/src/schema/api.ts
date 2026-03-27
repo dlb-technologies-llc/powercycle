@@ -5,10 +5,10 @@ export const CycleResponse = Schema.Struct({
 	id: Schema.String,
 	userId: Schema.String,
 	cycleNumber: Schema.Number,
-	squat1rm: Schema.Number,
-	bench1rm: Schema.Number,
-	deadlift1rm: Schema.Number,
-	ohp1rm: Schema.Number,
+	squat1rm: Schema.NullOr(Schema.Number),
+	bench1rm: Schema.NullOr(Schema.Number),
+	deadlift1rm: Schema.NullOr(Schema.Number),
+	ohp1rm: Schema.NullOr(Schema.Number),
 	unit: Schema.String,
 	currentRound: Schema.Number,
 	currentDay: Schema.Number,
@@ -73,6 +73,7 @@ export const ExerciseSlotSchema = Schema.Struct({
 	category: Schema.String,
 	defaultExercise: Schema.String,
 	sets: Schema.Array(RpeSetSchema),
+	preferredWeight: Schema.NullOr(Schema.Number),
 });
 
 export const WorkoutPlanResponse = Schema.Struct({
@@ -111,4 +112,21 @@ export const ProgressionResponse = Schema.Struct({
 export const ExercisePreferenceResponse = Schema.Struct({
 	slotKey: Schema.String,
 	exerciseName: Schema.String,
+});
+
+export const ExerciseWeightResponse = Schema.Struct({
+	id: Schema.String,
+	userId: Schema.String,
+	exerciseName: Schema.String,
+	weight: Schema.Number,
+	unit: Schema.String,
+	rpe: Schema.NullOr(Schema.Number),
+	updatedAt: Schema.String,
+});
+
+export const ExerciseWeightInput = Schema.Struct({
+	exerciseName: Schema.String,
+	weight: Schema.Number,
+	unit: Schema.String,
+	rpe: Schema.NullOr(Schema.Number),
 });

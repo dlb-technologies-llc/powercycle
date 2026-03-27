@@ -29,6 +29,13 @@
 			"when": 1774631372059,
 			"tag": "0003_military_supreme_intelligence",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1774634555358,
+			"tag": "0004_rapid_unus",
+			"breakpoints": true
 		}
 	]
 }
