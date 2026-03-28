@@ -42,6 +42,7 @@ function TimerRing({
 	const progress = (seconds % 60) / 60;
 	const dashOffset = circumference * (1 - progress);
 	const strokeColor = color === "cyan" ? "#06b6d4" : "#f59e0b";
+	const isWrapFrame = seconds % 60 === 0 && seconds > 0;
 	return (
 		<svg
 			className="absolute inset-0 w-full h-full -rotate-90"
@@ -67,7 +68,9 @@ function TimerRing({
 				strokeDasharray={circumference}
 				strokeDashoffset={dashOffset}
 				strokeLinecap="round"
-				className="transition-all duration-1000 ease-linear"
+				className={
+					isWrapFrame ? "" : "transition-all duration-1000 ease-linear"
+				}
 			/>
 		</svg>
 	);

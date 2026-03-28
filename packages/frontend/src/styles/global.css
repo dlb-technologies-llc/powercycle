@@ -142,3 +142,14 @@ h6 {
 	filter: brightness(1.1);
 	box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
 }
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+input[type="number"] {
+	-moz-appearance: textfield;
+}
