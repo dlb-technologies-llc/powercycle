@@ -1,20 +1,11 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { CycleResponse } from "@powercycle/shared/schema/api";
+import { DAY_NAMES } from "@powercycle/shared/schema/program";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { currentCycleAtom } from "../atoms/cycles";
 import { startWorkoutAtom } from "../atoms/workouts";
 import WeightManagement from "./WeightManagement";
-
-type CycleData = typeof CycleResponse.Type;
-
-const DAY_NAMES: Record<number, string> = {
-	1: "Squat",
-	2: "Bench Press",
-	3: "Deadlift",
-	4: "Overhead Press",
-};
 
 const ROUND_NAMES: Record<number, string> = {
 	1: "Volume",
@@ -46,7 +37,7 @@ export default function DashboardIsland() {
 		);
 	}
 
-	const cycle = result.value as CycleData | null;
+	const cycle = result.value;
 
 	// No cycle -> setup
 	if (!cycle) {

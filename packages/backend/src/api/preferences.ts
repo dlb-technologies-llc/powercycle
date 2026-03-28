@@ -1,14 +1,13 @@
 import { ExercisePreference } from "@powercycle/shared/schema/entities/exercise-preference";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	findExercisePreferences,
 	upsertExercisePreference,
 } from "../lib/queries.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
-
-const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export const PreferencesLive = HttpApiBuilder.group(
 	PowerCycleApi,

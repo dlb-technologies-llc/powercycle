@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 import { Layer } from "effect";
-import { HttpRouter } from "effect/unstable/http";
+import { HttpMiddleware, HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { CyclesLive } from "./api/cycles.js";
 import { ExerciseWeightsLive } from "./api/exercise-weights.js";
@@ -15,6 +15,13 @@ import { DatabaseService } from "./services/DatabaseService.js";
 import { WorkoutLive } from "./services/WorkoutService.js";
 
 const PORT = Number(process.env.API_PORT) || 3000;
+
+const allowedOrigins =
+	process.env.NODE_ENV === "production"
+		? ["https://powercycle.app"]
+		: process.env.NODE_ENV === "staging"
+			? ["https://staging.powercycle.app"]
+			: ["http://localhost:4321"];
 const DATABASE_URL =
 	process.env.DATABASE_URL ??
 	"postgres://powercycle:powercycle@localhost:5432/powercycle";
@@ -42,8 +49,12 @@ const ApiLive = HttpApiBuilder.layer(PowerCycleApi).pipe(
 	Layer.provide(HandlerLive),
 );
 
-const ServerLive = HttpRouter.serve(ApiLive).pipe(
-	Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })),
-);
+const ServerLive = HttpRouter.serve(ApiLive, {
+	middleware: HttpMiddleware.cors({
+		allowedOrigins,
+		allowedMethods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+		credentials: true,
+	}),
+}).pipe(Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })));
 
 Layer.launch(ServerLive).pipe(NodeRuntime.runMain);

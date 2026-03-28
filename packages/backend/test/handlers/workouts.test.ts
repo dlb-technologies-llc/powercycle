@@ -1,13 +1,28 @@
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it, layer } from "@effect/vitest";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
-import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
-import { Effect } from "effect";
+import {
+	LogSetInput,
+	WorkoutSet,
+} from "@powercycle/shared/schema/entities/workout-set";
+import { UserLifts } from "@powercycle/shared/schema/lifts";
+import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import {
 	WorkoutLive,
 	WorkoutService,
 } from "../../src/services/WorkoutService.js";
 
-describe("workouts handler logic", () => {
+const sampleLifts = () => {
+	const arb = Schema.toArbitrary(UserLifts);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
+};
+
+const sampleLogSetInput = () => {
+	const arb = Schema.toArbitrary(LogSetInput);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
+};
+
+layer(WorkoutLive)("workouts handler logic", (it) => {
 	it.effect("creates workout entity", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
@@ -20,34 +35,25 @@ describe("workouts handler logic", () => {
 			expect(entity.round).toBe(1);
 			expect(entity.day).toBe(1);
 			expect(entity.completedAt).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with all fields", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
+			const input = {
+				...sampleLogSetInput(),
 				exerciseName: "Squat",
-				category: null,
-				setNumber: 1,
 				prescribedWeight: 225,
-				actualWeight: 225,
-				prescribedReps: 5,
-				actualReps: 5,
-				prescribedRpeMin: null,
-				prescribedRpeMax: null,
-				rpe: null,
-				setDuration: null,
-				restDuration: null,
 				isMainLift: true,
-				isAmrap: false,
-			});
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.workoutId).toBe(workoutId);
 			expect(set.exerciseName).toBe("Squat");
 			expect(set.prescribedWeight).toBe(225);
 			expect(set.isMainLift).toBe(true);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validates workout — returns when found", () =>
@@ -58,7 +64,7 @@ describe("workouts handler logic", () => {
 			const workout = yield* service.createEntity(userId, cycleId, 1, 1);
 			const result = yield* service.validateWorkout(workout, workout.id);
 			expect(result.id).toBe(workout.id);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validates workout — fails when null", () =>
@@ -69,42 +75,30 @@ describe("workouts handler logic", () => {
 				.validateWorkout(null, workoutId)
 				.pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with timing fields", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
-				exerciseName: "Squat",
-				category: null,
-				setNumber: 1,
-				prescribedWeight: null,
-				actualWeight: null,
-				prescribedReps: null,
-				actualReps: null,
-				prescribedRpeMin: null,
-				prescribedRpeMax: null,
-				rpe: null,
-				isMainLift: true,
-				isAmrap: false,
+			const input = {
+				...sampleLogSetInput(),
 				setDuration: 30,
 				restDuration: 120,
-			});
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.setDuration).toBe(30);
 			expect(set.restDuration).toBe(120);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with optional fields as null", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
-				exerciseName: "Face Pulls",
-				category: null,
-				setNumber: 1,
+			const input = {
+				...sampleLogSetInput(),
 				prescribedWeight: null,
 				actualWeight: null,
 				prescribedReps: null,
@@ -114,37 +108,24 @@ describe("workouts handler logic", () => {
 				rpe: null,
 				setDuration: null,
 				restDuration: null,
-				isMainLift: false,
-				isAmrap: false,
-			});
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.prescribedWeight).toBeNull();
 			expect(set.actualWeight).toBeNull();
 			expect(set.rpe).toBeNull();
 			expect(set.setDuration).toBeNull();
 			expect(set.restDuration).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("logSet insert object includes non-null completedAt", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const setEntity = yield* service.createSetEntity(workoutId, {
-				exerciseName: "Squat",
-				category: null,
-				setNumber: 1,
-				prescribedWeight: 225,
-				actualWeight: 225,
-				prescribedReps: 5,
-				actualReps: 5,
-				prescribedRpeMin: null,
-				prescribedRpeMax: null,
-				rpe: null,
-				setDuration: null,
-				restDuration: null,
-				isMainLift: true,
-				isAmrap: false,
-			});
+			const setEntity = yield* service.createSetEntity(
+				workoutId,
+				sampleLogSetInput(),
+			);
 			// Simulate what the logSet handler does: spread toDbInsert + add completedAt
 			const insertData = {
 				...WorkoutSet.toDbInsert(setEntity),
@@ -157,16 +138,19 @@ describe("workouts handler logic", () => {
 			expect(new Date(response.completedAt!).toISOString()).toBe(
 				response.completedAt,
 			);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
+});
 
+describe("workouts handler logic (pure)", () => {
 	it("generateWorkoutPlan returns valid plan for day 1 round 1", () => {
+		const base = sampleLifts();
 		const lifts = {
-			squat: 315,
-			bench: 235,
-			deadlift: 405,
-			ohp: 150,
-			unit: "lbs" as const,
+			...base,
+			squat: base.squat ?? 315,
+			bench: base.bench ?? 235,
+			deadlift: base.deadlift ?? 405,
+			ohp: base.ohp ?? 150,
 		};
 		const plan = generateWorkoutPlan(lifts, 1, 1, 1);
 		expect(plan.mainLift).toBe("squat");
@@ -178,12 +162,13 @@ describe("workouts handler logic", () => {
 	});
 
 	it("generateWorkoutPlan returns valid plan for day 4 (OHP)", () => {
+		const base = sampleLifts();
 		const lifts = {
-			squat: 315,
-			bench: 235,
-			deadlift: 405,
-			ohp: 150,
-			unit: "lbs" as const,
+			...base,
+			squat: base.squat ?? 315,
+			bench: base.bench ?? 235,
+			deadlift: base.deadlift ?? 405,
+			ohp: base.ohp ?? 150,
 		};
 		const plan = generateWorkoutPlan(lifts, 1, 1, 4);
 		expect(plan.mainLift).toBe("ohp");

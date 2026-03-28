@@ -197,7 +197,7 @@ export class ExerciseWeightsGroup extends HttpApiGroup.make(
 		success: ExerciseWeightResponse,
 		error: [InternalError.pipe(HttpApiSchema.status(500))],
 	}),
-	HttpApiEndpoint["delete"]("remove", "/api/exercise-weights/:exerciseName", {
+	HttpApiEndpoint.delete("remove", "/api/exercise-weights/:exerciseName", {
 		params: { exerciseName: Schema.String },
 		success: Schema.Struct({ deleted: Schema.Boolean }),
 		error: [InternalError.pipe(HttpApiSchema.status(500))],

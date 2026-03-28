@@ -14,6 +14,13 @@ import {
 } from "../db/schema.js";
 import type { Database } from "../services/DatabaseService.js";
 
+const firstRow = <T>(rows: T[]) =>
+	rows[0] !== undefined
+		? Effect.succeed(rows[0])
+		: Effect.fail(
+				new InternalError({ message: "Expected row from returning()" }),
+			);
+
 export const findActiveCycle = (db: Database, userId: string) =>
 	Effect.tryPromise({
 		try: () =>
@@ -29,7 +36,7 @@ export const insertCycle = (db: Database, data: NewCycle) =>
 	Effect.tryPromise({
 		try: () => db.insert(cycles).values(data).returning(),
 		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const updateCycle = (
 	db: Database,
@@ -40,7 +47,7 @@ export const updateCycle = (
 		try: () =>
 			db.update(cycles).set(data).where(eq(cycles.id, cycleId)).returning(),
 		catch: (error) => new InternalError({ message: `Update failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const findInProgressWorkout = (
 	db: Database,
@@ -76,7 +83,7 @@ export const insertWorkout = (db: Database, data: NewWorkout) =>
 	Effect.tryPromise({
 		try: () => db.insert(workouts).values(data).returning(),
 		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const updateWorkout = (
 	db: Database,
@@ -91,13 +98,13 @@ export const updateWorkout = (
 				.where(eq(workouts.id, workoutId))
 				.returning(),
 		catch: (error) => new InternalError({ message: `Update failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const insertWorkoutSet = (db: Database, data: NewWorkoutSet) =>
 	Effect.tryPromise({
 		try: () => db.insert(workoutSets).values(data).returning(),
 		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const findSetsByWorkoutId = (db: Database, workoutId: string) =>
 	Effect.tryPromise({
@@ -150,7 +157,7 @@ export const upsertExercisePreference = (
 				})
 				.returning(),
 		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
 	Effect.tryPromise({
@@ -161,26 +168,6 @@ export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
 				.where(eq(exerciseWeights.userId, userId)),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	});
-
-export const findExerciseWeight = (
-	db: Database,
-	userId: string,
-	exerciseName: string,
-) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select()
-				.from(exerciseWeights)
-				.where(
-					and(
-						eq(exerciseWeights.userId, userId),
-						eq(exerciseWeights.exerciseName, exerciseName),
-					),
-				)
-				.limit(1),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
 
 export const upsertExerciseWeight = (db: Database, data: NewExerciseWeight) =>
 	Effect.tryPromise({
@@ -199,7 +186,7 @@ export const upsertExerciseWeight = (db: Database, data: NewExerciseWeight) =>
 				})
 				.returning(),
 		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]!));
+	}).pipe(Effect.flatMap(firstRow));
 
 export const deleteExerciseWeight = (
 	db: Database,
