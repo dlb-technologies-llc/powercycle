@@ -1,11 +1,23 @@
 import { expect, layer } from "@effect/vitest";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
+import { LogSetInput } from "@powercycle/shared/schema/entities/workout-set";
 import { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Schema } from "effect";
+import { FastCheck } from "effect/testing";
 import {
 	WorkoutLive,
 	WorkoutService,
 } from "../../src/services/WorkoutService.js";
+
+const sampleLogSetInput = () => {
+	const arb = Schema.toArbitrary(LogSetInput);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
+};
+
+const sampleWorkout = () => {
+	const arb = Schema.toArbitrary(Workout);
+	return FastCheck.sample(arb.arb, 1).map(arb.mapper)[0]!;
+};
 
 layer(WorkoutLive)("WorkoutService", (it) => {
 	it.effect("createEntity generates UUID and correct fields", () =>
@@ -40,22 +52,22 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
+			const input = {
+				...sampleLogSetInput(),
 				exerciseName: "Squat",
 				category: "Lower",
-				setNumber: 1,
+				setNumber: 1 as never,
 				prescribedWeight: 270,
 				actualWeight: 275,
-				prescribedReps: 5,
-				actualReps: 6,
+				prescribedReps: 5 as never,
+				actualReps: 6 as never,
 				prescribedRpeMin: 7,
 				prescribedRpeMax: 8,
 				rpe: 8,
-				setDuration: null,
-				restDuration: null,
 				isMainLift: true,
 				isAmrap: true,
-			});
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.id).toBeDefined();
 			expect(set.workoutId).toBe(workoutId);
 			expect(set.exerciseName).toBe("Squat");
@@ -78,10 +90,9 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
-				exerciseName: "Bench Press",
+			const input = {
+				...sampleLogSetInput(),
 				category: null,
-				setNumber: 2,
 				prescribedWeight: null,
 				actualWeight: null,
 				prescribedReps: null,
@@ -91,9 +102,8 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 				rpe: null,
 				setDuration: null,
 				restDuration: null,
-				isMainLift: false,
-				isAmrap: false,
-			});
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.category).toBeNull();
 			expect(set.prescribedWeight).toBeNull();
 			expect(set.actualWeight).toBeNull();
@@ -111,22 +121,12 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
 			const workoutId = crypto.randomUUID();
-			const set = yield* service.createSetEntity(workoutId, {
-				exerciseName: "Squat",
-				category: null,
-				setNumber: 1,
-				prescribedWeight: null,
-				actualWeight: null,
-				prescribedReps: null,
-				actualReps: null,
-				prescribedRpeMin: null,
-				prescribedRpeMax: null,
-				rpe: null,
-				isMainLift: true,
-				isAmrap: false,
-				setDuration: 45,
-				restDuration: 90,
-			});
+			const input = {
+				...sampleLogSetInput(),
+				setDuration: 45 as never,
+				restDuration: 90 as never,
+			};
+			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.setDuration).toBe(45);
 			expect(set.restDuration).toBe(90);
 		}),
@@ -135,17 +135,8 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 	it.effect("validateWorkout returns workout when found", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
-			const workoutId = crypto.randomUUID();
-			const workout = new Workout({
-				id: workoutId,
-				userId: crypto.randomUUID(),
-				cycleId: crypto.randomUUID(),
-				round: 1 as never,
-				day: 1 as never,
-				startedAt: new Date(),
-				completedAt: null,
-			});
-			const result = yield* service.validateWorkout(workout, workoutId);
+			const workout = new Workout(sampleWorkout());
+			const result = yield* service.validateWorkout(workout, workout.id);
 			expect(result).toBe(workout);
 		}),
 	);
