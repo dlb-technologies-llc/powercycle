@@ -43,6 +43,7 @@ function TimerRing({
 	const progress = (seconds % 60) / 60;
 	const dashOffset = circumference * (1 - progress);
 	const strokeColor = color === "cyan" ? "#06b6d4" : "#f59e0b";
+	// Disable CSS transition on 60s wrap to prevent ring animating backwards from full to empty
 	const isWrapFrame = seconds % 60 === 0 && seconds > 0;
 	return (
 		<svg
@@ -82,11 +83,11 @@ function getDefaultWeight(
 	preferredWeight?: number,
 	lastCompletedSetData?: { weight: string },
 ): string {
-	if (lastCompletedSetData?.weight) {
-		return lastCompletedSetData.weight;
-	}
 	if (set.isMainLift && set.prescribed.weight != null) {
 		return String(set.prescribed.weight);
+	}
+	if (lastCompletedSetData?.weight) {
+		return lastCompletedSetData.weight;
 	}
 	if (set.lastSession?.weight != null) {
 		return String(set.lastSession.weight);
@@ -101,11 +102,11 @@ function getDefaultReps(
 	set: FlatSet,
 	lastCompletedSetData?: { reps: string },
 ): string {
-	if (lastCompletedSetData?.reps) {
-		return lastCompletedSetData.reps;
-	}
 	if (set.isMainLift && set.prescribed.reps != null) {
 		return String(set.prescribed.reps);
+	}
+	if (lastCompletedSetData?.reps) {
+		return lastCompletedSetData.reps;
 	}
 	if (set.lastSession?.reps != null) {
 		return String(set.lastSession.reps);
@@ -284,11 +285,11 @@ export function ActiveSetView({
 						{set.exerciseName}
 					</h2>
 					<p className="font-[family-name:var(--font-heading)] text-sm sm:text-base uppercase tracking-wider text-amber-400">
-						Set {currentSetNumber}
+						Set {currentSetNumber} of {allSetsForExercise.length}
 					</p>
 					{set.isMainLift ? (
 						<p className="font-[family-name:var(--font-mono)] text-sm text-zinc-400">
-							Completed: {set.prescribed.weight ?? "—"} {unit} ×{" "}
+							Prescribed: {set.prescribed.weight ?? "—"} {unit} ×{" "}
 							{set.prescribed.reps ?? "—"}
 						</p>
 					) : (
