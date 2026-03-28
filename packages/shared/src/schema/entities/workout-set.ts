@@ -109,7 +109,9 @@ export const LogSetInput = Schema.Struct({
 	setNumber: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
 	prescribedWeight: Schema.NullOr(Schema.Number),
 	actualWeight: Schema.NullOr(Schema.Number),
-	prescribedReps: Schema.NullOr(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
+	prescribedReps: Schema.NullOr(
+		Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+	),
 	actualReps: Schema.NullOr(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
 	prescribedRpeMin: Schema.NullOr(Schema.Number),
 	prescribedRpeMax: Schema.NullOr(Schema.Number),

@@ -250,7 +250,8 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		}
 
 		// Build payload for the current set — store it as pending
-		const apiData = buildSetPayload(flow.currentSet!, {
+		if (!flow.currentSet) return;
+		const apiData = buildSetPayload(flow.currentSet, {
 			actualWeight: null,
 			actualReps: 0,
 			rpe: null,
@@ -269,8 +270,8 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		saveWeight?: boolean;
 	}) => {
 		// Update the pending set with actual data from the rest screen
-		if (pendingSetRef.current) {
-			const apiData = buildSetPayload(flow.currentSet!, data);
+		if (pendingSetRef.current && flow.currentSet) {
+			const apiData = buildSetPayload(flow.currentSet, data);
 			pendingSetRef.current = {
 				...pendingSetRef.current,
 				data: apiData,
@@ -347,12 +348,15 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		);
 	}
 
-	// ready, active, resting phases
+	// ready, active, resting phases — currentSet is always defined here
+	const currentSet = flow.currentSet;
+	if (!currentSet) return null;
+
 	return (
 		<div className="space-y-8 pb-8">
 			<ActiveSetView
-				key={`${flow.currentSet!.exerciseName}-${flow.currentSet!.setNumber}`}
-				set={flow.currentSet!}
+				key={`${currentSet.exerciseName}-${currentSet.setNumber}`}
+				set={currentSet}
 				phase={flow.phase}
 				setTimerSeconds={setTimer.seconds}
 				restTimerSeconds={restTimer.seconds}
