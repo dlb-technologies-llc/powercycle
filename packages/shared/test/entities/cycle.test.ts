@@ -88,12 +88,16 @@ describe("Cycle.decodeRow", () => {
 				ohp1rm: base.ohp1rm != null ? String(base.ohp1rm) : null,
 			};
 
+			// String(-0) → "0" → Number("0") → +0, so the roundtrip normalizes -0
+			const normalize = (v: number | null) =>
+				v != null ? Number(String(v)) : null;
+
 			const cycle = yield* Cycle.decodeRow(drizzleRow);
 			expect(cycle).toBeInstanceOf(Cycle);
-			expect(cycle.squat1rm).toBe(base.squat1rm);
-			expect(cycle.bench1rm).toBe(base.bench1rm);
-			expect(cycle.deadlift1rm).toBe(base.deadlift1rm);
-			expect(cycle.ohp1rm).toBe(base.ohp1rm);
+			expect(cycle.squat1rm).toBe(normalize(base.squat1rm));
+			expect(cycle.bench1rm).toBe(normalize(base.bench1rm));
+			expect(cycle.deadlift1rm).toBe(normalize(base.deadlift1rm));
+			expect(cycle.ohp1rm).toBe(normalize(base.ohp1rm));
 			expect(cycle.unit).toBe(base.unit);
 		}),
 	);
