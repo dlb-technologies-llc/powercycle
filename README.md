@@ -52,6 +52,8 @@ Astro 6 server-rendered site with React interactive islands.
 
 ## Getting Started
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines and conventions.
+
 ### Prerequisites
 
 - [Bun](https://bun.sh) >= 1.0
@@ -103,6 +105,10 @@ Handlers compose pure services with DB queries:
 Handler = query DB -> pure service method -> respond
 ```
 
+### CORS
+
+CORS is configured in `packages/backend/src/server.ts` via `HttpMiddleware.cors()` in `HttpRouter.serve()`. Allowed origins are set per environment.
+
 ### Layer Composition
 
 ```
@@ -133,6 +139,15 @@ bun run test
 bun run test:unit -- --coverage
 ```
 
+### Docker-in-Docker E2E
+
+When running E2E tests from inside a Docker container (e.g., a CI sandbox), `localhost` cannot reach sibling containers. Connect to the dev stack network first:
+
+```bash
+docker network connect <stack-network> $(hostname)
+BASE_URL=http://powercycle-dev-app:80 bun run test:e2e:docker
+```
+
 ## Scripts
 
 | Script | Description |
@@ -143,9 +158,13 @@ bun run test:unit -- --coverage
 | `bun run build` | Build frontend |
 | `bun run lint` | Check with Biome |
 | `bun run lint:fix` | Auto-fix with Biome |
+| `bun run format` | Format with Biome |
 | `bun run typecheck` | TypeScript check |
 | `bun run test:unit` | Vitest unit tests |
 | `bun run test:e2e` | Playwright E2E tests |
-| `bun run docker:dev` | Start PostgreSQL |
+| `bun run test:e2e:docker` | E2E tests against Docker stack |
+| `bun run docker:dev` | Start Postgres + app |
+| `bun run docker:down` | Tear down Docker stack |
+| `bun run docker:logs` | Follow Docker logs |
 | `bun run db:generate` | Generate migrations |
 | `bun run db:migrate` | Run migrations |

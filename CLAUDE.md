@@ -54,7 +54,8 @@ bun run test:unit
 
 - **Unit**: `@effect/vitest` with `it.effect()`, mock layers in `test/fixtures/`
 - **E2E**: Playwright at `packages/frontend/tests/`
-- Pattern: `Effect.gen(...).pipe(Effect.provide(ServiceLayer))`
+- Preferred pattern: `layer(ServiceLive)("describe block", (it) => { it.effect(...) })` -- provides the layer once for the entire describe block
+- Legacy pattern: `Effect.gen(...).pipe(Effect.provide(ServiceLayer))` per test
 
 ## Local Docker Stack
 
@@ -80,9 +81,47 @@ bun run test:unit
 - API client: `AtomHttpApi.Service` at `src/atoms/client.ts`
 - Tailwind 4 with `@tailwindcss/vite` plugin
 
+## Shared Schema Locations
+
+- **UUID**: `packages/shared/src/schema/common.ts` -- `Schema.String.check(Schema.isUUID())`; import from `../common.js`
+- **DAY_NAMES**: `packages/shared/src/schema/program.ts` -- `Record<TrainingDay, string>` mapping day numbers to display names
+- **DEFAULT_USER_ID**: `packages/backend/src/lib/constants.ts` -- centralized default user constant
+
+## Entity Pattern (Cast-Free)
+
+Entities use `Schema.Class` with a static `DrizzleRow` schema for decoding DB rows. The `DrizzleRow` schema uses branded types (e.g., `Schema.NumberFromString`) to handle Drizzle's string numerics without `as` casts:
+
+```typescript
+export class Cycle extends Schema.Class<Cycle>("Cycle")({
+  id: UUID,
+  squat1rm: Schema.NullOr(Schema.Number),
+  // ...
+}) {
+  static readonly DrizzleRow = Schema.Struct({
+    id: UUID,
+    squat1rm: Schema.NullOr(Schema.NumberFromString), // string → number
+    // ...
+  });
+
+  static decodeRow(row: unknown) {
+    return Schema.decodeUnknownEffect(Cycle.DrizzleRow)(row).pipe(
+      Effect.map((data) => new Cycle(data)),
+      Effect.mapError((e) => new InternalError({ message: `Cycle decode failed: ${e}` })),
+    );
+  }
+}
+```
+
+No `as never`, no `as number` -- all conversions flow through the schema.
+
+## Query Helpers
+
+- `firstRow()` helper in `packages/backend/src/lib/queries.ts` -- safely extracts the first row from a query result via `Effect.succeed`/`Effect.fail`, replacing `rows[0]!` patterns
+
 ## Conventions
 
 - **Tabs** for indentation, **double quotes** for strings
 - Branch naming: `feat/<description>`, `fix/<description>`
 - Errors: `Schema.TaggedErrorClass` with descriptive `_tag`
 - Query functions in `src/lib/queries.ts` wrapped in `Effect.tryPromise`
+- **No `as` casts or `!` assertions** -- Biome `noNonNullAssertion` enforced project-wide
