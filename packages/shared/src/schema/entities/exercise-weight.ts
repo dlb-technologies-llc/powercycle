@@ -1,8 +1,7 @@
 import { Effect, Schema } from "effect";
 import { InternalError } from "../../errors/index.js";
+import { UUID } from "../common.js";
 import { Unit } from "../lifts.js";
-
-const UUID = Schema.String.check(Schema.isUUID());
 
 // The entity — single source of truth for ExerciseWeight domain type
 export class ExerciseWeight extends Schema.Class<ExerciseWeight>(

@@ -7,6 +7,13 @@ export type Round = typeof Round.Type;
 export const TrainingDay = Schema.Literals([1, 2, 3, 4]);
 export type TrainingDay = typeof TrainingDay.Type;
 
+export const DAY_NAMES: Record<TrainingDay, string> = {
+	1: "Squat",
+	2: "Bench Press",
+	3: "Deadlift",
+	4: "Overhead Press",
+};
+
 export const DAY_LIFT_MAP = {
 	1: "squat",
 	2: "bench",

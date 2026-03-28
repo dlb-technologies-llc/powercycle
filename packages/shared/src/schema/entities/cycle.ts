@@ -1,9 +1,8 @@
 import { Effect, Schema } from "effect";
 import { InternalError } from "../../errors/index.js";
+import { UUID } from "../common.js";
 import { Unit } from "../lifts.js";
 import { Round, TrainingDay } from "../program.js";
-
-const UUID = Schema.String.check(Schema.isUUID());
 
 // The entity — single source of truth for Cycle domain type
 export class Cycle extends Schema.Class<Cycle>("Cycle")({

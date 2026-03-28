@@ -1,14 +1,8 @@
 import { useAtomValue } from "@effect/atom-react";
+import { DAY_NAMES, type TrainingDay } from "@powercycle/shared/schema/program";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { workoutHistoryAtom } from "../atoms/workouts";
-
-const DAY_NAMES: Record<number, string> = {
-	1: "Squat",
-	2: "Bench Press",
-	3: "Deadlift",
-	4: "Overhead Press",
-};
 
 interface WorkoutSet {
 	readonly exerciseName: string;
@@ -22,7 +16,7 @@ interface WorkoutSet {
 interface Workout {
 	readonly id: string;
 	readonly round: number;
-	readonly day: number;
+	readonly day: TrainingDay;
 	readonly startedAt: string;
 	readonly completedAt: string | null;
 	readonly sets: readonly WorkoutSet[];

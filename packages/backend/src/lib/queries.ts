@@ -162,26 +162,6 @@ export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	});
 
-export const findExerciseWeight = (
-	db: Database,
-	userId: string,
-	exerciseName: string,
-) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select()
-				.from(exerciseWeights)
-				.where(
-					and(
-						eq(exerciseWeights.userId, userId),
-						eq(exerciseWeights.exerciseName, exerciseName),
-					),
-				)
-				.limit(1),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
-
 export const upsertExerciseWeight = (db: Database, data: NewExerciseWeight) =>
 	Effect.tryPromise({
 		try: () =>
