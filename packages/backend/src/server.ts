@@ -19,7 +19,9 @@ const PORT = Number(process.env.API_PORT) || 3000;
 const allowedOrigins =
 	process.env.NODE_ENV === "production"
 		? ["https://powercycle.app"]
-		: ["http://localhost:4321"];
+		: process.env.NODE_ENV === "staging"
+			? ["https://staging.powercycle.app"]
+			: ["http://localhost:4321"];
 const DATABASE_URL =
 	process.env.DATABASE_URL ??
 	"postgres://powercycle:powercycle@localhost:5432/powercycle";
