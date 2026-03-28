@@ -14,6 +14,7 @@ interface ActiveSetViewProps {
 	nextExerciseName: string | null;
 	unit: string;
 	preferredWeight?: number;
+	lastCompletedSetData?: { weight: string; reps: string; rpe: string };
 	progress: { current: number; total: number };
 	onStartSet: () => void;
 	onDone: () => void;
@@ -76,7 +77,14 @@ function TimerRing({
 	);
 }
 
-function getDefaultWeight(set: FlatSet, preferredWeight?: number): string {
+function getDefaultWeight(
+	set: FlatSet,
+	preferredWeight?: number,
+	lastCompletedSetData?: { weight: string },
+): string {
+	if (lastCompletedSetData?.weight) {
+		return lastCompletedSetData.weight;
+	}
 	if (set.isMainLift && set.prescribed.weight != null) {
 		return String(set.prescribed.weight);
 	}
@@ -89,7 +97,13 @@ function getDefaultWeight(set: FlatSet, preferredWeight?: number): string {
 	return "";
 }
 
-function getDefaultReps(set: FlatSet): string {
+function getDefaultReps(
+	set: FlatSet,
+	lastCompletedSetData?: { reps: string },
+): string {
+	if (lastCompletedSetData?.reps) {
+		return lastCompletedSetData.reps;
+	}
 	if (set.isMainLift && set.prescribed.reps != null) {
 		return String(set.prescribed.reps);
 	}
@@ -99,7 +113,13 @@ function getDefaultReps(set: FlatSet): string {
 	return "";
 }
 
-function getDefaultRpe(set: FlatSet): string {
+function getDefaultRpe(
+	set: FlatSet,
+	lastCompletedSetData?: { rpe: string },
+): string {
+	if (lastCompletedSetData?.rpe) {
+		return lastCompletedSetData.rpe;
+	}
 	if (set.lastSession?.rpe != null) {
 		return String(set.lastSession.rpe);
 	}
@@ -118,16 +138,21 @@ export function ActiveSetView({
 	nextExerciseName,
 	unit,
 	preferredWeight,
+	lastCompletedSetData,
 	progress,
 	onStartSet,
 	onDone,
 	onConfirmAndNext,
 }: ActiveSetViewProps) {
 	const [weight, setWeight] = useState<string>(
-		getDefaultWeight(set, preferredWeight),
+		getDefaultWeight(set, preferredWeight, lastCompletedSetData),
 	);
-	const [reps, setReps] = useState<string>(getDefaultReps(set));
-	const [rpe, setRpe] = useState<string>(getDefaultRpe(set));
+	const [reps, setReps] = useState<string>(
+		getDefaultReps(set, lastCompletedSetData),
+	);
+	const [rpe, setRpe] = useState<string>(
+		getDefaultRpe(set, lastCompletedSetData),
+	);
 	const [saveWeight, setSaveWeight] = useState(true);
 
 	const hasRpe = set.prescribed.rpeMin != null && set.prescribed.rpeMax != null;

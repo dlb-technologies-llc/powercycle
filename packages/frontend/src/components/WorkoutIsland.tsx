@@ -95,6 +95,9 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const flow = useWorkoutFlow(plan ?? null);
 	const setTimer = useWorkoutTimer();
 	const restTimer = useWorkoutTimer();
+	const completedSetsDataRef = useRef<
+		Record<string, { weight: string; reps: string; rpe: string }>
+	>({});
 	const pendingSetRef = useRef<{
 		data: Record<string, unknown>;
 		setDuration: number;
@@ -269,6 +272,15 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		rpe: number | null;
 		saveWeight?: boolean;
 	}) => {
+		// Store the entered data for prefilling the next set of the same exercise
+		if (flow.currentSet) {
+			completedSetsDataRef.current[flow.currentSet.exerciseName] = {
+				weight: data.actualWeight != null ? String(data.actualWeight) : "",
+				reps: String(data.actualReps),
+				rpe: data.rpe != null ? String(data.rpe) : "",
+			};
+		}
+
 		// Update the pending set with actual data from the rest screen
 		if (pendingSetRef.current && flow.currentSet) {
 			const apiData = buildSetPayload(flow.currentSet, data);
@@ -367,6 +379,9 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				nextExerciseName={flow.nextExerciseName}
 				unit="lbs"
 				preferredWeight={flow.currentSet?.preferredWeight}
+				lastCompletedSetData={
+					completedSetsDataRef.current[currentSet.exerciseName]
+				}
 				progress={flow.progress}
 				onStartSet={handleStartSet}
 				onDone={handleDone}
