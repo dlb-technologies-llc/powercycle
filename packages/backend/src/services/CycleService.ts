@@ -1,6 +1,7 @@
 import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import type { UserLifts } from "@powercycle/shared/schema/lifts";
+import type { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Layer, ServiceMap } from "effect";
 
 export class CycleService extends ServiceMap.Service<
@@ -41,20 +42,32 @@ export const CycleLive = Layer.succeed(CycleService)({
 
 	advancePosition: (cycle) =>
 		Effect.sync(() => {
-			const nextDay = { 1: 2, 2: 3, 3: 4 } as const;
-			const nextRound = { 1: 2, 2: 3, 3: 4 } as const;
+			const nextDay: Record<TrainingDay, TrainingDay | null> = {
+				1: 2,
+				2: 3,
+				3: 4,
+				4: null,
+			};
+			const nextRound: Record<Round, Round | null> = {
+				1: 2,
+				2: 3,
+				3: 4,
+				4: null,
+			};
 
-			if (cycle.currentDay < 4) {
+			const day = nextDay[cycle.currentDay];
+			if (day !== null) {
 				return new Cycle({
 					...cycle,
-					currentDay: nextDay[cycle.currentDay as keyof typeof nextDay],
+					currentDay: day,
 				});
 			}
 			// Day 4 done — advance to next round
-			if (cycle.currentDay === 4 && cycle.currentRound < 4) {
+			const round = nextRound[cycle.currentRound];
+			if (round !== null) {
 				return new Cycle({
 					...cycle,
-					currentRound: nextRound[cycle.currentRound as keyof typeof nextRound],
+					currentRound: round,
 					currentDay: 1,
 				});
 			}

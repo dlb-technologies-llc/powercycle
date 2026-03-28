@@ -1,69 +1,74 @@
 import { useAtomRefresh, useAtomSet } from "@effect/atom-react";
+import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
 import { useEffect, useState } from "react";
 import { update1rmAtom } from "../atoms/cycles";
 import { nextWorkoutAtom } from "../atoms/workouts";
 
-const LIFT_DISPLAY_NAMES: Record<string, string> = {
+const LIFT_DISPLAY_NAMES: Record<MainLift, string> = {
 	squat: "Squat",
 	bench: "Bench Press",
 	deadlift: "Deadlift",
 	ohp: "Overhead Press",
 };
 
-const DAY_NAMES: Record<string, string> = {
+const DAY_NAMES: Record<MainLift, string> = {
 	squat: "Squat Day",
 	bench: "Bench Day",
 	deadlift: "Deadlift Day",
 	ohp: "OHP Day",
 };
 
+// Widen EXERCISE_OPTIONS for string-key lookup (cast-free)
+const exerciseOptionsLookup: Record<string, readonly string[] | undefined> =
+	EXERCISE_OPTIONS;
+
 interface WorkoutOverviewProps {
 	plan: {
-		day: number;
-		round: number;
-		cycle: number;
-		mainLift: string;
-		mainLiftSets: Array<{
-			setNumber: number;
-			weight: number;
-			reps: number;
-			percentage: number;
-			isAmrap: boolean;
+		readonly day: number;
+		readonly round: number;
+		readonly cycle: number;
+		readonly mainLift: MainLift;
+		readonly mainLiftSets: ReadonlyArray<{
+			readonly setNumber: number;
+			readonly weight: number;
+			readonly reps: number;
+			readonly percentage: number;
+			readonly isAmrap: boolean;
 		}>;
-		variation: {
-			category: string;
-			defaultExercise: string;
-			preferredWeight?: number | null;
-			lastSession?: {
-				weight: number | null;
-				reps: number | null;
-				rpe: number | null;
+		readonly variation: {
+			readonly category: string;
+			readonly defaultExercise: string;
+			readonly preferredWeight?: number | null;
+			readonly lastSession?: {
+				readonly weight: number | null;
+				readonly reps: number | null;
+				readonly rpe: number | null;
 			} | null;
-			sets: Array<{
-				setNumber: number;
-				rpeMin: number;
-				rpeMax: number;
-				repMin: number;
-				repMax: number;
+			readonly sets: ReadonlyArray<{
+				readonly setNumber: number;
+				readonly rpeMin: number;
+				readonly rpeMax: number;
+				readonly repMin: number;
+				readonly repMax: number;
 			}>;
 		};
-		accessories: Array<{
-			category: string;
-			defaultExercise: string;
-			preferredWeight?: number | null;
-			lastSession?: {
-				weight: number | null;
-				reps: number | null;
-				rpe: number | null;
+		readonly accessories: ReadonlyArray<{
+			readonly category: string;
+			readonly defaultExercise: string;
+			readonly preferredWeight?: number | null;
+			readonly lastSession?: {
+				readonly weight: number | null;
+				readonly reps: number | null;
+				readonly rpe: number | null;
 			} | null;
-			sets: Array<{
-				setNumber: number;
-				rpeMin: number;
-				rpeMax: number;
-				repMin: number;
-				repMax: number;
+			readonly sets: ReadonlyArray<{
+				readonly setNumber: number;
+				readonly rpeMin: number;
+				readonly rpeMax: number;
+				readonly repMin: number;
+				readonly repMax: number;
 			}>;
 		}>;
 	};
@@ -154,7 +159,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		setOneRmError("");
 		const exit = await update1rm({
 			payload: {
-				lift: plan.mainLift as "squat" | "bench" | "deadlift" | "ohp",
+				lift: plan.mainLift,
 				value,
 			},
 		});
@@ -171,10 +176,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		});
 	};
 
-	const variationOptions =
-		(EXERCISE_OPTIONS as Record<string, readonly string[]>)[
-			plan.variation.category
-		] ?? [];
+	const variationOptions = exerciseOptionsLookup[plan.variation.category] ?? [];
 
 	// Determine the best weight to show for variation
 	const variationDisplayWeight =
@@ -289,10 +291,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			{/* Accessories */}
 			{plan.accessories.map((acc, i) => {
 				const accKey = `${acc.category}-${i}`;
-				const accOptions =
-					(EXERCISE_OPTIONS as Record<string, readonly string[]>)[
-						acc.category
-					] ?? [];
+				const accOptions = exerciseOptionsLookup[acc.category] ?? [];
 				const accDisplayWeight = acc.lastSession?.weight ?? acc.preferredWeight;
 				return (
 					<div key={accKey} className="glass-card p-5 space-y-3">

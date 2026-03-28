@@ -1,4 +1,5 @@
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
+import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
@@ -18,19 +19,15 @@ interface WeightManagementProps {
 	};
 }
 
-const LIFTS = [
-	{ key: "squat" as const, label: "Squat", field: "squat1rm" as const },
-	{ key: "bench" as const, label: "Bench Press", field: "bench1rm" as const },
-	{
-		key: "deadlift" as const,
-		label: "Deadlift",
-		field: "deadlift1rm" as const,
-	},
-	{
-		key: "ohp" as const,
-		label: "Overhead Press",
-		field: "ohp1rm" as const,
-	},
+const LIFTS: ReadonlyArray<{
+	key: MainLift;
+	label: string;
+	field: `${MainLift}1rm`;
+}> = [
+	{ key: "squat", label: "Squat", field: "squat1rm" },
+	{ key: "bench", label: "Bench Press", field: "bench1rm" },
+	{ key: "deadlift", label: "Deadlift", field: "deadlift1rm" },
+	{ key: "ohp", label: "Overhead Press", field: "ohp1rm" },
 ];
 
 export default function WeightManagement({ cycle }: WeightManagementProps) {
@@ -76,19 +73,19 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 	const [editValue, setEditValue] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 
-	const handleEdit = (key: string, currentValue: number | null) => {
+	const handleEdit = (key: MainLift, currentValue: number | null) => {
 		setEditingLift(key);
 		setEditValue(currentValue != null ? String(currentValue) : "");
 	};
 
-	const handleSave = async (key: string) => {
+	const handleSave = async (key: MainLift) => {
 		const parsed = Number(editValue);
 		if (Number.isNaN(parsed) || parsed <= 0) return;
 
 		setIsSaving(true);
 		const exit = await update1rm({
 			payload: {
-				lift: key as "squat" | "bench" | "deadlift" | "ohp",
+				lift: key,
 				value: parsed,
 			},
 		});
@@ -217,15 +214,7 @@ function SavedWeightsSection() {
 		);
 	}
 
-	const weights = (
-		result.value as readonly {
-			readonly id: string;
-			readonly exerciseName: string;
-			readonly weight: number;
-			readonly unit: string;
-			readonly rpe: number | null;
-		}[]
-	).slice();
+	const weights = [...result.value];
 
 	return (
 		<div>
