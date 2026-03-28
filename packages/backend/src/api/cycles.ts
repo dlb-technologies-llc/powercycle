@@ -4,6 +4,7 @@ import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { NewCycle } from "../db/schema.js";
+import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	countCyclesByUserId,
 	findActiveCycle,
@@ -13,8 +14,6 @@ import {
 import { CycleService } from "../services/CycleService.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
-
-const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export const CyclesLive = HttpApiBuilder.group(
 	PowerCycleApi,
@@ -113,16 +112,17 @@ export const CyclesLive = HttpApiBuilder.group(
 							}),
 						);
 					}
-					const columnMap: Record<string, keyof NewCycle> = {
+					const LIFT_COLUMN_MAP = {
 						squat: "squat1rm",
 						bench: "bench1rm",
 						deadlift: "deadlift1rm",
 						ohp: "ohp1rm",
-					};
-					const column = columnMap[ctx.payload.lift];
-					const updated = yield* updateCycle(db, row.id, {
-						[column]: String(ctx.payload.value),
-					} as Partial<NewCycle>);
+					} as const satisfies Record<string, keyof NewCycle>;
+					const liftUpdate: Partial<NewCycle> = {};
+					liftUpdate[LIFT_COLUMN_MAP[ctx.payload.lift]] = String(
+						ctx.payload.value,
+					);
+					const updated = yield* updateCycle(db, row.id, liftUpdate);
 					const cycle = yield* Cycle.decodeRow(updated);
 					return Cycle.toResponse(cycle);
 				}),

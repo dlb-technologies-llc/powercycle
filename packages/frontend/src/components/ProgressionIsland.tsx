@@ -1,18 +1,31 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { CycleProgressionResult } from "@powercycle/shared";
 import { calculateCycleProgression } from "@powercycle/shared";
-import type { CycleResponse } from "@powercycle/shared/schema/api";
+import type { NullableCycleResponse } from "@powercycle/shared/schema/api";
+import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { currentCycleAtom, startNextCycleAtom } from "../atoms/cycles";
 
-type CycleData = typeof CycleResponse.Type;
+type CycleData = NonNullable<typeof NullableCycleResponse.Type>;
 
-const LIFTS: Array<{
-	key: "squat" | "bench" | "deadlift" | "ohp";
-	label: string;
-}> = [
+type LiftKey = "squat" | "bench" | "deadlift" | "ohp";
+
+function get1rm(cycle: CycleData, key: LiftKey): number | null {
+	switch (key) {
+		case "squat":
+			return cycle.squat1rm;
+		case "bench":
+			return cycle.bench1rm;
+		case "deadlift":
+			return cycle.deadlift1rm;
+		case "ohp":
+			return cycle.ohp1rm;
+	}
+}
+
+const LIFTS: Array<{ key: LiftKey; label: string }> = [
 	{ key: "squat", label: "Squat" },
 	{ key: "bench", label: "Bench Press" },
 	{ key: "deadlift", label: "Deadlift" },
@@ -52,7 +65,7 @@ export default function ProgressionIsland() {
 		);
 	}
 
-	const cycle = result.value as CycleData | null;
+	const cycle = result.value;
 
 	if (!cycle) {
 		return (
@@ -62,15 +75,24 @@ export default function ProgressionIsland() {
 		);
 	}
 
-	const liftsWithData = LIFTS.filter(
-		({ key }) => cycle[`${key}1rm` as keyof CycleData] != null,
-	);
+	const liftsWithData = LIFTS.filter(({ key }) => get1rm(cycle, key) != null);
 
 	const handleCalculate = () => {
-		const round3: Record<string, { weight: number; reps: number }> = {};
-		const currentLifts: Record<string, number> = {};
+		const defaultResult = { weight: 0, reps: 0 };
+		const round3: Record<MainLift, { weight: number; reps: number }> = {
+			squat: defaultResult,
+			bench: defaultResult,
+			deadlift: defaultResult,
+			ohp: defaultResult,
+		};
+		const currentLifts: Record<MainLift, number> = {
+			squat: 0,
+			bench: 0,
+			deadlift: 0,
+			ohp: 0,
+		};
 		for (const { key } of LIFTS) {
-			const rm = cycle[`${key}1rm` as keyof CycleData] as number | null;
+			const rm = get1rm(cycle, key);
 			if (rm == null) continue;
 			round3[key] = {
 				weight: Number(results[key].weight),
@@ -78,12 +100,7 @@ export default function ProgressionIsland() {
 			};
 			currentLifts[key] = rm;
 		}
-		setProgression(
-			calculateCycleProgression(
-				round3 as Parameters<typeof calculateCycleProgression>[0],
-				currentLifts as Parameters<typeof calculateCycleProgression>[1],
-			),
-		);
+		setProgression(calculateCycleProgression(round3, currentLifts));
 	};
 
 	const handleStartNext = async () => {
@@ -138,7 +155,7 @@ export default function ProgressionIsland() {
 								<p className="text-sm text-zinc-500 mb-3">
 									current 1RM:{" "}
 									<span className="font-[family-name:var(--font-mono)]">
-										{cycle[`${key}1rm` as keyof CycleData]}
+										{get1rm(cycle, key)}
 									</span>
 								</p>
 								<div className="grid grid-cols-2 gap-3">

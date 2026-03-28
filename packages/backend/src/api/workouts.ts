@@ -6,6 +6,7 @@ import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { Effect, Schema } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	findActiveCycle,
 	findExerciseWeightsByUserId,
@@ -23,8 +24,6 @@ import { CycleService } from "../services/CycleService.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { WorkoutService } from "../services/WorkoutService.js";
 import { PowerCycleApi } from "./index.js";
-
-const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export const WorkoutsLive = HttpApiBuilder.group(
 	PowerCycleApi,
@@ -192,11 +191,14 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					const workoutEntity = workoutRow
 						? yield* Workout.decodeRow(workoutRow)
 						: null;
-					yield* workoutService.validateWorkout(workoutEntity, ctx.params.id);
+					const validated = yield* workoutService.validateWorkout(
+						workoutEntity,
+						ctx.params.id,
+					);
 
 					// Prevent double-completion
-					if (workoutEntity!.completedAt) {
-						return Workout.toResponse(workoutEntity!);
+					if (validated.completedAt) {
+						return Workout.toResponse(validated);
 					}
 
 					const updatedRow = yield* updateWorkout(db, ctx.params.id, {
@@ -207,7 +209,7 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					// Advance cycle position only if workout belongs to the active cycle
 					const userId = DEFAULT_USER_ID;
 					const cycleRow = yield* findActiveCycle(db, userId);
-					if (cycleRow && cycleRow.id === workoutEntity!.cycleId) {
+					if (cycleRow && cycleRow.id === validated.cycleId) {
 						const cycleEntity = yield* Cycle.decodeRow(cycleRow);
 						const advanced = yield* cycleService.advancePosition(cycleEntity);
 						yield* updateCycle(db, cycleRow.id, {

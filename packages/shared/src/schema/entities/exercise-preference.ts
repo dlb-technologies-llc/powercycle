@@ -14,8 +14,8 @@ export class ExercisePreference extends Schema.Class<ExercisePreference>(
 }) {
 	// Decode schema for Drizzle rows (no numeric columns)
 	static readonly DrizzleRow = Schema.Struct({
-		id: Schema.String,
-		userId: Schema.String,
+		id: UUID,
+		userId: UUID,
 		slotKey: Schema.String,
 		exerciseName: Schema.String,
 		updatedAt: Schema.Date,
@@ -23,7 +23,7 @@ export class ExercisePreference extends Schema.Class<ExercisePreference>(
 
 	static decodeRow(row: unknown) {
 		return Schema.decodeUnknownEffect(ExercisePreference.DrizzleRow)(row).pipe(
-			Effect.map((data) => new ExercisePreference(data as never)),
+			Effect.map((data) => new ExercisePreference(data)),
 			Effect.mapError(
 				(e) =>
 					new InternalError({

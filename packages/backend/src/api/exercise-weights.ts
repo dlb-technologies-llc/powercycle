@@ -1,6 +1,7 @@
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	deleteExerciseWeight,
 	findExerciseWeightsByUserId,
@@ -8,8 +9,6 @@ import {
 } from "../lib/queries.js";
 import { DatabaseService } from "../services/DatabaseService.js";
 import { PowerCycleApi } from "./index.js";
-
-const DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export const ExerciseWeightsLive = HttpApiBuilder.group(
 	PowerCycleApi,

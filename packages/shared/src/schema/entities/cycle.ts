@@ -21,23 +21,23 @@ export class Cycle extends Schema.Class<Cycle>("Cycle")({
 }) {
 	// Decode schema for Drizzle rows (string numerics → numbers)
 	static readonly DrizzleRow = Schema.Struct({
-		id: Schema.String,
-		userId: Schema.String,
-		cycleNumber: Schema.Number,
+		id: UUID,
+		userId: UUID,
+		cycleNumber: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
 		squat1rm: Schema.NullOr(Schema.NumberFromString),
 		bench1rm: Schema.NullOr(Schema.NumberFromString),
 		deadlift1rm: Schema.NullOr(Schema.NumberFromString),
 		ohp1rm: Schema.NullOr(Schema.NumberFromString),
-		unit: Schema.String,
-		currentRound: Schema.Number,
-		currentDay: Schema.Number,
+		unit: Unit,
+		currentRound: Round,
+		currentDay: TrainingDay,
 		startedAt: Schema.Date,
 		completedAt: Schema.NullOr(Schema.Date),
 	});
 
 	static decodeRow(row: unknown) {
 		return Schema.decodeUnknownEffect(Cycle.DrizzleRow)(row).pipe(
-			Effect.map((data) => new Cycle(data as never)),
+			Effect.map((data) => new Cycle(data)),
 			Effect.mapError(
 				(e) =>
 					new InternalError({

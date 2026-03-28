@@ -1,25 +1,12 @@
 import { useAtomValue } from "@effect/atom-react";
-import { DAY_NAMES, type TrainingDay } from "@powercycle/shared/schema/program";
+import { DAY_NAMES } from "@powercycle/shared/schema/program";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
 import { workoutHistoryAtom } from "../atoms/workouts";
 
-interface WorkoutSet {
-	readonly exerciseName: string;
-	readonly setNumber: number;
-	readonly actualWeight: number | null;
-	readonly actualReps: number | null;
-	readonly rpe: number | null;
-	readonly isMainLift: boolean;
-}
-
-interface Workout {
-	readonly id: string;
-	readonly round: number;
-	readonly day: TrainingDay;
-	readonly startedAt: string;
-	readonly completedAt: string | null;
-	readonly sets: readonly WorkoutSet[];
+function getDayName(day: number): string {
+	const names: Record<number, string> = DAY_NAMES;
+	return names[day] ?? "Unknown";
 }
 
 export default function HistoryIsland() {
@@ -34,9 +21,7 @@ export default function HistoryIsland() {
 		return <p className="text-red-400">Failed to load workout history.</p>;
 	}
 
-	const workouts = ((result.value ?? []) as readonly Workout[]).filter(
-		(w) => w.completedAt !== null,
-	);
+	const workouts = (result.value ?? []).filter((w) => w.completedAt !== null);
 
 	if (workouts.length === 0) {
 		return (
@@ -70,7 +55,7 @@ export default function HistoryIsland() {
 						>
 							<div>
 								<p className="font-[family-name:var(--font-heading)] text-lg">
-									{DAY_NAMES[workout.day] ?? "Unknown"} Day
+									{getDayName(workout.day)} Day
 								</p>
 								<p className="text-sm text-zinc-500">
 									Round {workout.round} —{" "}

@@ -17,18 +17,18 @@ export class ExerciseWeight extends Schema.Class<ExerciseWeight>(
 }) {
 	// Decode schema for Drizzle rows (string numerics → numbers)
 	static readonly DrizzleRow = Schema.Struct({
-		id: Schema.String,
-		userId: Schema.String,
+		id: UUID,
+		userId: UUID,
 		exerciseName: Schema.String,
 		weight: Schema.NumberFromString,
-		unit: Schema.String,
+		unit: Unit,
 		rpe: Schema.NullOr(Schema.NumberFromString),
 		updatedAt: Schema.Date,
 	});
 
 	static decodeRow(row: unknown) {
 		return Schema.decodeUnknownEffect(ExerciseWeight.DrizzleRow)(row).pipe(
-			Effect.map((data) => new ExerciseWeight(data as never)),
+			Effect.map((data) => new ExerciseWeight(data)),
 			Effect.mapError(
 				(e) =>
 					new InternalError({
