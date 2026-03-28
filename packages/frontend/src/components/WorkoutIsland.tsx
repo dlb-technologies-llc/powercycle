@@ -12,11 +12,10 @@ import {
 import type { FlatSet } from "../hooks/useWorkoutFlow";
 import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
-import type { DeepMutable } from "../lib/types";
 import { ActiveSetView } from "./ActiveSetView";
 import { WorkoutOverview } from "./WorkoutOverview";
 
-type WorkoutPlanData = DeepMutable<typeof WorkoutPlanResponse.Type>;
+type WorkoutPlanData = typeof WorkoutPlanResponse.Type;
 
 interface WorkoutIslandProps {
 	workoutId?: string;
@@ -86,10 +85,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		mode: "promiseExit",
 	});
 
-	const plan = (() => {
+	const plan: WorkoutPlanData | null | undefined = (() => {
 		if (AsyncResult.isInitial(result) || result.waiting) return undefined;
 		if (AsyncResult.isFailure(result)) return undefined;
-		return result.value as WorkoutPlanData | null;
+		return result.value;
 	})();
 
 	const flow = useWorkoutFlow(plan ?? null);
@@ -99,7 +98,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		Record<string, { weight: string; reps: string; rpe: string }>
 	>({});
 	const pendingSetRef = useRef<{
-		data: Record<string, unknown>;
+		data: ReturnType<typeof buildSetPayload>;
 		setDuration: number;
 	} | null>(null);
 	const [resumeChecked, setResumeChecked] = useState(false);
@@ -127,18 +126,19 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (!id || !plan || resumeChecked) return;
 
 		Promise.all([
-			fetch(`/api/workouts/${id}/sets`).then((res) => {
+			fetch(`/api/workouts/${id}/sets`).then(async (res) => {
 				if (!res.ok) throw new Error("Failed to fetch sets");
-				return res.json() as Promise<unknown[]>;
+				const data: unknown[] = await res.json();
+				return data;
 			}),
 			fetch("/api/preferences/exercises")
-				.then((res) => {
+				.then(async (res) => {
 					if (!res.ok) return [];
-					return res.json() as Promise<
-						Array<{ slotKey: string; exerciseName: string }>
-					>;
+					const data: Array<{ slotKey: string; exerciseName: string }> =
+						await res.json();
+					return data;
 				})
-				.catch(() => [] as Array<{ slotKey: string; exerciseName: string }>),
+				.catch((): Array<{ slotKey: string; exerciseName: string }> => []),
 		])
 			.then(([sets, prefs]) => {
 				if (sets.length > 0) {
@@ -205,28 +205,13 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	}
 
 	const sendLogSet = (
-		data: Record<string, unknown>,
+		data: ReturnType<typeof buildSetPayload>,
 		setDuration: number,
 		restDuration: number | null,
 	) => {
 		logSet({
 			params: { id },
-			payload: { ...data, setDuration, restDuration } as {
-				exerciseName: string;
-				setNumber: number;
-				prescribedWeight: number | null;
-				actualWeight: number | null;
-				prescribedReps: number | null;
-				actualReps: number | null;
-				rpe: number | null;
-				prescribedRpeMin: number | null;
-				prescribedRpeMax: number | null;
-				isMainLift: boolean;
-				isAmrap: boolean;
-				setDuration: number | null;
-				restDuration: number | null;
-				category: string | null;
-			},
+			payload: { ...data, setDuration, restDuration },
 		}).catch((err) => console.error("Failed to log set", err));
 	};
 
