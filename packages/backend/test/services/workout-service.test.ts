@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest";
+import { expect, layer } from "@effect/vitest";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Schema } from "effect";
@@ -7,7 +7,7 @@ import {
 	WorkoutService,
 } from "../../src/services/WorkoutService.js";
 
-describe("WorkoutService", () => {
+layer(WorkoutLive)("WorkoutService", (it) => {
 	it.effect("createEntity generates UUID and correct fields", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
@@ -22,7 +22,7 @@ describe("WorkoutService", () => {
 			expect(workout.day).toBe(3);
 			expect(workout.startedAt).toBeInstanceOf(Date);
 			expect(workout.completedAt).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("createEntity generates unique IDs", () =>
@@ -33,7 +33,7 @@ describe("WorkoutService", () => {
 			const w1 = yield* service.createEntity(userId, cycleId, 1, 1);
 			const w2 = yield* service.createEntity(userId, cycleId, 1, 2);
 			expect(w1.id).not.toBe(w2.id);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("createSetEntity maps all fields correctly from LogSetInput", () =>
@@ -71,7 +71,7 @@ describe("WorkoutService", () => {
 			expect(set.isMainLift).toBe(true);
 			expect(set.isAmrap).toBe(true);
 			expect(set.completedAt).toBeInstanceOf(Date);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("createSetEntity defaults optional fields to null", () =>
@@ -104,7 +104,7 @@ describe("WorkoutService", () => {
 			expect(set.rpe).toBeNull();
 			expect(set.setDuration).toBeNull();
 			expect(set.restDuration).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("createSetEntity maps timing fields correctly", () =>
@@ -129,7 +129,7 @@ describe("WorkoutService", () => {
 			});
 			expect(set.setDuration).toBe(45);
 			expect(set.restDuration).toBe(90);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validateWorkout returns workout when found", () =>
@@ -147,7 +147,7 @@ describe("WorkoutService", () => {
 			});
 			const result = yield* service.validateWorkout(workout, workoutId);
 			expect(result).toBe(workout);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validateWorkout fails with NotFoundError when null", () =>
@@ -160,7 +160,7 @@ describe("WorkoutService", () => {
 			expect(error._tag).toBe("NotFoundError");
 			expect(error.message).toBe(`Workout not found: ${workoutId}`);
 			expect(error.resource).toBe("workout");
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect.prop(
@@ -182,6 +182,6 @@ describe("WorkoutService", () => {
 					day,
 				);
 				expect(w1.id).not.toBe(w2.id);
-			}).pipe(Effect.provide(WorkoutLive)),
+			}),
 	);
 });

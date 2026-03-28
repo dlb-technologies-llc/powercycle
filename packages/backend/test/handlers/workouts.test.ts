@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it, layer } from "@effect/vitest";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { Effect } from "effect";
@@ -7,7 +7,7 @@ import {
 	WorkoutService,
 } from "../../src/services/WorkoutService.js";
 
-describe("workouts handler logic", () => {
+layer(WorkoutLive)("workouts handler logic", (it) => {
 	it.effect("creates workout entity", () =>
 		Effect.gen(function* () {
 			const service = yield* WorkoutService;
@@ -20,7 +20,7 @@ describe("workouts handler logic", () => {
 			expect(entity.round).toBe(1);
 			expect(entity.day).toBe(1);
 			expect(entity.completedAt).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with all fields", () =>
@@ -47,7 +47,7 @@ describe("workouts handler logic", () => {
 			expect(set.exerciseName).toBe("Squat");
 			expect(set.prescribedWeight).toBe(225);
 			expect(set.isMainLift).toBe(true);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validates workout — returns when found", () =>
@@ -58,7 +58,7 @@ describe("workouts handler logic", () => {
 			const workout = yield* service.createEntity(userId, cycleId, 1, 1);
 			const result = yield* service.validateWorkout(workout, workout.id);
 			expect(result.id).toBe(workout.id);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("validates workout — fails when null", () =>
@@ -69,7 +69,7 @@ describe("workouts handler logic", () => {
 				.validateWorkout(null, workoutId)
 				.pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with timing fields", () =>
@@ -94,7 +94,7 @@ describe("workouts handler logic", () => {
 			});
 			expect(set.setDuration).toBe(30);
 			expect(set.restDuration).toBe(120);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("creates set entity with optional fields as null", () =>
@@ -122,7 +122,7 @@ describe("workouts handler logic", () => {
 			expect(set.rpe).toBeNull();
 			expect(set.setDuration).toBeNull();
 			expect(set.restDuration).toBeNull();
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
 
 	it.effect("logSet insert object includes non-null completedAt", () =>
@@ -157,9 +157,11 @@ describe("workouts handler logic", () => {
 			expect(new Date(response.completedAt!).toISOString()).toBe(
 				response.completedAt,
 			);
-		}).pipe(Effect.provide(WorkoutLive)),
+		}),
 	);
+});
 
+describe("workouts handler logic (pure)", () => {
 	it("generateWorkoutPlan returns valid plan for day 1 round 1", () => {
 		const lifts = {
 			squat: 315,

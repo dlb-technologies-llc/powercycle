@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest";
+import { expect, layer } from "@effect/vitest";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { UserLifts } from "@powercycle/shared/schema/lifts";
 import { Effect, Schema } from "effect";
@@ -24,7 +24,7 @@ const sampleLiftsAllNull = () => ({
 	ohp: null,
 });
 
-describe("CycleService", () => {
+layer(CycleLive)("CycleService", (it) => {
 	it.effect("createEntity generates correct defaults", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
@@ -44,7 +44,7 @@ describe("CycleService", () => {
 			expect(cycle.currentDay).toBe(1);
 			expect(cycle.startedAt).toBeInstanceOf(Date);
 			expect(cycle.completedAt).toBeNull();
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("createEntity with null 1RMs stores null", () =>
@@ -58,7 +58,7 @@ describe("CycleService", () => {
 			expect(cycle.deadlift1rm).toBeNull();
 			expect(cycle.ohp1rm).toBeNull();
 			expect(cycle.unit).toBe(lifts.unit);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("createEntity with partial 1RMs (mix of numbers and nulls)", () =>
@@ -71,7 +71,7 @@ describe("CycleService", () => {
 			expect(cycle.bench1rm).toBeNull();
 			expect(cycle.deadlift1rm).toBe(lifts.deadlift);
 			expect(cycle.ohp1rm).toBeNull();
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("advancePosition: day 1 to day 2", () =>
@@ -86,7 +86,7 @@ describe("CycleService", () => {
 
 			expect(advanced.currentDay).toBe(2);
 			expect(advanced.currentRound).toBe(1);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("advancePosition: day 3 to day 4", () =>
@@ -105,7 +105,7 @@ describe("CycleService", () => {
 
 			expect(advanced.currentDay).toBe(4);
 			expect(advanced.currentRound).toBe(1);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("advancePosition: day 4 advances to next round day 1", () =>
@@ -125,7 +125,7 @@ describe("CycleService", () => {
 
 			expect(advanced.currentRound).toBe(3);
 			expect(advanced.currentDay).toBe(1);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("advancePosition: round 4 day 4 sets completedAt", () =>
@@ -146,7 +146,7 @@ describe("CycleService", () => {
 			expect(advanced.completedAt).toBeInstanceOf(Date);
 			expect(advanced.currentRound).toBe(4);
 			expect(advanced.currentDay).toBe(4);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("advancePosition returns a new object (immutability)", () =>
@@ -162,7 +162,7 @@ describe("CycleService", () => {
 			expect(advanced).not.toBe(original);
 			expect(original.currentDay).toBe(1);
 			expect(advanced.currentDay).toBe(2);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("isComplete: false for active cycle", () =>
@@ -174,7 +174,7 @@ describe("CycleService", () => {
 				1,
 			);
 			expect(service.isComplete(cycle)).toBe(false);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("isComplete: true for completed cycle", () =>
@@ -190,7 +190,7 @@ describe("CycleService", () => {
 				completedAt: new Date(),
 			});
 			expect(service.isComplete(cycle)).toBe(true);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("validateActiveCycle returns cycle when not null", () =>
@@ -204,7 +204,7 @@ describe("CycleService", () => {
 			const validated = yield* service.validateActiveCycle(cycle);
 
 			expect(validated).toEqual(cycle);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("validateActiveCycle fails with NotFoundError when null", () =>
@@ -214,7 +214,7 @@ describe("CycleService", () => {
 			expect(error._tag).toBe("NotFoundError");
 			expect(error.message).toBe("No active cycle found");
 			expect(error.resource).toBe("cycle");
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect.prop(
@@ -239,6 +239,6 @@ describe("CycleService", () => {
 				expect(cycle.currentRound).toBe(1);
 				expect(cycle.currentDay).toBe(1);
 				expect(cycle.completedAt).toBeNull();
-			}).pipe(Effect.provide(CycleLive)),
+			}),
 	);
 });

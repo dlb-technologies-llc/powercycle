@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it, layer } from "@effect/vitest";
 import { calculateCycleProgression } from "@powercycle/shared";
 import { UserLifts } from "@powercycle/shared/schema/lifts";
 import { Effect, Schema } from "effect";
@@ -16,7 +16,7 @@ const sampleLiftsWithNulls = () => ({
 	ohp: null,
 });
 
-describe("cycles handler logic", () => {
+layer(CycleLive)("cycles handler logic", (it) => {
 	it.effect("creates cycle entity with correct defaults", () =>
 		Effect.gen(function* () {
 			const service = yield* CycleService;
@@ -26,7 +26,7 @@ describe("cycles handler logic", () => {
 			expect(entity.currentRound).toBe(1);
 			expect(entity.currentDay).toBe(1);
 			expect(entity.completedAt).toBeNull();
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("creates cycle entity with nullable 1RMs", () =>
@@ -38,7 +38,7 @@ describe("cycles handler logic", () => {
 			expect(entity.bench1rm).toBeNull();
 			expect(entity.deadlift1rm).toBe(lifts.deadlift);
 			expect(entity.ohp1rm).toBeNull();
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("validates active cycle — returns cycle when found", () =>
@@ -51,7 +51,7 @@ describe("cycles handler logic", () => {
 			);
 			const result = yield* service.validateActiveCycle(cycle);
 			expect(result.id).toBe(cycle.id);
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
 	it.effect("validates active cycle — fails when null", () =>
@@ -59,9 +59,33 @@ describe("cycles handler logic", () => {
 			const service = yield* CycleService;
 			const error = yield* service.validateActiveCycle(null).pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
-		}).pipe(Effect.provide(CycleLive)),
+		}),
 	);
 
+	it.effect("next cycle handler advances correctly", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const lifts = sampleLifts();
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
+			expect(cycle.cycleNumber).toBe(2);
+			expect(cycle.squat1rm).toBe(lifts.squat);
+		}),
+	);
+
+	it.effect("next cycle handler works with nullable 1RMs", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const lifts = sampleLiftsWithNulls();
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
+			expect(cycle.cycleNumber).toBe(2);
+			expect(cycle.squat1rm).toBe(lifts.squat);
+			expect(cycle.bench1rm).toBeNull();
+			expect(cycle.ohp1rm).toBeNull();
+		}),
+	);
+});
+
+describe("cycles handler logic (pure)", () => {
 	it("calculates progression correctly", () => {
 		const amrapResults = {
 			squat: { weight: 300, reps: 5 },
@@ -74,26 +98,4 @@ describe("cycles handler logic", () => {
 		expect(result.squat.currentMax).toBe(315);
 		expect(result.squat.newMax).toBeGreaterThanOrEqual(315);
 	});
-
-	it.effect("next cycle handler advances correctly", () =>
-		Effect.gen(function* () {
-			const service = yield* CycleService;
-			const lifts = sampleLifts();
-			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
-			expect(cycle.cycleNumber).toBe(2);
-			expect(cycle.squat1rm).toBe(lifts.squat);
-		}).pipe(Effect.provide(CycleLive)),
-	);
-
-	it.effect("next cycle handler works with nullable 1RMs", () =>
-		Effect.gen(function* () {
-			const service = yield* CycleService;
-			const lifts = sampleLiftsWithNulls();
-			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
-			expect(cycle.cycleNumber).toBe(2);
-			expect(cycle.squat1rm).toBe(lifts.squat);
-			expect(cycle.bench1rm).toBeNull();
-			expect(cycle.ohp1rm).toBeNull();
-		}).pipe(Effect.provide(CycleLive)),
-	);
 });
