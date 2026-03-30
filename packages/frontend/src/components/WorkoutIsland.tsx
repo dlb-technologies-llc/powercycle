@@ -217,8 +217,29 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		}).catch((err) => console.error("Failed to log set", err));
 	};
 
-	const handleStart = (selections: Record<string, string>) => {
+	const handleStart = (
+		selections: Record<string, string>,
+		skippedExercises?: ReadonlySet<string>,
+	) => {
 		flow.startWorkout(selections);
+		// Skip exercises that were marked in the overview
+		if (skippedExercises && skippedExercises.size > 0) {
+			// After starting, iterate through skipped exercises and fire skip API calls
+			for (const exerciseKey of skippedExercises) {
+				// The flow will handle advancing past these in the UI
+				// We need to fire the API call for each skipped exercise
+				const skipInfo = flow.skipExercise();
+				if (skipInfo) {
+					skipSets({
+						params: { id },
+						payload: {
+							exerciseName: skipInfo.exerciseName,
+							fromSetNumber: skipInfo.fromSetNumber,
+						},
+					}).catch((err) => console.error("Failed to skip sets", err));
+				}
+			}
+		}
 	};
 
 	const handleStartSet = () => {

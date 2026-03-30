@@ -4,8 +4,10 @@ import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
+import { and, eq } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
+import { workoutSets } from "../db/schema.js";
 import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	findActiveCycle,
@@ -274,10 +276,20 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						workout.day,
 					);
 
+					// Map main lift key to display name (frontend sends display names)
+					const LIFT_DISPLAY_NAMES: Record<string, string> = {
+						squat: "Squat",
+						bench: "Bench Press",
+						deadlift: "Deadlift",
+						ohp: "Overhead Press",
+					};
+					const mainLiftDisplayName =
+						LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;
+
 					// Find the exercise in the plan to determine total sets
 					const allExercises = [
 						{
-							name: plan.mainLift,
+							name: mainLiftDisplayName,
 							sets: plan.mainLiftSets,
 							isMainLift: true,
 							category: null,
@@ -310,6 +322,34 @@ export const WorkoutsLive = HttpApiBuilder.group(
 								resource: "exercise",
 							}),
 						);
+					}
+
+					// Idempotency: check if skipped sets already exist
+					const existingSets = yield* Effect.tryPromise({
+						try: () =>
+							db
+								.select()
+								.from(workoutSets)
+								.where(
+									and(
+										eq(workoutSets.workoutId, ctx.params.id),
+										eq(workoutSets.exerciseName, ctx.payload.exerciseName),
+										eq(workoutSets.skipped, true),
+									),
+								),
+						catch: (e) =>
+							new InternalError({
+								message: `Failed to check existing skipped sets: ${e}`,
+							}),
+					});
+					if (existingSets.length > 0) {
+						// Already skipped — return existing sets as responses
+						const responses = [];
+						for (const row of existingSets) {
+							const set = yield* WorkoutSet.decodeRow(row);
+							responses.push(WorkoutSet.toResponse(set));
+						}
+						return responses;
 					}
 
 					const totalSets = exercise.sets.length;
