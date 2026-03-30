@@ -1,3 +1,5 @@
+import { Progress } from "@/components/ui/progress";
+
 interface WorkoutProgressProps {
 	current: number;
 	total: number;
@@ -18,12 +20,7 @@ export function WorkoutProgress({
 				</span>
 				{exerciseName && <span className="badge">{exerciseName}</span>}
 			</div>
-			<div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-				<div
-					className="h-full bg-black rounded-full transition-all duration-300"
-					style={{ width: `${pct}%` }}
-				/>
-			</div>
+			<Progress value={pct} />
 		</div>
 	);
 }

@@ -1,6 +1,11 @@
 import { useAtomSet } from "@effect/atom-react";
 import { Exit } from "effect";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { createCycleAtom } from "../atoms/cycles";
 
 const lifts = [
@@ -70,55 +75,51 @@ export default function SetupIsland() {
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-3">
 				<div className="inline-flex rounded-lg border border-gray-200 p-1 mb-4">
-					<button
+					<Button
 						type="button"
+						variant={unit === "lbs" ? "default" : "ghost"}
+						size="sm"
 						onClick={() => setUnit("lbs")}
-						className={`px-5 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-							unit === "lbs"
-								? "bg-black text-white"
-								: "text-gray-400 hover:text-gray-600"
-						}`}
+						className={cn(
+							unit !== "lbs" && "text-gray-400 hover:text-gray-600",
+						)}
 					>
 						lbs
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
+						variant={unit === "kg" ? "default" : "ghost"}
+						size="sm"
 						onClick={() => setUnit("kg")}
-						className={`px-5 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-							unit === "kg"
-								? "bg-black text-white"
-								: "text-gray-400 hover:text-gray-600"
-						}`}
+						className={cn(unit !== "kg" && "text-gray-400 hover:text-gray-600")}
 					>
 						kg
-					</button>
+					</Button>
 				</div>
 				{lifts.map(({ label }, i) => (
-					<div key={label} className="card">
-						<label className="block">
-							<span className="label">
-								{label} ({unit})
-							</span>
-							<input
-								type="number"
-								min="0"
-								step="any"
-								value={liftState[i].value}
-								onChange={(e) => liftState[i].setter(e.target.value)}
-								placeholder="—"
-								className="input w-full font-mono"
-							/>
-						</label>
-					</div>
+					<Card key={label}>
+						<CardContent>
+							<Label className="block">
+								<span className="mb-1.5 block">
+									{label} ({unit})
+								</span>
+								<Input
+									type="number"
+									min="0"
+									step="any"
+									value={liftState[i].value}
+									onChange={(e) => liftState[i].setter(e.target.value)}
+									placeholder="—"
+									className="font-mono"
+								/>
+							</Label>
+						</CardContent>
+					</Card>
 				))}
 				{error && <p className="text-red-600 text-sm">{error}</p>}
-				<button
-					type="submit"
-					disabled={isPending}
-					className="btn-primary w-full"
-				>
+				<Button type="submit" disabled={isPending} className="w-full">
 					{isPending ? "Starting..." : "Start program"}
-				</button>
+				</Button>
 			</form>
 		</div>
 	);
