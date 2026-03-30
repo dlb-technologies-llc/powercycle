@@ -94,22 +94,28 @@ Nike-inspired light-mode brand. Clean, bold, minimal — NOT dark mode.
 
 **Typography:** Inter (400/500/600/700) for all text. JetBrains Mono for numbers/weights.
 
-**Shared CSS classes** (defined in `packages/frontend/src/styles/global.css`):
-- `.btn-primary` — black bg, white text (Nike signature)
-- `.btn-secondary` — outlined, dark text
-- `.btn-danger` — red bg, white text
-- `.btn-ghost` — text-only
-- `.card` — white bg, gray border, rounded-xl
-- `.input` — bordered, compact (text-sm), black focus ring
-- `.badge` — small pill for metadata
-- `.label` — small gray label text
+**shadcn/ui components** (in `packages/frontend/src/components/ui/`):
+- `<Button>` — variants: default (black bg), secondary, ghost, destructive, outline, link
+- `<Card>`, `<CardContent>`, `<CardHeader>`, `<CardTitle>`, `<CardDescription>`
+- `<Input>` — compact by default, use `className="font-mono"` for weight/number inputs
+- `<Label>` — Radix-based accessible label
+- `<Badge>` — variants: default, secondary, destructive, outline
+- `<Progress>` — Radix progress bar with primary color
+- `<Collapsible>`, `<CollapsibleTrigger>`, `<CollapsibleContent>` — Radix collapsible
+- `<Separator>` — horizontal/vertical divider
+
+**CSS theme** (in `packages/frontend/src/styles/global.css`):
+- `@theme inline` maps shadcn CSS variables (--color-primary, --color-background, etc.)
+- `:root` defines Nike light-mode palette (white bg, black primary, gray borders)
+- Use `cn()` from `@/lib/utils` for className composition (twMerge + clsx)
 
 **Rules:**
 - No dark mode classes (bg-neutral-950, bg-neutral-900, text-neutral-100, etc.)
 - No gradients, glow, glass-morphism, or indigo accent
 - Inputs must be compact — never text-xl or larger
 - Timer display is text-based (bold monospace) — no SVG circle/ring
-- Use shared CSS classes from global.css, not inline Tailwind strings for common patterns
+- Use shadcn components, not inline Tailwind strings or raw CSS classes
+- Use semantic color tokens (text-foreground, text-muted-foreground, text-destructive, bg-background, bg-card, border-border) — no hardcoded gray/black classes
 
 ## Workout Data
 

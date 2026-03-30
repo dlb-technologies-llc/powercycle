@@ -3,6 +3,11 @@ import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { update1rmAtom } from "../atoms/cycles";
 import { nextWorkoutAtom } from "../atoms/workouts";
 
@@ -207,122 +212,136 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		<div className="space-y-6">
 			{/* Title */}
 			<div>
-				<h1 className="text-2xl font-bold text-black">{dayName}</h1>
-				<p className="text-sm text-gray-600 mt-1">
+				<h1 className="text-2xl font-bold text-foreground">{dayName}</h1>
+				<p className="text-sm text-muted-foreground mt-1">
 					Cycle {plan.cycle} &middot; Round {plan.round}
 				</p>
 			</div>
 
 			{/* Main Lift Section */}
 			{plan.mainLiftSets.length === 0 ? (
-				<div className="card p-5 space-y-3">
-					<h2 className="text-lg font-semibold text-black">{mainLiftName}</h2>
-					<p className="text-sm text-gray-600">
-						Enter your 1RM for {mainLiftName} to calculate your sets.
-					</p>
-					<div className="flex gap-3">
-						<input
-							type="number"
-							value={oneRmInput}
-							onChange={(e) => setOneRmInput(e.target.value)}
-							placeholder={`1RM in ${unit}`}
-							className="input flex-1"
-						/>
-						<button
-							type="button"
-							onClick={handleSubmit1rm}
-							disabled={isSubmitting1rm}
-							className="btn-primary px-4 py-2.5"
-						>
-							{isSubmitting1rm ? "Saving..." : "Save"}
-						</button>
-					</div>
-					{oneRmError && <p className="text-red-600 text-sm">{oneRmError}</p>}
-				</div>
-			) : (
-				<div className="card p-5 space-y-3">
-					<h2 className="text-lg font-semibold text-black">{mainLiftName}</h2>
-					<div className="space-y-1">
-						{plan.mainLiftSets.map((s) => (
-							<div
-								key={s.setNumber}
-								className="flex items-center justify-between text-sm text-gray-600 py-1.5"
+				<Card className="p-5 gap-3">
+					<CardContent className="space-y-3 p-0">
+						<h2 className="text-lg font-semibold text-foreground">
+							{mainLiftName}
+						</h2>
+						<p className="text-sm text-muted-foreground">
+							Enter your 1RM for {mainLiftName} to calculate your sets.
+						</p>
+						<div className="flex gap-3">
+							<Input
+								type="number"
+								value={oneRmInput}
+								onChange={(e) => setOneRmInput(e.target.value)}
+								placeholder={`1RM in ${unit}`}
+								className={cn("font-mono", "flex-1")}
+							/>
+							<Button
+								type="button"
+								onClick={handleSubmit1rm}
+								disabled={isSubmitting1rm}
+								className="px-4 py-2.5"
 							>
-								<span className="font-mono text-sm text-black">
-									Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
-									{s.isAmrap ? "+" : ""}
-								</span>
-								{s.isAmrap && (
-									<span className="badge bg-red-100 text-red-600">AMRAP</span>
-								)}
-							</div>
-						))}
-					</div>
-				</div>
-			)}
-
-			{/* Variation Section */}
-			<div className="card p-5 space-y-3">
-				<div className="flex items-center justify-between">
-					<h2
-						className={`text-lg font-semibold ${isVariationSkipped ? "text-gray-400 line-through" : "text-black"}`}
-					>
-						Variation
-					</h2>
-					<div className="flex items-center gap-2">
-						{isVariationSkipped && (
-							<span className="badge bg-gray-100 text-gray-500">Skipped</span>
+								{isSubmitting1rm ? "Saving..." : "Save"}
+							</Button>
+						</div>
+						{oneRmError && (
+							<p className="text-destructive text-sm">{oneRmError}</p>
 						)}
-						<button
-							type="button"
-							onClick={() => toggleSkip(variationKey)}
-							className="btn-ghost text-sm"
-						>
-							{isVariationSkipped ? "Undo" : "Skip"}
-						</button>
-					</div>
-				</div>
-				{!isVariationSkipped && (
-					<>
-						<select
-							value={selections[variationKey]}
-							onChange={(e) =>
-								updateSelection(
-									variationKey,
-									`${plan.variation.category}-variation`,
-									e.target.value,
-								)
-							}
-							className="input w-full"
-						>
-							{variationOptions.map((opt) => (
-								<option key={opt} value={opt}>
-									{opt}
-								</option>
-							))}
-						</select>
+					</CardContent>
+				</Card>
+			) : (
+				<Card className="p-5 gap-3">
+					<CardContent className="space-y-3 p-0">
+						<h2 className="text-lg font-semibold text-foreground">
+							{mainLiftName}
+						</h2>
 						<div className="space-y-1">
-							{plan.variation.sets.map((s) => (
+							{plan.mainLiftSets.map((s) => (
 								<div
 									key={s.setNumber}
-									className="font-mono text-sm text-gray-600 py-1"
+									className="flex items-center justify-between text-sm text-muted-foreground py-1.5"
 								>
-									Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}
-									-{s.rpeMax}
+									<span className="font-mono text-sm text-foreground">
+										Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
+										{s.isAmrap ? "+" : ""}
+									</span>
+									{s.isAmrap && <Badge variant="destructive">AMRAP</Badge>}
 								</div>
 							))}
 						</div>
-						{variationDisplayWeight != null && (
-							<p className="text-xs text-gray-500">
-								Last session:{" "}
-								<span className="font-mono font-medium text-black">
-									{variationDisplayWeight} {unit}
-								</span>
-							</p>
-						)}
-					</>
-				)}
-			</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Variation Section */}
+			<Card className="p-5 gap-3">
+				<CardContent className="space-y-3 p-0">
+					<div className="flex items-center justify-between">
+						<h2
+							className={cn(
+								"text-lg font-semibold",
+								isVariationSkipped
+									? "text-muted-foreground line-through"
+									: "text-foreground",
+							)}
+						>
+							Variation
+						</h2>
+						<div className="flex items-center gap-2">
+							{isVariationSkipped && <Badge variant="secondary">Skipped</Badge>}
+							<Button
+								variant="ghost"
+								type="button"
+								onClick={() => toggleSkip(variationKey)}
+								className="text-sm"
+							>
+								{isVariationSkipped ? "Undo" : "Skip"}
+							</Button>
+						</div>
+					</div>
+					{!isVariationSkipped && (
+						<>
+							<select
+								value={selections[variationKey]}
+								onChange={(e) =>
+									updateSelection(
+										variationKey,
+										`${plan.variation.category}-variation`,
+										e.target.value,
+									)
+								}
+								className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+							>
+								{variationOptions.map((opt) => (
+									<option key={opt} value={opt}>
+										{opt}
+									</option>
+								))}
+							</select>
+							<div className="space-y-1">
+								{plan.variation.sets.map((s) => (
+									<div
+										key={s.setNumber}
+										className="font-mono text-sm text-muted-foreground py-1"
+									>
+										Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE{" "}
+										{s.rpeMin}-{s.rpeMax}
+									</div>
+								))}
+							</div>
+							{variationDisplayWeight != null && (
+								<p className="text-xs text-muted-foreground">
+									Last session:{" "}
+									<span className="font-mono font-medium text-foreground">
+										{variationDisplayWeight} {unit}
+									</span>
+								</p>
+							)}
+						</>
+					)}
+				</CardContent>
+			</Card>
 
 			{/* Accessories */}
 			{plan.accessories.map((acc, i) => {
@@ -331,82 +350,87 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				const accDisplayWeight = acc.lastSession?.weight ?? acc.preferredWeight;
 				const isSkipped = skippedExercises.has(accKey);
 				return (
-					<div key={accKey} className="card p-5 space-y-3">
-						<div className="flex items-center justify-between">
-							<h2
-								className={`text-lg font-semibold ${isSkipped ? "text-gray-400 line-through" : "text-black"}`}
-							>
-								{acc.category
-									.replace(/_/g, " ")
-									.replace(/\b\w/g, (c) => c.toUpperCase())}
-							</h2>
-							<div className="flex items-center gap-2">
-								{isSkipped && (
-									<span className="badge bg-gray-100 text-gray-500">
-										Skipped
-									</span>
-								)}
-								<button
-									type="button"
-									onClick={() => toggleSkip(accKey)}
-									className="btn-ghost text-sm"
+					<Card key={accKey} className="p-5 gap-3">
+						<CardContent className="space-y-3 p-0">
+							<div className="flex items-center justify-between">
+								<h2
+									className={cn(
+										"text-lg font-semibold",
+										isSkipped
+											? "text-muted-foreground line-through"
+											: "text-foreground",
+									)}
 								>
-									{isSkipped ? "Undo" : "Skip"}
-								</button>
-							</div>
-						</div>
-						{!isSkipped && (
-							<>
-								<select
-									value={selections[accKey]}
-									onChange={(e) =>
-										updateSelection(
-											accKey,
-											`${acc.category}-${i}`,
-											e.target.value,
-										)
-									}
-									className="input w-full"
-								>
-									{accOptions.map((opt) => (
-										<option key={opt} value={opt}>
-											{opt}
-										</option>
-									))}
-								</select>
-								<div className="space-y-1">
-									{acc.sets.map((s) => (
-										<div
-											key={s.setNumber}
-											className="font-mono text-sm text-gray-600 py-1"
-										>
-											Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE{" "}
-											{s.rpeMin}-{s.rpeMax}
-										</div>
-									))}
+									{acc.category
+										.replace(/_/g, " ")
+										.replace(/\b\w/g, (c) => c.toUpperCase())}
+								</h2>
+								<div className="flex items-center gap-2">
+									{isSkipped && <Badge variant="secondary">Skipped</Badge>}
+									<Button
+										variant="ghost"
+										type="button"
+										onClick={() => toggleSkip(accKey)}
+										className="text-sm"
+									>
+										{isSkipped ? "Undo" : "Skip"}
+									</Button>
 								</div>
-								{accDisplayWeight != null && (
-									<p className="text-xs text-gray-500">
-										Last session:{" "}
-										<span className="font-mono font-medium text-black">
-											{accDisplayWeight} {unit}
-										</span>
-									</p>
-								)}
-							</>
-						)}
-					</div>
+							</div>
+							{!isSkipped && (
+								<>
+									<select
+										value={selections[accKey]}
+										onChange={(e) =>
+											updateSelection(
+												accKey,
+												`${acc.category}-${i}`,
+												e.target.value,
+											)
+										}
+										className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+									>
+										{accOptions.map((opt) => (
+											<option key={opt} value={opt}>
+												{opt}
+											</option>
+										))}
+									</select>
+									<div className="space-y-1">
+										{acc.sets.map((s) => (
+											<div
+												key={s.setNumber}
+												className="font-mono text-sm text-muted-foreground py-1"
+											>
+												Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE{" "}
+												{s.rpeMin}-{s.rpeMax}
+											</div>
+										))}
+									</div>
+									{accDisplayWeight != null && (
+										<p className="text-xs text-muted-foreground">
+											Last session:{" "}
+											<span className="font-mono font-medium text-foreground">
+												{accDisplayWeight} {unit}
+											</span>
+										</p>
+									)}
+								</>
+							)}
+						</CardContent>
+					</Card>
 				);
 			})}
 
 			{/* Start Button */}
-			<button
+			<Button
+				size="lg"
 				type="button"
 				onClick={() => onStart(selections, skippedExercises)}
-				className="btn-primary min-h-20 text-xl w-full"
+				className="w-full min-h-20 text-xl"
 			>
 				Start workout
-			</button>
+			</Button>
 		</div>
 	);
 }

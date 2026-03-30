@@ -1,3 +1,7 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
 interface WorkoutCompleteProps {
 	setsCompleted: number;
 	totalSets: number;
@@ -43,51 +47,56 @@ export function WorkoutComplete({
 				<p className="text-5xl" aria-hidden="true">
 					&#10003;
 				</p>
-				<h1 className="text-5xl font-bold tracking-tight text-black">Done.</h1>
-				<p className="text-gray-600 text-lg">{liftName} day complete</p>
+				<h1 className="text-5xl font-bold tracking-tight text-foreground">
+					Done.
+				</h1>
+				<p className="text-muted-foreground text-lg">{liftName} day complete</p>
 			</div>
 
 			{/* Summary card */}
-			<div className="card w-full max-w-sm p-6 space-y-5">
-				<div className="flex justify-between items-baseline">
-					<span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
-						Sets
-					</span>
-					<span className="font-mono text-2xl font-bold text-black">
-						{setsCompleted} / {totalSets}
-					</span>
-				</div>
-
-				{skipped > 0 && (
+			<Card className="w-full max-w-sm">
+				<CardContent className="p-6 space-y-5">
 					<div className="flex justify-between items-baseline">
-						<span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
-							Skipped
+						<span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+							Sets
 						</span>
-						<span className="badge font-mono">
-							{skipped} {skipped === 1 ? "set" : "sets"}
+						<span className="font-mono text-2xl font-bold text-foreground">
+							{setsCompleted} / {totalSets}
 						</span>
 					</div>
-				)}
 
-				<div className="flex justify-between items-baseline">
-					<span className="text-sm font-medium text-gray-600 uppercase tracking-wide">
-						Duration
-					</span>
-					<span className="font-mono text-2xl font-bold text-black">
-						{duration}
-					</span>
-				</div>
-			</div>
+					{skipped > 0 && (
+						<div className="flex justify-between items-baseline">
+							<span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+								Skipped
+							</span>
+							<Badge variant="secondary" className="font-mono">
+								{skipped} {skipped === 1 ? "set" : "sets"}
+							</Badge>
+						</div>
+					)}
+
+					<div className="flex justify-between items-baseline">
+						<span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+							Duration
+						</span>
+						<span className="font-mono text-2xl font-bold text-foreground">
+							{duration}
+						</span>
+					</div>
+				</CardContent>
+			</Card>
 
 			{/* CTA */}
-			<button
+			<Button
 				type="button"
 				onClick={onFinish}
 				disabled={isFinishing}
-				className="btn-primary min-h-16 text-lg w-full max-w-sm disabled:opacity-50"
+				size="lg"
+				className="w-full max-w-sm min-h-16 text-lg"
 			>
 				{isFinishing ? "Finishing..." : "Done"}
-			</button>
+			</Button>
 		</div>
 	);
 }
