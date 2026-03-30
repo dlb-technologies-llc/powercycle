@@ -32,6 +32,27 @@ const LIFTS: Array<{ key: LiftKey; label: string }> = [
 	{ key: "ohp", label: "Overhead Press" },
 ];
 
+function progressionColor(p: {
+	currentMax: number;
+	newMax: number;
+	progressed: boolean;
+}): string {
+	if (p.newMax > p.currentMax) return "text-green-600";
+	if (p.newMax < p.currentMax) return "text-red-600";
+	return "text-gray-500";
+}
+
+function progressionLabel(p: {
+	currentMax: number;
+	newMax: number;
+	progressed: boolean;
+}): string {
+	const diff = p.newMax - p.currentMax;
+	if (diff > 0) return `+${diff}`;
+	if (diff < 0) return `${diff}`;
+	return "Same";
+}
+
 export default function ProgressionIsland() {
 	const [isStarting, setIsStarting] = useState(false);
 	const [results, setResults] = useState({
@@ -52,7 +73,7 @@ export default function ProgressionIsland() {
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-neutral-400">Loading...</p>
+				<p className="text-gray-600">Loading...</p>
 			</div>
 		);
 	}
@@ -60,7 +81,7 @@ export default function ProgressionIsland() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-red-400">Failed to load cycle data.</p>
+				<p className="text-red-600">Failed to load cycle data.</p>
 			</div>
 		);
 	}
@@ -70,7 +91,7 @@ export default function ProgressionIsland() {
 	if (!cycle) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-neutral-400">Loading...</p>
+				<p className="text-gray-600">Loading...</p>
 			</div>
 		);
 	}
@@ -128,45 +149,33 @@ export default function ProgressionIsland() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-semibold text-neutral-100 mb-2">
-				Cycle complete
-			</h1>
-			<p className="text-neutral-400 mb-6">
+			<h1 className="text-2xl font-bold text-black mb-2">Cycle complete</h1>
+			<p className="text-gray-600 mb-6">
 				Enter your Round 3 AMRAP results to calculate new maxes.
 			</p>
 
 			{!progression ? (
 				liftsWithData.length === 0 ? (
 					<div className="text-center">
-						<p className="text-neutral-400">
+						<p className="text-gray-600">
 							No 1RMs recorded this cycle. Start a new cycle to begin tracking.
 						</p>
-						<a
-							href="/"
-							className="text-neutral-100 underline mt-4 inline-block"
-						>
+						<a href="/" className="text-black underline mt-4 inline-block">
 							Back to dashboard
 						</a>
 					</div>
 				) : (
 					<div className="space-y-4">
 						{liftsWithData.map(({ key, label }) => (
-							<div
-								key={key}
-								className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
-							>
-								<p className="text-sm font-medium text-neutral-100 mb-1">
-									{label}
-								</p>
-								<p className="text-sm text-neutral-400 mb-3">
+							<div key={key} className="card p-5">
+								<p className="text-sm font-medium text-black mb-1">{label}</p>
+								<p className="text-sm text-gray-600 mb-3">
 									Current 1RM:{" "}
 									<span className="font-mono">{get1rm(cycle, key)}</span>
 								</p>
 								<div className="grid grid-cols-2 gap-3">
 									<label className="block">
-										<span className="text-xs font-medium text-neutral-400 block mb-1">
-											Weight @ 95%
-										</span>
+										<span className="label mb-1">Weight @ 95%</span>
 										<input
 											type="number"
 											value={results[key].weight}
@@ -176,13 +185,11 @@ export default function ProgressionIsland() {
 													[key]: { ...r[key], weight: e.target.value },
 												}))
 											}
-											className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 font-mono text-neutral-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+											className="input w-full font-mono"
 										/>
 									</label>
 									<label className="block">
-										<span className="text-xs font-medium text-neutral-400 block mb-1">
-											Reps (1+)
-										</span>
+										<span className="label mb-1">Reps (1+)</span>
 										<input
 											type="number"
 											value={results[key].reps}
@@ -192,7 +199,7 @@ export default function ProgressionIsland() {
 													[key]: { ...r[key], reps: e.target.value },
 												}))
 											}
-											className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 font-mono text-neutral-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+											className="input w-full font-mono"
 										/>
 									</label>
 								</div>
@@ -201,7 +208,7 @@ export default function ProgressionIsland() {
 						<button
 							type="button"
 							onClick={handleCalculate}
-							className="w-full bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-16 text-lg"
+							className="btn-primary w-full min-h-16 text-lg"
 						>
 							Calculate new maxes
 						</button>
@@ -214,22 +221,20 @@ export default function ProgressionIsland() {
 						return (
 							<div
 								key={key}
-								className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex items-center justify-between"
+								className="card p-5 flex items-center justify-between"
 							>
 								<div>
-									<p className="text-sm font-medium text-neutral-100">
-										{label}
-									</p>
-									<p className="text-sm text-neutral-400">
+									<p className="text-sm font-medium text-black">{label}</p>
+									<p className="text-sm text-gray-600">
 										<span className="font-mono">{p.currentMax}</span>
 										{" → "}
 										<span className="font-mono">{p.newMax}</span>
 									</p>
 								</div>
 								<div
-									className={`text-lg font-bold font-mono ${p.progressed ? "text-green-400" : "text-neutral-400"}`}
+									className={`text-lg font-bold font-mono ${progressionColor(p)}`}
 								>
-									{p.progressed ? `+${p.newMax - p.currentMax}` : "Same"}
+									{progressionLabel(p)}
 								</div>
 							</div>
 						);
@@ -238,7 +243,7 @@ export default function ProgressionIsland() {
 						type="button"
 						onClick={handleStartNext}
 						disabled={isStarting}
-						className="w-full bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-16 text-lg disabled:opacity-50"
+						className="btn-primary w-full min-h-16 text-lg"
 					>
 						{isStarting ? "Starting..." : "Start next cycle"}
 					</button>

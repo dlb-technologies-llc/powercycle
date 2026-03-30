@@ -64,19 +64,19 @@ export default function SetupIsland() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-semibold text-neutral-100 mb-2">
-				Set your maxes
-			</h1>
-			<p className="text-neutral-400 mb-8">
+			<h1 className="text-2xl font-bold text-black mb-1">Set your maxes</h1>
+			<p className="text-sm text-gray-600 mb-8">
 				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
-			<form onSubmit={handleSubmit} className="space-y-4">
-				<div className="inline-flex bg-neutral-800 rounded-lg p-1 mb-6">
+			<form onSubmit={handleSubmit} className="space-y-3">
+				<div className="inline-flex rounded-lg border border-gray-200 p-1 mb-4">
 					<button
 						type="button"
 						onClick={() => setUnit("lbs")}
-						className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-							unit === "lbs" ? "bg-indigo-500 text-white" : "text-neutral-400"
+						className={`px-5 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+							unit === "lbs"
+								? "bg-black text-white"
+								: "text-gray-400 hover:text-gray-600"
 						}`}
 					>
 						lbs
@@ -84,20 +84,19 @@ export default function SetupIsland() {
 					<button
 						type="button"
 						onClick={() => setUnit("kg")}
-						className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-							unit === "kg" ? "bg-indigo-500 text-white" : "text-neutral-400"
+						className={`px-5 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+							unit === "kg"
+								? "bg-black text-white"
+								: "text-gray-400 hover:text-gray-600"
 						}`}
 					>
 						kg
 					</button>
 				</div>
 				{lifts.map(({ label }, i) => (
-					<div
-						key={label}
-						className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
-					>
+					<div key={label} className="card">
 						<label className="block">
-							<span className="block text-sm font-medium text-neutral-400 mb-2">
+							<span className="label">
 								{label} ({unit})
 							</span>
 							<input
@@ -107,16 +106,16 @@ export default function SetupIsland() {
 								value={liftState[i].value}
 								onChange={(e) => liftState[i].setter(e.target.value)}
 								placeholder="—"
-								className="w-full px-4 py-3 text-lg font-mono bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+								className="input w-full font-mono"
 							/>
 						</label>
 					</div>
 				))}
-				{error && <p className="text-red-400 text-sm">{error}</p>}
+				{error && <p className="text-red-600 text-sm">{error}</p>}
 				<button
 					type="submit"
 					disabled={isPending}
-					className="w-full py-3 text-lg bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+					className="btn-primary w-full"
 				>
 					{isPending ? "Starting..." : "Start program"}
 				</button>
