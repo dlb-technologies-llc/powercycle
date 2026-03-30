@@ -182,21 +182,18 @@ describe("workouts handler logic (pure)", () => {
 const CurrentTestLayer = Layer.mergeAll(WorkoutLive, CycleLive);
 
 layer(CurrentTestLayer)("current workout handler logic", (it) => {
-	it.effect("returns null when no active cycle exists", () =>
+	it.effect("validateActiveCycle rejects null with NotFoundError", () =>
 		Effect.gen(function* () {
-			// The handler's first step: findActiveCycle → if null, return null
-			// Verify CycleService.validateActiveCycle correctly rejects null
 			const cycleService = yield* CycleService;
 			const error = yield* cycleService
 				.validateActiveCycle(null)
 				.pipe(Effect.flip);
 			expect(error._tag).toBe("NotFoundError");
-			// Handler short-circuits: if (!cycleRow) return null
 		}),
 	);
 
 	it.effect(
-		"returns null when active cycle exists but no in-progress workout",
+		"Cycle.decodeRow succeeds and validateWorkout rejects null workout",
 		() =>
 			Effect.gen(function* () {
 				const cycleService = yield* CycleService;
@@ -207,7 +204,6 @@ layer(CurrentTestLayer)("current workout handler logic", (it) => {
 					1,
 				);
 
-				// Cycle decodes successfully — handler proceeds past null check
 				const decodedCycle = yield* Cycle.decodeRow({
 					...cycle,
 					squat1rm: cycle.squat1rm != null ? String(cycle.squat1rm) : null,
@@ -219,8 +215,6 @@ layer(CurrentTestLayer)("current workout handler logic", (it) => {
 				expect(decodedCycle.currentRound).toBe(1);
 				expect(decodedCycle.currentDay).toBe(1);
 
-				// Handler: findInProgressWorkout returns null → handler returns null
-				// WorkoutService.validateWorkout rejects null workouts
 				const workoutService = yield* WorkoutService;
 				const workoutError = yield* workoutService
 					.validateWorkout(null, crypto.randomUUID())
@@ -230,7 +224,7 @@ layer(CurrentTestLayer)("current workout handler logic", (it) => {
 	);
 
 	it.effect(
-		"returns WorkoutResponse when active cycle has in-progress workout",
+		"full decode pipeline produces WorkoutResponse from in-progress workout",
 		() =>
 			Effect.gen(function* () {
 				const cycleService = yield* CycleService;
@@ -281,44 +275,42 @@ layer(CurrentTestLayer)("current workout handler logic", (it) => {
 			}),
 	);
 
-	it.effect(
-		"returns null when workout exists but is completed (completedAt set)",
-		() =>
-			Effect.gen(function* () {
-				const cycleService = yield* CycleService;
-				const workoutService = yield* WorkoutService;
+	it.effect("completed workout has non-null completedAt after decode", () =>
+		Effect.gen(function* () {
+			const cycleService = yield* CycleService;
+			const workoutService = yield* WorkoutService;
 
-				const lifts = sampleLifts();
-				const cycle = yield* cycleService.createEntity(
-					crypto.randomUUID(),
-					lifts,
-					1,
-				);
+			const lifts = sampleLifts();
+			const cycle = yield* cycleService.createEntity(
+				crypto.randomUUID(),
+				lifts,
+				1,
+			);
 
-				// Create workout (initially in-progress)
-				const workout = yield* workoutService.createEntity(
-					cycle.userId,
-					cycle.id,
-					cycle.currentRound,
-					cycle.currentDay,
-				);
-				expect(workout.completedAt).toBeNull();
+			// Create workout (initially in-progress)
+			const workout = yield* workoutService.createEntity(
+				cycle.userId,
+				cycle.id,
+				cycle.currentRound,
+				cycle.currentDay,
+			);
+			expect(workout.completedAt).toBeNull();
 
-				// Mark workout as completed
-				const completedWorkout = new Workout({
-					...workout,
-					completedAt: new Date(),
-				});
-				expect(completedWorkout.completedAt).toBeInstanceOf(Date);
+			// Mark workout as completed
+			const completedWorkout = new Workout({
+				...workout,
+				completedAt: new Date(),
+			});
+			expect(completedWorkout.completedAt).toBeInstanceOf(Date);
 
-				// Verify completed workout decodes with non-null completedAt
-				const decoded = yield* Workout.decodeRow(completedWorkout);
-				expect(decoded.completedAt).toBeInstanceOf(Date);
+			// Verify completed workout decodes with non-null completedAt
+			const decoded = yield* Workout.decodeRow(completedWorkout);
+			expect(decoded.completedAt).toBeInstanceOf(Date);
 
-				// Handler: findInProgressWorkout filters by isNull(completedAt)
-				// A completed workout would not be returned by the query → null → handler returns null
-				const response = Workout.toResponse(decoded);
-				expect(response.completedAt).not.toBeNull();
-			}),
+			// Handler: findInProgressWorkout filters by isNull(completedAt)
+			// A completed workout would not be returned by the query → null → handler returns null
+			const response = Workout.toResponse(decoded);
+			expect(response.completedAt).not.toBeNull();
+		}),
 	);
 });
