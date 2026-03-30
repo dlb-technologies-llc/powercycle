@@ -125,22 +125,16 @@ describe("Cycle.decodeRow", () => {
 
 describe("Cycle.toResponse", () => {
 	it("converts dates to ISO strings", () => {
-		const startedAt = new Date("2024-01-01T00:00:00.000Z");
-		const completedAt = new Date("2024-02-01T00:00:00.000Z");
-		const cycle = new Cycle({
-			...sample(),
-			startedAt,
-			completedAt,
-		});
+		const data = sample();
+		const cycle = new Cycle(data);
 
 		const response = Cycle.toResponse(cycle);
-		expect(response.startedAt).toBe("2024-01-01T00:00:00.000Z");
-		expect(response.completedAt).toBe("2024-02-01T00:00:00.000Z");
+		expect(response.startedAt).toBe(data.startedAt.toISOString());
+		expect(response.completedAt).toBe(data.completedAt?.toISOString() ?? null);
 	});
 
 	it("handles null completedAt", () => {
-		const startedAt = new Date("2024-01-01T00:00:00.000Z");
-		const cycle = new Cycle({ ...sample(), startedAt, completedAt: null });
+		const cycle = new Cycle({ ...sample(), completedAt: null });
 		const response = Cycle.toResponse(cycle);
 		expect(response.completedAt).toBeNull();
 	});
@@ -200,5 +194,21 @@ describe("Cycle.toDbInsert", () => {
 		expect("id" in insert).toBe(false);
 		expect("startedAt" in insert).toBe(false);
 		expect("completedAt" in insert).toBe(false);
+	});
+});
+
+describe("Cycle arbitrary safety", () => {
+	it("generates 1000+ samples with valid ISO-serializable dates", () => {
+		const arb = Schema.toArbitrary(Cycle);
+		const samples = FastCheck.sample(arb.arb, 1100).map(arb.mapper);
+		expect(samples.length).toBeGreaterThanOrEqual(1000);
+
+		for (const data of samples) {
+			const cycle = new Cycle(data);
+			expect(() => cycle.startedAt.toISOString()).not.toThrow();
+			if (cycle.completedAt !== null) {
+				expect(() => cycle.completedAt?.toISOString()).not.toThrow();
+			}
+		}
 	});
 });

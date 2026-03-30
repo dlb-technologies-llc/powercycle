@@ -4,6 +4,15 @@ import { UUID } from "../common.js";
 import { Unit } from "../lifts.js";
 import { Round, TrainingDay } from "../program.js";
 
+// Date with constrained arbitrary — isBetweenDate feeds min/max into fc.date() constraints.
+// Range is wide enough to never reject real production data (1970–2200).
+const SafeArbitraryDate = Schema.Date.check(
+	Schema.isBetweenDate({
+		minimum: new Date("1970-01-01T00:00:00.000Z"),
+		maximum: new Date("2200-01-01T00:00:00.000Z"),
+	}),
+);
+
 // The entity — single source of truth for Cycle domain type
 export class Cycle extends Schema.Class<Cycle>("Cycle")({
 	id: UUID,
@@ -16,8 +25,8 @@ export class Cycle extends Schema.Class<Cycle>("Cycle")({
 	unit: Unit,
 	currentRound: Round,
 	currentDay: TrainingDay,
-	startedAt: Schema.Date,
-	completedAt: Schema.NullOr(Schema.Date),
+	startedAt: SafeArbitraryDate,
+	completedAt: Schema.NullOr(SafeArbitraryDate),
 }) {
 	// Decode schema for Drizzle rows (string numerics → numbers)
 	static readonly DrizzleRow = Schema.Struct({

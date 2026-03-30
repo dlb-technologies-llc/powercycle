@@ -1,3 +1,7 @@
+import {
+	LIFT_DISPLAY_NAMES,
+	type MainLift,
+} from "@powercycle/shared/schema/lifts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,18 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 interface WorkoutCompleteProps {
 	setsCompleted: number;
 	totalSets: number;
-	mainLift: string;
+	mainLift: MainLift;
 	startedAt: string | null;
 	isFinishing: boolean;
 	onFinish: () => void;
 }
-
-const LIFT_DISPLAY_NAMES: Record<string, string> = {
-	squat: "Squat",
-	bench: "Bench Press",
-	deadlift: "Deadlift",
-	ohp: "Overhead Press",
-};
 
 function formatDuration(startedAt: string | null): string {
 	if (!startedAt) return "--";

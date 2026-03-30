@@ -1,4 +1,5 @@
 import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
+import { LIFT_DISPLAY_NAMES } from "@powercycle/shared/schema/lifts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type WorkoutPlan = typeof WorkoutPlanResponse.Type;
@@ -33,13 +34,6 @@ export type WorkoutPhase =
 	| "active"
 	| "resting"
 	| "complete";
-
-const LIFT_DISPLAY_NAMES: Record<string, string> = {
-	squat: "Squat",
-	bench: "Bench Press",
-	deadlift: "Deadlift",
-	ohp: "Overhead Press",
-};
 
 export function useWorkoutFlow(plan: WorkoutPlan | null) {
 	const [phase, setPhase] = useState<WorkoutPhase>("overview");

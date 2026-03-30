@@ -1,5 +1,8 @@
 import { useAtomRefresh, useAtomSet } from "@effect/atom-react";
-import type { MainLift } from "@powercycle/shared/schema/lifts";
+import {
+	LIFT_DISPLAY_NAMES,
+	type MainLift,
+} from "@powercycle/shared/schema/lifts";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
 import { useEffect, useState } from "react";
@@ -7,16 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/NativeSelect";
 import { cn } from "@/lib/utils";
 import { update1rmAtom } from "../atoms/cycles";
 import { nextWorkoutAtom } from "../atoms/workouts";
-
-const LIFT_DISPLAY_NAMES: Record<MainLift, string> = {
-	squat: "Squat",
-	bench: "Bench Press",
-	deadlift: "Deadlift",
-	ohp: "Overhead Press",
-};
 
 const DAY_NAMES: Record<MainLift, string> = {
 	squat: "Squat Day",
@@ -302,7 +299,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					</div>
 					{!isVariationSkipped && (
 						<>
-							<select
+							<NativeSelect
 								value={selections[variationKey]}
 								onChange={(e) =>
 									updateSelection(
@@ -311,14 +308,13 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 										e.target.value,
 									)
 								}
-								className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
 							>
 								{variationOptions.map((opt) => (
 									<option key={opt} value={opt}>
 										{opt}
 									</option>
 								))}
-							</select>
+							</NativeSelect>
 							<div className="space-y-1">
 								{plan.variation.sets.map((s) => (
 									<div
@@ -379,7 +375,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							</div>
 							{!isSkipped && (
 								<>
-									<select
+									<NativeSelect
 										value={selections[accKey]}
 										onChange={(e) =>
 											updateSelection(
@@ -388,14 +384,13 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 												e.target.value,
 											)
 										}
-										className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
 									>
 										{accOptions.map((opt) => (
 											<option key={opt} value={opt}>
 												{opt}
 											</option>
 										))}
-									</select>
+									</NativeSelect>
 									<div className="space-y-1">
 										{acc.sets.map((s) => (
 											<div

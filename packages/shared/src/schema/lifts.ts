@@ -6,6 +6,13 @@ export type MainLift = typeof MainLift.Type;
 export const Unit = Schema.Literals(["lbs", "kg"]);
 export type Unit = typeof Unit.Type;
 
+export const LIFT_DISPLAY_NAMES: Record<MainLift, string> = {
+	squat: "Squat",
+	bench: "Bench Press",
+	deadlift: "Deadlift",
+	ohp: "Overhead Press",
+};
+
 export const PLATE_INCREMENT: Record<Unit, number> = {
 	lbs: 5,
 	kg: 2.5,
