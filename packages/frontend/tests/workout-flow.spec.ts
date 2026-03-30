@@ -127,7 +127,8 @@ async function completeOneSet(
 	await expect(doneBtn).toBeVisible();
 	await doneBtn.click();
 
-	await expect(page.getByText("Rest Timer")).toBeVisible();
+	// Resting phase: weight input becomes visible
+	await expect(page.getByPlaceholder("Weight")).toBeVisible();
 	const repsInput = page.getByPlaceholder("Reps");
 	await repsInput.fill(options.reps ?? "5");
 
@@ -150,19 +151,17 @@ test.describe("Workout Flow", () => {
 		await expect(startSetBtn).toBeVisible();
 		await startSetBtn.click();
 
-		// Active phase: should see "Set Timer" label and "Done" button
-		await expect(page.getByText("Set Timer")).toBeVisible();
+		// Active phase: should see "Done" button (full-screen timer view)
 		const doneBtn = page.getByRole("button", { name: "Done" });
 		await expect(doneBtn).toBeVisible();
 		await doneBtn.click();
 
-		// Resting phase: should see "Rest Timer" and input fields
-		await expect(page.getByText("Rest Timer")).toBeVisible();
+		// Resting phase: should see input fields for recording the set
 		await expect(page.getByPlaceholder("Weight")).toBeVisible();
 		await expect(page.getByPlaceholder("Reps")).toBeVisible();
 	});
 
-	test("exercise transition shows NEXT UP label", async ({ page, request }) => {
+	test("exercise transition shows Next up label", async ({ page, request }) => {
 		const { workout, plan } = await setupWorkout(
 			request as unknown as ApiRequest,
 		);
@@ -174,11 +173,11 @@ test.describe("Workout Flow", () => {
 			await completeOneSet(page, { isFirstOfExercise: i === 0 });
 		}
 
-		// After completing all main lift sets, should see "Next Up" for variation
-		await expect(page.getByText("Next Up")).toBeVisible();
+		// After completing all main lift sets, should see "Next up" for variation
+		await expect(page.getByText("Next up")).toBeVisible();
 	});
 
-	test("timer labels: SET TIMER in active, REST TIMER in resting", async ({
+	test("timer display in active phase, input fields in resting phase", async ({
 		page,
 		request,
 	}) => {
@@ -190,15 +189,16 @@ test.describe("Workout Flow", () => {
 		await expect(startSetBtn).toBeVisible();
 		await startSetBtn.click();
 
-		// Active: verify "Set Timer" label
-		await expect(page.getByText("Set Timer")).toBeVisible();
+		// Active: verify "Done" button is visible (timer is full-screen)
+		const doneBtn = page.getByRole("button", { name: "Done" });
+		await expect(doneBtn).toBeVisible();
 
 		// Active -> Resting
-		const doneBtn = page.getByRole("button", { name: "Done" });
 		await doneBtn.click();
 
-		// Resting: verify "Rest Timer" label
-		await expect(page.getByText("Rest Timer")).toBeVisible();
+		// Resting: verify input fields are visible
+		await expect(page.getByPlaceholder("Weight")).toBeVisible();
+		await expect(page.getByPlaceholder("Reps")).toBeVisible();
 	});
 
 	test("RPE validation shows error for out-of-range value", async ({
@@ -216,8 +216,8 @@ test.describe("Workout Flow", () => {
 			await completeOneSet(page, { isFirstOfExercise: i === 0 });
 		}
 
-		// Now at variation Ready phase with "Next Up"
-		await expect(page.getByText("Next Up")).toBeVisible();
+		// Now at variation Ready phase with "Next up"
+		await expect(page.getByText("Next up")).toBeVisible();
 		const startSetBtn = page.getByRole("button", { name: "Start Set" });
 		await startSetBtn.click();
 
@@ -227,7 +227,7 @@ test.describe("Workout Flow", () => {
 		await doneBtn.click();
 
 		// Resting phase — should have RPE input
-		await expect(page.getByText("Rest Timer")).toBeVisible();
+		await expect(page.getByPlaceholder("Weight")).toBeVisible();
 		const rpeInput = page.getByPlaceholder("RPE");
 		await expect(rpeInput).toBeVisible();
 
@@ -323,7 +323,8 @@ test.describe("Workout Flow", () => {
 		await doneBtn.click();
 
 		// In Resting phase, progress bar should show "Set 1 of N"
-		await expect(page.getByText(/Set 1 of \d+/)).toBeVisible();
+		// Use .first() — both exercise-level and overall progress show "Set X of Y"
+		await expect(page.getByText(/Set 1 of \d+/).first()).toBeVisible();
 
 		// Complete the first set and move to the second
 		const repsInput = page.getByPlaceholder("Reps");
@@ -337,7 +338,7 @@ test.describe("Workout Flow", () => {
 		await doneBtn2.click();
 
 		// Progress should now show "Set 2 of N"
-		await expect(page.getByText(/Set 2 of \d+/)).toBeVisible();
+		await expect(page.getByText(/Set 2 of \d+/).first()).toBeVisible();
 	});
 
 	test("data pre-fill: main lifts show prescribed weight/reps in set breakdown", async ({
@@ -424,11 +425,12 @@ test.describe("Workout Resume", () => {
 		// Navigate to the workout page
 		await page.goto(`/workout?id=${workout.id}`);
 
-		// Should resume — NOT show overview. Should see Ready or Active phase
+		// Should resume — NOT show overview. Should see Ready phase (Start Set button)
+		// or Active phase (Done button)
 		const startSetBtn = page.getByRole("button", { name: "Start Set" });
-		const setTimerLabel = page.getByText("Set Timer");
+		const doneBtn = page.getByRole("button", { name: "Done" });
 
-		await expect(startSetBtn.or(setTimerLabel)).toBeVisible({
+		await expect(startSetBtn.or(doneBtn)).toBeVisible({
 			timeout: 15000,
 		});
 
