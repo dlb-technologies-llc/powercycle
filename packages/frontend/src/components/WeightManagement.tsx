@@ -50,7 +50,7 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 				</button>
 
 				{isOpen && (
-					<div className="px-6 pb-6 space-y-4 animate-fade-in">
+					<div className="px-6 pb-6 space-y-4">
 						<OneRmSection cycle={cycle} />
 						<SavedWeightsSection />
 					</div>
