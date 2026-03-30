@@ -3,6 +3,9 @@ import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { upsertExerciseWeightAtom } from "../atoms/exercise-weights";
 import {
 	completeWorkoutAtom,
@@ -160,7 +163,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!id) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-gray-600">No workout ID provided.</p>
+				<p className="text-muted-foreground">No workout ID provided.</p>
 			</div>
 		);
 	}
@@ -173,13 +176,13 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		) {
 			return (
 				<div className="flex items-center justify-center min-h-[60vh]">
-					<p className="text-red-600">Failed to load workout plan.</p>
+					<p className="text-destructive">Failed to load workout plan.</p>
 				</div>
 			);
 		}
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-gray-600">Loading workout plan...</p>
+				<p className="text-muted-foreground">Loading workout plan...</p>
 			</div>
 		);
 	}
@@ -187,10 +190,12 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!plan) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<p className="text-gray-600 mb-4">No workout available.</p>
+				<p className="text-muted-foreground mb-4">No workout available.</p>
 				<a
 					href="/"
-					className="text-black underline hover:text-gray-600 transition-colors"
+					className={cn(
+						"text-foreground underline hover:text-muted-foreground transition-colors",
+					)}
 				>
 					Back to dashboard
 				</a>
@@ -201,7 +206,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (plan && !resumeChecked) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-gray-600">Checking workout progress...</p>
+				<p className="text-muted-foreground">Checking workout progress...</p>
 			</div>
 		);
 	}
@@ -225,7 +230,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		// Skip exercises that were marked in the overview
 		if (skippedExercises && skippedExercises.size > 0) {
 			// After starting, iterate through skipped exercises and fire skip API calls
-			for (const exerciseKey of skippedExercises) {
+			for (const _exerciseKey of skippedExercises) {
 				// The flow will handle advancing past these in the UI
 				// We need to fire the API call for each skipped exercise
 				const skipInfo = flow.skipExercise();
@@ -362,20 +367,25 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (flow.phase === "complete") {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-				<div className="card p-8 space-y-4">
-					<h1 className="text-4xl font-semibold text-black">
-						Workout complete
-					</h1>
-					<p className="text-gray-600">All {flow.totalSets} sets finished</p>
-				</div>
-				<button
+				<Card className="p-8">
+					<CardContent className="space-y-4">
+						<h1 className="text-4xl font-semibold text-foreground">
+							Workout complete
+						</h1>
+						<p className="text-muted-foreground">
+							All {flow.totalSets} sets finished
+						</p>
+					</CardContent>
+				</Card>
+				<Button
 					type="button"
 					onClick={handleFinish}
 					disabled={isFinishing}
-					className="btn-primary min-h-20 text-xl w-full disabled:opacity-50"
+					size="lg"
+					className="w-full min-h-20 text-xl"
 				>
 					{isFinishing ? "Finishing..." : "Finish workout"}
-				</button>
+				</Button>
 			</div>
 		);
 	}
