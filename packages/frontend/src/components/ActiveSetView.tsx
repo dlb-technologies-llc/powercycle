@@ -226,15 +226,15 @@ export function ActiveSetView({
 		const totalSets = allSetsForExercise.length;
 
 		return (
-			<div className="flex flex-col items-center text-center space-y-6 min-h-[70vh] justify-center">
-				<div className="space-y-2">
-					<h2 className="text-xl font-semibold text-foreground">
+			<div className="fixed inset-0 z-40 bg-background flex flex-col items-center text-center">
+				<div className="space-y-1 pt-6">
+					<h2 className="text-lg font-semibold text-foreground">
 						{set.exerciseName}
 					</h2>
 					<p className="text-sm font-medium text-muted-foreground">
 						Set {currentSetNumber} of {totalSets}
 					</p>
-					<p className="font-mono text-lg text-muted-foreground">
+					<p className="font-mono text-base text-muted-foreground">
 						{set.isMainLift
 							? `${set.prescribed.weight ?? "—"} ${unit} × ${set.prescribed.reps ?? "—"}`
 							: `${set.prescribed.repMin ?? "—"}-${set.prescribed.repMax ?? "—"} reps @ RPE ${set.prescribed.rpeMin ?? "—"}-${set.prescribed.rpeMax ?? "—"}`}
@@ -242,9 +242,13 @@ export function ActiveSetView({
 					{set.isAmrap && <Badge variant="destructive">AMRAP</Badge>}
 				</div>
 
-				<TimerDisplay seconds={setTimerSeconds} />
+				<div className="flex-1 flex items-center justify-center w-full">
+					<span className="font-mono text-7xl sm:text-8xl font-bold text-foreground">
+						{formatTime(setTimerSeconds)}
+					</span>
+				</div>
 
-				<div className="w-full mt-auto">
+				<div className="w-full max-w-2xl px-6 pb-6">
 					<Button
 						type="button"
 						size="lg"
