@@ -144,6 +144,23 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					};
 				}),
 			)
+			.handle("current", (_ctx) =>
+				Effect.gen(function* () {
+					const userId = DEFAULT_USER_ID;
+					const cycleRow = yield* findActiveCycle(db, userId);
+					if (!cycleRow) return null;
+					const cycle = yield* Cycle.decodeRow(cycleRow);
+					const workoutRow = yield* findInProgressWorkout(
+						db,
+						cycleRow.id,
+						cycle.currentRound,
+						cycle.currentDay,
+					);
+					if (!workoutRow) return null;
+					const workout = yield* Workout.decodeRow(workoutRow);
+					return Workout.toResponse(workout);
+				}),
+			)
 			.handle("start", (ctx) =>
 				Effect.gen(function* () {
 					const userId = DEFAULT_USER_ID;

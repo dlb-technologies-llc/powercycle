@@ -12,6 +12,11 @@ export const workoutHistoryAtom = ApiClient.query("workouts", "history", {});
  */
 export const nextWorkoutAtom = ApiClient.query("workouts", "next", {});
 
+/**
+ * Query atom for the current in-progress workout (or null).
+ */
+export const currentWorkoutAtom = ApiClient.query("workouts", "current", {});
+
 // ── Mutation Atoms ──
 
 /**
