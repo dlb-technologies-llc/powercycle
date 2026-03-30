@@ -37,6 +37,10 @@ describe("ExerciseWeight entity", () => {
 });
 
 describe("ExerciseWeight.decodeRow", () => {
+	// String(-0) → "0" → Number("0") → +0, so the roundtrip normalizes -0
+	const normalize = (v: number | null) =>
+		v != null ? Number(String(v)) : null;
+
 	it.effect("decodes Drizzle row with string weight and rpe", () =>
 		Effect.gen(function* () {
 			const base = sample();
@@ -48,8 +52,8 @@ describe("ExerciseWeight.decodeRow", () => {
 
 			const ew = yield* ExerciseWeight.decodeRow(drizzleRow);
 			expect(ew).toBeInstanceOf(ExerciseWeight);
-			expect(ew.weight).toBe(base.weight);
-			expect(ew.rpe).toBe(base.rpe);
+			expect(ew.weight).toBe(normalize(base.weight));
+			expect(ew.rpe).toBe(normalize(base.rpe));
 		}),
 	);
 
@@ -64,7 +68,7 @@ describe("ExerciseWeight.decodeRow", () => {
 
 			const ew = yield* ExerciseWeight.decodeRow(drizzleRow);
 			expect(ew).toBeInstanceOf(ExerciseWeight);
-			expect(ew.weight).toBe(base.weight);
+			expect(ew.weight).toBe(normalize(base.weight));
 			expect(ew.rpe).toBeNull();
 			expect(ew.unit).toBe(base.unit);
 		}),
