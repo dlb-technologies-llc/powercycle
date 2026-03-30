@@ -30,3 +30,9 @@ export const logSetAtom = ApiClient.mutation("workouts", "logSet");
  * Requires params.id (workout ID).
  */
 export const completeWorkoutAtom = ApiClient.mutation("workouts", "complete");
+
+/**
+ * Skip remaining sets for an exercise.
+ * Requires params.id (workout ID) and payload with exerciseName + fromSetNumber.
+ */
+export const skipSetsAtom = ApiClient.mutation("workouts", "skipSets");

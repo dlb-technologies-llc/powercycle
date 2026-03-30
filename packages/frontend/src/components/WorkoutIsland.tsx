@@ -8,6 +8,7 @@ import {
 	completeWorkoutAtom,
 	logSetAtom,
 	nextWorkoutAtom,
+	skipSetsAtom,
 } from "../atoms/workouts";
 import type { FlatSet } from "../hooks/useWorkoutFlow";
 import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
@@ -84,6 +85,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const upsertWeight = useAtomSet(upsertExerciseWeightAtom, {
 		mode: "promiseExit",
 	});
+	const skipSets = useAtomSet(skipSetsAtom, { mode: "promiseExit" });
 
 	const plan: WorkoutPlanData | null | undefined = (() => {
 		if (AsyncResult.isInitial(result) || result.waiting) return undefined;
@@ -158,7 +160,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!id) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-neutral-500">No workout ID provided.</p>
+				<p className="text-gray-600">No workout ID provided.</p>
 			</div>
 		);
 	}
@@ -171,13 +173,13 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		) {
 			return (
 				<div className="flex items-center justify-center min-h-[60vh]">
-					<p className="text-red-400">Failed to load workout plan.</p>
+					<p className="text-red-600">Failed to load workout plan.</p>
 				</div>
 			);
 		}
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-neutral-500">Loading workout plan...</p>
+				<p className="text-gray-600">Loading workout plan...</p>
 			</div>
 		);
 	}
@@ -185,10 +187,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!plan) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<p className="text-neutral-500 mb-4">No workout available.</p>
+				<p className="text-gray-600 mb-4">No workout available.</p>
 				<a
 					href="/"
-					className="text-neutral-100 underline hover:text-neutral-300 transition-colors"
+					className="text-black underline hover:text-gray-600 transition-colors"
 				>
 					Back to dashboard
 				</a>
@@ -199,7 +201,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (plan && !resumeChecked) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-neutral-500">Checking workout progress...</p>
+				<p className="text-gray-600">Checking workout progress...</p>
 			</div>
 		);
 	}
@@ -215,8 +217,29 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		}).catch((err) => console.error("Failed to log set", err));
 	};
 
-	const handleStart = (selections: Record<string, string>) => {
+	const handleStart = (
+		selections: Record<string, string>,
+		skippedExercises?: ReadonlySet<string>,
+	) => {
 		flow.startWorkout(selections);
+		// Skip exercises that were marked in the overview
+		if (skippedExercises && skippedExercises.size > 0) {
+			// After starting, iterate through skipped exercises and fire skip API calls
+			for (const exerciseKey of skippedExercises) {
+				// The flow will handle advancing past these in the UI
+				// We need to fire the API call for each skipped exercise
+				const skipInfo = flow.skipExercise();
+				if (skipInfo) {
+					skipSets({
+						params: { id },
+						payload: {
+							exerciseName: skipInfo.exerciseName,
+							fromSetNumber: skipInfo.fromSetNumber,
+						},
+					}).catch((err) => console.error("Failed to skip sets", err));
+				}
+			}
+		}
 	};
 
 	const handleStartSet = () => {
@@ -316,6 +339,18 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		});
 	};
 
+	const handleSkipExercise = () => {
+		const skipInfo = flow.skipExercise();
+		if (!skipInfo) return;
+		skipSets({
+			params: { id },
+			payload: {
+				exerciseName: skipInfo.exerciseName,
+				fromSetNumber: skipInfo.fromSetNumber,
+			},
+		}).catch((err) => console.error("Failed to skip sets", err));
+	};
+
 	if (flow.phase === "overview") {
 		return (
 			<div className="space-y-8 pb-8">
@@ -327,17 +362,17 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (flow.phase === "complete") {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 space-y-4">
-					<h1 className="text-4xl font-semibold text-neutral-100">
+				<div className="card p-8 space-y-4">
+					<h1 className="text-4xl font-semibold text-black">
 						Workout complete
 					</h1>
-					<p className="text-neutral-500">All {flow.totalSets} sets finished</p>
+					<p className="text-gray-600">All {flow.totalSets} sets finished</p>
 				</div>
 				<button
 					type="button"
 					onClick={handleFinish}
 					disabled={isFinishing}
-					className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full disabled:opacity-50"
+					className="btn-primary min-h-20 text-xl w-full disabled:opacity-50"
 				>
 					{isFinishing ? "Finishing..." : "Finish workout"}
 				</button>
@@ -371,6 +406,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				onStartSet={handleStartSet}
 				onDone={handleDone}
 				onConfirmAndNext={handleConfirmAndNext}
+				onSkipExercise={handleSkipExercise}
 			/>
 		</div>
 	);

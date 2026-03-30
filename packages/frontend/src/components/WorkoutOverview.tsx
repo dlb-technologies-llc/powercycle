@@ -73,7 +73,10 @@ interface WorkoutOverviewProps {
 		}>;
 	};
 	unit: string;
-	onStart: (selections: Record<string, string>) => void;
+	onStart: (
+		selections: Record<string, string>,
+		skippedExercises: ReadonlySet<string>,
+	) => void;
 }
 
 export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
@@ -101,6 +104,22 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		return initial;
 	});
 
+	const [skippedExercises, setSkippedExercises] = useState<Set<string>>(
+		() => new Set(),
+	);
+
+	const toggleSkip = (exerciseKey: string) => {
+		setSkippedExercises((prev) => {
+			const next = new Set(prev);
+			if (next.has(exerciseKey)) {
+				next.delete(exerciseKey);
+			} else {
+				next.add(exerciseKey);
+			}
+			return next;
+		});
+	};
+
 	useEffect(() => {
 		fetch("/api/preferences/exercises")
 			.then((res) => res.json())
@@ -109,7 +128,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					const updates: Record<string, string> = {};
 					for (const p of prefs) {
 						updates[p.slotKey] = p.exerciseName;
-						// Sync API → localStorage
+						// Sync API -> localStorage
 						if (typeof window !== "undefined") {
 							localStorage.setItem(
 								`exercise-pref-${p.slotKey}`,
@@ -182,23 +201,23 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 	const variationDisplayWeight =
 		plan.variation.lastSession?.weight ?? plan.variation.preferredWeight;
 
+	const isVariationSkipped = skippedExercises.has(variationKey);
+
 	return (
 		<div className="space-y-6">
 			{/* Title */}
 			<div>
-				<h1 className="text-2xl font-semibold text-neutral-100">{dayName}</h1>
-				<p className="text-sm text-neutral-400 mt-1">
+				<h1 className="text-2xl font-bold text-black">{dayName}</h1>
+				<p className="text-sm text-gray-600 mt-1">
 					Cycle {plan.cycle} &middot; Round {plan.round}
 				</p>
 			</div>
 
 			{/* Main Lift Section */}
 			{plan.mainLiftSets.length === 0 ? (
-				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
-					<h2 className="text-lg font-semibold text-neutral-100">
-						{mainLiftName}
-					</h2>
-					<p className="text-sm text-neutral-400">
+				<div className="card p-5 space-y-3">
+					<h2 className="text-lg font-semibold text-black">{mainLiftName}</h2>
+					<p className="text-sm text-gray-600">
 						Enter your 1RM for {mainLiftName} to calculate your sets.
 					</p>
 					<div className="flex gap-3">
@@ -207,38 +226,34 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							value={oneRmInput}
 							onChange={(e) => setOneRmInput(e.target.value)}
 							placeholder={`1RM in ${unit}`}
-							className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
+							className="input flex-1"
 						/>
 						<button
 							type="button"
 							onClick={handleSubmit1rm}
 							disabled={isSubmitting1rm}
-							className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors disabled:opacity-50"
+							className="btn-primary px-4 py-2.5"
 						>
 							{isSubmitting1rm ? "Saving..." : "Save"}
 						</button>
 					</div>
-					{oneRmError && <p className="text-red-400 text-sm">{oneRmError}</p>}
+					{oneRmError && <p className="text-red-600 text-sm">{oneRmError}</p>}
 				</div>
 			) : (
-				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
-					<h2 className="text-lg font-semibold text-neutral-100">
-						{mainLiftName}
-					</h2>
+				<div className="card p-5 space-y-3">
+					<h2 className="text-lg font-semibold text-black">{mainLiftName}</h2>
 					<div className="space-y-1">
 						{plan.mainLiftSets.map((s) => (
 							<div
 								key={s.setNumber}
-								className="flex items-center justify-between text-sm text-neutral-300 py-1.5"
+								className="flex items-center justify-between text-sm text-gray-600 py-1.5"
 							>
-								<span className="font-mono text-sm text-neutral-300">
+								<span className="font-mono text-sm text-black">
 									Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
 									{s.isAmrap ? "+" : ""}
 								</span>
 								{s.isAmrap && (
-									<span className="bg-red-500/10 text-red-400 rounded-md px-2 py-0.5 text-xs font-medium">
-										AMRAP
-									</span>
+									<span className="badge bg-red-100 text-red-600">AMRAP</span>
 								)}
 							</div>
 						))}
@@ -247,43 +262,65 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			)}
 
 			{/* Variation Section */}
-			<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
-				<h2 className="text-lg font-semibold text-neutral-100">Variation</h2>
-				<select
-					value={selections[variationKey]}
-					onChange={(e) =>
-						updateSelection(
-							variationKey,
-							`${plan.variation.category}-variation`,
-							e.target.value,
-						)
-					}
-					className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
-				>
-					{variationOptions.map((opt) => (
-						<option key={opt} value={opt}>
-							{opt}
-						</option>
-					))}
-				</select>
-				<div className="space-y-1">
-					{plan.variation.sets.map((s) => (
-						<div
-							key={s.setNumber}
-							className="font-mono text-sm text-neutral-300 py-1"
+			<div className="card p-5 space-y-3">
+				<div className="flex items-center justify-between">
+					<h2
+						className={`text-lg font-semibold ${isVariationSkipped ? "text-gray-400 line-through" : "text-black"}`}
+					>
+						Variation
+					</h2>
+					<div className="flex items-center gap-2">
+						{isVariationSkipped && (
+							<span className="badge bg-gray-100 text-gray-500">Skipped</span>
+						)}
+						<button
+							type="button"
+							onClick={() => toggleSkip(variationKey)}
+							className="btn-ghost text-sm"
 						>
-							Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}-
-							{s.rpeMax}
-						</div>
-					))}
+							{isVariationSkipped ? "Undo" : "Skip"}
+						</button>
+					</div>
 				</div>
-				{variationDisplayWeight != null && (
-					<p className="text-xs text-neutral-500">
-						Last session:{" "}
-						<span className="text-indigo-400 font-mono">
-							{variationDisplayWeight} {unit}
-						</span>
-					</p>
+				{!isVariationSkipped && (
+					<>
+						<select
+							value={selections[variationKey]}
+							onChange={(e) =>
+								updateSelection(
+									variationKey,
+									`${plan.variation.category}-variation`,
+									e.target.value,
+								)
+							}
+							className="input w-full"
+						>
+							{variationOptions.map((opt) => (
+								<option key={opt} value={opt}>
+									{opt}
+								</option>
+							))}
+						</select>
+						<div className="space-y-1">
+							{plan.variation.sets.map((s) => (
+								<div
+									key={s.setNumber}
+									className="font-mono text-sm text-gray-600 py-1"
+								>
+									Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}
+									-{s.rpeMax}
+								</div>
+							))}
+						</div>
+						{variationDisplayWeight != null && (
+							<p className="text-xs text-gray-500">
+								Last session:{" "}
+								<span className="font-mono font-medium text-black">
+									{variationDisplayWeight} {unit}
+								</span>
+							</p>
+						)}
+					</>
 				)}
 			</div>
 
@@ -292,47 +329,71 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				const accKey = `${acc.category}-${i}`;
 				const accOptions = exerciseOptionsLookup[acc.category] ?? [];
 				const accDisplayWeight = acc.lastSession?.weight ?? acc.preferredWeight;
+				const isSkipped = skippedExercises.has(accKey);
 				return (
-					<div
-						key={accKey}
-						className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3"
-					>
-						<h2 className="text-lg font-semibold text-neutral-100">
-							{acc.category
-								.replace(/_/g, " ")
-								.replace(/\b\w/g, (c) => c.toUpperCase())}
-						</h2>
-						<select
-							value={selections[accKey]}
-							onChange={(e) =>
-								updateSelection(accKey, `${acc.category}-${i}`, e.target.value)
-							}
-							className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
-						>
-							{accOptions.map((opt) => (
-								<option key={opt} value={opt}>
-									{opt}
-								</option>
-							))}
-						</select>
-						<div className="space-y-1">
-							{acc.sets.map((s) => (
-								<div
-									key={s.setNumber}
-									className="font-mono text-sm text-neutral-300 py-1"
+					<div key={accKey} className="card p-5 space-y-3">
+						<div className="flex items-center justify-between">
+							<h2
+								className={`text-lg font-semibold ${isSkipped ? "text-gray-400 line-through" : "text-black"}`}
+							>
+								{acc.category
+									.replace(/_/g, " ")
+									.replace(/\b\w/g, (c) => c.toUpperCase())}
+							</h2>
+							<div className="flex items-center gap-2">
+								{isSkipped && (
+									<span className="badge bg-gray-100 text-gray-500">
+										Skipped
+									</span>
+								)}
+								<button
+									type="button"
+									onClick={() => toggleSkip(accKey)}
+									className="btn-ghost text-sm"
 								>
-									Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}
-									-{s.rpeMax}
-								</div>
-							))}
+									{isSkipped ? "Undo" : "Skip"}
+								</button>
+							</div>
 						</div>
-						{accDisplayWeight != null && (
-							<p className="text-xs text-neutral-500">
-								Last session:{" "}
-								<span className="text-indigo-400 font-mono">
-									{accDisplayWeight} {unit}
-								</span>
-							</p>
+						{!isSkipped && (
+							<>
+								<select
+									value={selections[accKey]}
+									onChange={(e) =>
+										updateSelection(
+											accKey,
+											`${acc.category}-${i}`,
+											e.target.value,
+										)
+									}
+									className="input w-full"
+								>
+									{accOptions.map((opt) => (
+										<option key={opt} value={opt}>
+											{opt}
+										</option>
+									))}
+								</select>
+								<div className="space-y-1">
+									{acc.sets.map((s) => (
+										<div
+											key={s.setNumber}
+											className="font-mono text-sm text-gray-600 py-1"
+										>
+											Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE{" "}
+											{s.rpeMin}-{s.rpeMax}
+										</div>
+									))}
+								</div>
+								{accDisplayWeight != null && (
+									<p className="text-xs text-gray-500">
+										Last session:{" "}
+										<span className="font-mono font-medium text-black">
+											{accDisplayWeight} {unit}
+										</span>
+									</p>
+								)}
+							</>
 						)}
 					</div>
 				);
@@ -341,8 +402,8 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			{/* Start Button */}
 			<button
 				type="button"
-				onClick={() => onStart(selections)}
-				className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full"
+				onClick={() => onStart(selections, skippedExercises)}
+				className="btn-primary min-h-20 text-xl w-full"
 			>
 				Start workout
 			</button>

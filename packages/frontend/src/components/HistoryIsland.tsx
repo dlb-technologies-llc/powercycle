@@ -14,11 +14,11 @@ export default function HistoryIsland() {
 	const result = useAtomValue(workoutHistoryAtom);
 
 	if (AsyncResult.isInitial(result) || result.waiting) {
-		return <p className="text-neutral-400">Loading history...</p>;
+		return <p className="text-gray-500">Loading history...</p>;
 	}
 
 	if (AsyncResult.isFailure(result)) {
-		return <p className="text-red-400">Failed to load workout history.</p>;
+		return <p className="text-red-600">Failed to load workout history.</p>;
 	}
 
 	const workouts = (result.value ?? []).filter((w) => w.completedAt !== null);
@@ -26,43 +26,36 @@ export default function HistoryIsland() {
 	if (workouts.length === 0) {
 		return (
 			<div>
-				<h1 className="text-2xl font-semibold text-neutral-100 mb-4">
-					Workout history
-				</h1>
-				<p className="text-neutral-400">No completed workouts yet.</p>
+				<h1 className="text-2xl font-bold text-black mb-4">Workout history</h1>
+				<p className="text-gray-500">No completed workouts yet.</p>
 			</div>
 		);
 	}
 
 	return (
 		<div>
-			<h1 className="text-2xl font-semibold text-neutral-100 mb-6">
-				Workout history
-			</h1>
+			<h1 className="text-2xl font-bold text-black mb-6">Workout history</h1>
 			<div className="space-y-3">
 				{workouts.map((workout) => (
-					<div
-						key={workout.id}
-						className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden"
-					>
+					<div key={workout.id} className="card p-0 overflow-hidden">
 						<button
 							type="button"
 							onClick={() =>
 								setExpandedId(expandedId === workout.id ? null : workout.id)
 							}
-							className="w-full p-4 flex items-center justify-between text-left transition-colors hover:bg-neutral-800/50"
+							className="w-full p-4 flex items-center justify-between text-left transition-colors hover:bg-gray-50"
 						>
 							<div>
-								<p className="font-semibold text-lg text-neutral-100">
+								<p className="font-semibold text-lg text-black">
 									{getDayName(workout.day)} Day
 								</p>
-								<p className="text-sm text-neutral-500">
+								<p className="text-sm text-gray-500">
 									Round {workout.round} —{" "}
 									{new Date(workout.startedAt).toLocaleDateString()}
 								</p>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="bg-neutral-800 text-neutral-300 rounded-md px-2 py-0.5 text-xs font-mono">
+								<span className="badge font-mono">
 									{workout.sets?.length ?? 0} sets
 								</span>
 								<svg
@@ -71,7 +64,7 @@ export default function HistoryIsland() {
 									fill="currentColor"
 									aria-label="Toggle details"
 									role="img"
-									className={`w-5 h-5 text-neutral-500 transition-transform duration-300 ${expandedId === workout.id ? "rotate-180" : ""}`}
+									className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expandedId === workout.id ? "rotate-180" : ""}`}
 								>
 									<path
 										fillRule="evenodd"
@@ -82,19 +75,26 @@ export default function HistoryIsland() {
 							</div>
 						</button>
 						{expandedId === workout.id && workout.sets && (
-							<div className="border-t border-neutral-800 p-4 space-y-2">
+							<div className="border-t border-gray-200 p-4 space-y-2">
 								{workout.sets.map((set) => (
 									<div
 										key={`${set.exerciseName}-${String(set.setNumber)}`}
 										className="flex items-center justify-between text-sm"
 									>
-										<span className="text-neutral-300">
+										<span className="text-black">
 											{set.exerciseName} — Set {set.setNumber}
 										</span>
-										<span className="font-mono text-neutral-400">
-											{set.actualWeight != null ? `${set.actualWeight} ` : ""}
-											{set.actualReps != null ? `x${set.actualReps}` : ""}
-											{set.rpe != null ? ` @ RPE ${set.rpe}` : ""}
+										<span className="flex items-center gap-2">
+											{set.skipped && (
+												<span className="badge bg-red-100 text-red-700">
+													Skipped
+												</span>
+											)}
+											<span className="font-mono text-gray-500">
+												{set.actualWeight != null ? `${set.actualWeight} ` : ""}
+												{set.actualReps != null ? `x${set.actualReps}` : ""}
+												{set.rpe != null ? ` @ RPE ${set.rpe}` : ""}
+											</span>
 										</span>
 									</div>
 								))}

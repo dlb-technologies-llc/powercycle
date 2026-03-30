@@ -35,15 +35,15 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 
 	return (
 		<div className="w-full max-w-md mx-auto mt-8">
-			<div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+			<div className="card !p-0 overflow-hidden">
 				<button
 					type="button"
 					onClick={() => setIsOpen(!isOpen)}
-					className="w-full flex items-center justify-between px-6 py-4 text-neutral-100 hover:bg-neutral-800/50 transition-colors"
+					className="w-full flex items-center justify-between px-6 py-4 text-black hover:bg-gray-50 transition-colors"
 				>
 					<span className="font-semibold">Weight management</span>
 					<span
-						className={`text-neutral-400 transition-transform duration-200 inline-block ${isOpen ? "rotate-180" : ""}`}
+						className={`text-gray-400 transition-transform duration-200 inline-block ${isOpen ? "rotate-180" : ""}`}
 					>
 						&#x25BC;
 					</span>
@@ -98,7 +98,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 
 	return (
 		<div>
-			<h3 className="text-xs font-semibold text-neutral-400 mb-3">Your 1RMs</h3>
+			<h3 className="label mb-3">Your 1RMs</h3>
 			<div className="space-y-2">
 				{LIFTS.map(({ key, label, field }) => {
 					const value = cycle[field];
@@ -107,45 +107,45 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 					return (
 						<div
 							key={key}
-							className="flex items-center justify-between py-2 border-b border-neutral-800/50 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0"
 						>
-							<span className="text-neutral-100 text-sm">{label}</span>
+							<span className="text-black text-sm">{label}</span>
 							{isEditing ? (
 								<div className="flex items-center gap-2">
 									<input
 										type="number"
 										value={editValue}
 										onChange={(e) => setEditValue(e.target.value)}
-										className="w-20 px-2 py-1 bg-neutral-800 border border-neutral-700 text-neutral-100 rounded-lg text-sm text-right font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
+										className="input w-20 text-right font-mono"
 										min={0}
 										step={0.5}
 									/>
-									<span className="text-neutral-500 text-xs">{cycle.unit}</span>
+									<span className="text-gray-500 text-xs">{cycle.unit}</span>
 									<button
 										type="button"
 										onClick={() => handleSave(key)}
 										disabled={isSaving}
-										className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-100 text-xs rounded-lg font-medium transition-colors disabled:opacity-50"
+										className="btn-secondary !px-2 !py-1 !text-xs disabled:opacity-50"
 									>
 										{isSaving ? "..." : "Save"}
 									</button>
 									<button
 										type="button"
 										onClick={() => setEditingLift(null)}
-										className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-100 text-xs rounded-lg font-medium transition-colors"
+										className="btn-ghost !px-2 !py-1 !text-xs"
 									>
 										Cancel
 									</button>
 								</div>
 							) : (
 								<div className="flex items-center gap-2">
-									<span className="text-neutral-300 text-sm font-mono font-bold">
+									<span className="text-gray-600 text-sm font-mono font-bold">
 										{value != null ? `${value} ${cycle.unit}` : "Not set"}
 									</span>
 									<button
 										type="button"
 										onClick={() => handleEdit(key, value)}
-										className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-100 text-xs rounded-lg font-medium transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
+										className="btn-secondary !px-2 !py-1 !text-xs min-h-[48px] min-w-[48px]"
 									>
 										Edit
 									</button>
@@ -187,10 +187,8 @@ function SavedWeightsSection() {
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div>
-				<h3 className="text-xs font-semibold text-neutral-400 mb-3">
-					Saved weights
-				</h3>
-				<p className="text-neutral-500 text-sm">Loading...</p>
+				<h3 className="label mb-3">Saved weights</h3>
+				<p className="text-gray-400 text-sm">Loading...</p>
 			</div>
 		);
 	}
@@ -198,12 +196,8 @@ function SavedWeightsSection() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div>
-				<h3 className="text-xs font-semibold text-neutral-400 mb-3">
-					Saved weights
-				</h3>
-				<p className="text-neutral-400 text-sm">
-					Failed to load saved weights.
-				</p>
+				<h3 className="label mb-3">Saved weights</h3>
+				<p className="text-gray-500 text-sm">Failed to load saved weights.</p>
 			</div>
 		);
 	}
@@ -212,11 +206,9 @@ function SavedWeightsSection() {
 
 	return (
 		<div>
-			<h3 className="text-xs font-semibold text-neutral-400 mb-3">
-				Saved weights
-			</h3>
+			<h3 className="label mb-3">Saved weights</h3>
 			{weights.length === 0 ? (
-				<p className="text-neutral-500 text-sm">
+				<p className="text-gray-400 text-sm">
 					Weights will be saved as you complete workouts
 				</p>
 			) : (
@@ -224,18 +216,18 @@ function SavedWeightsSection() {
 					{weights.map((w) => (
 						<div
 							key={w.id}
-							className="flex items-center justify-between py-2 border-b border-neutral-800/50 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0"
 						>
-							<span className="text-neutral-100 text-sm">{w.exerciseName}</span>
+							<span className="text-black text-sm">{w.exerciseName}</span>
 							<div className="flex items-center gap-2">
-								<span className="text-neutral-300 text-sm font-mono font-bold">
+								<span className="text-gray-600 text-sm font-mono font-bold">
 									{w.weight} {w.unit}
 								</span>
 								<button
 									type="button"
 									onClick={() => handleDelete(w.exerciseName)}
 									disabled={deletingName === w.exerciseName}
-									className="w-8 h-8 min-h-[48px] min-w-[48px] flex items-center justify-center text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+									className="btn-ghost !text-red-600 hover:!text-red-700 hover:!bg-red-50 min-h-[48px] min-w-[48px] disabled:opacity-50"
 								>
 									{deletingName === w.exerciseName ? "..." : "\u00D7"}
 								</button>
