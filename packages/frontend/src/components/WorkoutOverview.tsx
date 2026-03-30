@@ -183,24 +183,22 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		plan.variation.lastSession?.weight ?? plan.variation.preferredWeight;
 
 	return (
-		<div className="space-y-6 animate-fade-in">
+		<div className="space-y-6">
 			{/* Title */}
 			<div>
-				<h1 className="text-4xl font-[family-name:var(--font-heading)] uppercase gradient-text-cyan font-bold">
-					{dayName}
-				</h1>
-				<p className="text-zinc-500 text-sm mt-1">
+				<h1 className="text-2xl font-semibold text-neutral-100">{dayName}</h1>
+				<p className="text-sm text-neutral-400 mt-1">
 					Cycle {plan.cycle} &middot; Round {plan.round}
 				</p>
 			</div>
 
 			{/* Main Lift Section */}
 			{plan.mainLiftSets.length === 0 ? (
-				<div className="glass-card p-5 space-y-3">
-					<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
+				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
+					<h2 className="text-lg font-semibold text-neutral-100">
 						{mainLiftName}
 					</h2>
-					<p className="text-zinc-400 text-sm">
+					<p className="text-sm text-neutral-400">
 						Enter your 1RM for {mainLiftName} to calculate your sets.
 					</p>
 					<div className="flex gap-3">
@@ -209,13 +207,13 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							value={oneRmInput}
 							onChange={(e) => setOneRmInput(e.target.value)}
 							placeholder={`1RM in ${unit}`}
-							className="flex-1 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
+							className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
 						/>
 						<button
 							type="button"
 							onClick={handleSubmit1rm}
 							disabled={isSubmitting1rm}
-							className="btn-gradient-cyan px-6 py-2 rounded-xl disabled:opacity-50"
+							className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors disabled:opacity-50"
 						>
 							{isSubmitting1rm ? "Saving..." : "Save"}
 						</button>
@@ -223,22 +221,22 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					{oneRmError && <p className="text-red-400 text-sm">{oneRmError}</p>}
 				</div>
 			) : (
-				<div className="glass-card p-5 space-y-3">
-					<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
+				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
+					<h2 className="text-lg font-semibold text-neutral-100">
 						{mainLiftName}
 					</h2>
 					<div className="space-y-1">
 						{plan.mainLiftSets.map((s) => (
 							<div
 								key={s.setNumber}
-								className="flex items-center justify-between text-sm text-zinc-300 py-1.5"
+								className="flex items-center justify-between text-sm text-neutral-300 py-1.5"
 							>
-								<span className="font-[family-name:var(--font-mono)]">
+								<span className="font-mono text-sm text-neutral-300">
 									Set {s.setNumber}: {s.weight} {unit} &times; {s.reps}
 									{s.isAmrap ? "+" : ""}
 								</span>
 								{s.isAmrap && (
-									<span className="text-xs bg-red-500/20 text-red-400 rounded px-2 py-0.5">
+									<span className="bg-red-500/10 text-red-400 rounded-md px-2 py-0.5 text-xs font-medium">
 										AMRAP
 									</span>
 								)}
@@ -249,10 +247,8 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			)}
 
 			{/* Variation Section */}
-			<div className="glass-card p-5 space-y-3">
-				<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
-					Variation
-				</h2>
+			<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3">
+				<h2 className="text-lg font-semibold text-neutral-100">Variation</h2>
 				<select
 					value={selections[variationKey]}
 					onChange={(e) =>
@@ -262,7 +258,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							e.target.value,
 						)
 					}
-					className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
+					className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
 				>
 					{variationOptions.map((opt) => (
 						<option key={opt} value={opt}>
@@ -274,7 +270,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					{plan.variation.sets.map((s) => (
 						<div
 							key={s.setNumber}
-							className="text-sm text-zinc-300 py-1 font-[family-name:var(--font-mono)]"
+							className="font-mono text-sm text-neutral-300 py-1"
 						>
 							Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}-
 							{s.rpeMax}
@@ -282,8 +278,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 					))}
 				</div>
 				{variationDisplayWeight != null && (
-					<p className="text-cyan-500 font-[family-name:var(--font-mono)] text-sm">
-						Last: {variationDisplayWeight} {unit}
+					<p className="text-xs text-neutral-500">
+						Last session:{" "}
+						<span className="text-indigo-400 font-mono">
+							{variationDisplayWeight} {unit}
+						</span>
 					</p>
 				)}
 			</div>
@@ -294,8 +293,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				const accOptions = exerciseOptionsLookup[acc.category] ?? [];
 				const accDisplayWeight = acc.lastSession?.weight ?? acc.preferredWeight;
 				return (
-					<div key={accKey} className="glass-card p-5 space-y-3">
-						<h2 className="text-lg font-[family-name:var(--font-heading)] font-bold text-zinc-100 uppercase">
+					<div
+						key={accKey}
+						className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-3"
+					>
+						<h2 className="text-lg font-semibold text-neutral-100">
 							{acc.category
 								.replace(/_/g, " ")
 								.replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -305,7 +307,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							onChange={(e) =>
 								updateSelection(accKey, `${acc.category}-${i}`, e.target.value)
 							}
-							className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-100 focus:ring-cyan-500 focus:ring-1 focus:outline-none"
+							className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
 						>
 							{accOptions.map((opt) => (
 								<option key={opt} value={opt}>
@@ -317,7 +319,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							{acc.sets.map((s) => (
 								<div
 									key={s.setNumber}
-									className="text-sm text-zinc-300 py-1 font-[family-name:var(--font-mono)]"
+									className="font-mono text-sm text-neutral-300 py-1"
 								>
 									Set {s.setNumber}: {s.repMin}-{s.repMax} reps @ RPE {s.rpeMin}
 									-{s.rpeMax}
@@ -325,8 +327,11 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 							))}
 						</div>
 						{accDisplayWeight != null && (
-							<p className="text-cyan-500 font-[family-name:var(--font-mono)] text-sm">
-								Last: {accDisplayWeight} {unit}
+							<p className="text-xs text-neutral-500">
+								Last session:{" "}
+								<span className="text-indigo-400 font-mono">
+									{accDisplayWeight} {unit}
+								</span>
 							</p>
 						)}
 					</div>
@@ -337,7 +342,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			<button
 				type="button"
 				onClick={() => onStart(selections)}
-				className="btn-gradient-cyan min-h-20 rounded-2xl text-xl w-full"
+				className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full"
 			>
 				Start Workout
 			</button>

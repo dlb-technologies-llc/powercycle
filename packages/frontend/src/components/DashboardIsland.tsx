@@ -24,7 +24,7 @@ export default function DashboardIsland() {
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-zinc-400">Loading...</p>
+				<p className="text-neutral-500">Loading...</p>
 			</div>
 		);
 	}
@@ -32,7 +32,7 @@ export default function DashboardIsland() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-zinc-400">Failed to load cycle data.</p>
+				<p className="text-neutral-500">Failed to load cycle data.</p>
 			</div>
 		);
 	}
@@ -51,23 +51,19 @@ export default function DashboardIsland() {
 	if (cycle.completedAt) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<div className="glass-card p-8 w-full max-w-md">
-					<h1 className="gradient-text-green text-5xl font-[family-name:var(--font-heading)] uppercase tracking-wider mb-4 animate-fade-in">
-						CYCLE COMPLETE
+				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 w-full max-w-md">
+					<h1 className="text-2xl font-semibold text-neutral-100 mb-4">
+						Cycle complete
 					</h1>
-					<p
-						className="text-zinc-400 mb-8 animate-fade-in"
-						style={{ animationDelay: "100ms" }}
-					>
+					<p className="text-neutral-400 mb-8">
 						Cycle {cycle.cycleNumber} finished. Time to calculate your new
 						maxes.
 					</p>
 					<a
 						href="/progression"
-						className="btn-gradient-green block w-full min-h-20 flex items-center justify-center text-xl rounded-2xl animate-fade-in"
-						style={{ animationDelay: "200ms" }}
+						className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors block w-full text-center"
 					>
-						View Progression
+						View progression
 					</a>
 				</div>
 			</div>
@@ -99,34 +95,22 @@ export default function DashboardIsland() {
 
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-			<div className="glass-card p-8 w-full max-w-md">
-				<p
-					className="text-sm text-zinc-500 mb-4 animate-fade-in"
-					style={{ animationDelay: "0ms" }}
-				>
+			<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 w-full max-w-md">
+				<p className="text-sm text-neutral-400 mb-4">
 					Cycle {cycle.cycleNumber} &middot; Round {cycle.currentRound} (
 					{roundName})
 				</p>
-				<h1
-					className="gradient-text-cyan text-5xl font-[family-name:var(--font-heading)] uppercase tracking-wider mb-2 animate-fade-in"
-					style={{ animationDelay: "100ms" }}
-				>
-					{dayName} Day
+				<h1 className="text-2xl font-semibold text-neutral-100 mb-2">
+					{dayName} day
 				</h1>
-				<p
-					className="text-zinc-400 mb-8 animate-fade-in"
-					style={{ animationDelay: "200ms" }}
-				>
-					Day {cycle.currentDay} of 4
-				</p>
+				<p className="text-neutral-400 mb-8">Day {cycle.currentDay} of 4</p>
 				<button
 					type="button"
 					onClick={handleStart}
 					disabled={isStarting}
-					className="btn-gradient-cyan w-full min-h-20 text-xl rounded-2xl disabled:opacity-50 animate-fade-in animate-glow-cyan"
-					style={{ animationDelay: "300ms" }}
+					className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors w-full disabled:opacity-50"
 				>
-					{isStarting ? "Starting..." : "START WORKOUT"}
+					{isStarting ? "Starting..." : "Start workout"}
 				</button>
 			</div>
 			<WeightManagement cycle={cycle} />
