@@ -100,7 +100,9 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (AsyncResult.isInitial(workoutResult) || workoutResult.waiting)
 			return null;
 		if (AsyncResult.isFailure(workoutResult)) return null;
-		return workoutResult.value?.startedAt ?? null;
+		const workout = workoutResult.value;
+		if (!workout || workout.id !== id) return null;
+		return workout.startedAt;
 	})();
 
 	const flow = useWorkoutFlow(plan ?? null);

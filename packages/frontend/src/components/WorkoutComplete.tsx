@@ -16,7 +16,7 @@ const LIFT_DISPLAY_NAMES: Record<string, string> = {
 
 function formatDuration(startedAt: string | null): string {
 	if (!startedAt) return "--";
-	const ms = Date.now() - new Date(startedAt).getTime();
+	const ms = Math.max(0, Date.now() - new Date(startedAt).getTime());
 	const totalMinutes = Math.floor(ms / 60000);
 	if (totalMinutes < 60) return `${totalMinutes} min`;
 	const hours = Math.floor(totalMinutes / 60);

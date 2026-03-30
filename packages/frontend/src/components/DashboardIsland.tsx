@@ -39,7 +39,7 @@ export default function DashboardIsland() {
 	const currentWorkout = (() => {
 		if (AsyncResult.isInitial(workoutResult) || workoutResult.waiting)
 			return undefined;
-		if (AsyncResult.isFailure(workoutResult)) return undefined;
+		if (AsyncResult.isFailure(workoutResult)) return null;
 		return workoutResult.value;
 	})();
 
@@ -210,7 +210,10 @@ export default function DashboardIsland() {
 							) : (
 								<button
 									type="button"
-									onClick={() => setEndWorkoutConfirm(true)}
+									onClick={() => {
+										setEndWorkoutConfirm(true);
+										setEndCycleConfirm(false);
+									}}
 									className="btn-ghost w-full"
 								>
 									End workout
@@ -257,7 +260,10 @@ export default function DashboardIsland() {
 					) : (
 						<button
 							type="button"
-							onClick={() => setEndCycleConfirm(true)}
+							onClick={() => {
+								setEndCycleConfirm(true);
+								setEndWorkoutConfirm(false);
+							}}
 							className="btn-ghost w-full"
 						>
 							End cycle
