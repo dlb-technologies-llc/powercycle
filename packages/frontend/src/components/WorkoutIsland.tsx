@@ -158,7 +158,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!id) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-zinc-400">No workout ID provided.</p>
+				<p className="text-neutral-500">No workout ID provided.</p>
 			</div>
 		);
 	}
@@ -177,7 +177,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		}
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-zinc-400">Loading workout plan...</p>
+				<p className="text-neutral-500">Loading workout plan...</p>
 			</div>
 		);
 	}
@@ -185,10 +185,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (!plan) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-				<p className="text-zinc-400 mb-4">No workout available.</p>
+				<p className="text-neutral-500 mb-4">No workout available.</p>
 				<a
 					href="/"
-					className="text-zinc-100 underline hover:text-zinc-300 transition-colors"
+					className="text-neutral-100 underline hover:text-neutral-300 transition-colors"
 				>
 					Back to Dashboard
 				</a>
@@ -199,7 +199,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (plan && !resumeChecked) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-zinc-400">Checking workout progress...</p>
+				<p className="text-neutral-500">Checking workout progress...</p>
 			</div>
 		);
 	}
@@ -326,18 +326,16 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 
 	if (flow.phase === "complete") {
 		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-fade-in">
-				<div className="glass-card p-8 space-y-4">
-					<h1 className="text-4xl font-[family-name:var(--font-heading)] font-bold gradient-text-green uppercase">
-						Workout Complete!
-					</h1>
-					<p className="text-zinc-400">All {flow.totalSets} sets finished</p>
+			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+				<div className="p-8 space-y-4">
+					<h1 className="text-4xl font-semibold">Workout complete</h1>
+					<p className="text-neutral-500">All {flow.totalSets} sets finished</p>
 				</div>
 				<button
 					type="button"
 					onClick={handleFinish}
 					disabled={isFinishing}
-					className="btn-gradient-green min-h-20 rounded-2xl text-xl w-full disabled:opacity-50"
+					className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full disabled:opacity-50"
 				>
 					{isFinishing ? "Finishing..." : "Finish Workout"}
 				</button>

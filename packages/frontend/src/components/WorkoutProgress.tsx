@@ -12,20 +12,17 @@ export function WorkoutProgress({
 	const pct = total > 0 ? (current / total) * 100 : 0;
 	return (
 		<div className="space-y-1.5">
-			<div className="text-sm text-zinc-400">
+			<div className="text-sm text-neutral-400">
 				Set {current} of {total}
 			</div>
-			<div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+			<div className="h-2 rounded-full bg-neutral-800 overflow-hidden">
 				<div
-					className="h-full rounded-full transition-all duration-300"
-					style={{
-						width: `${pct}%`,
-						background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
-					}}
+					className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+					style={{ width: `${pct}%` }}
 				/>
 			</div>
 			{exerciseName && (
-				<div className="text-xs text-zinc-500">{exerciseName}</div>
+				<div className="text-xs text-neutral-500">{exerciseName}</div>
 			)}
 		</div>
 	);
