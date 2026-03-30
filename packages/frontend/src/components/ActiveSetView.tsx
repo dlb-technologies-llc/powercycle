@@ -24,6 +24,7 @@ interface ActiveSetViewProps {
 		rpe: number | null;
 		saveWeight?: boolean;
 	}) => void;
+	onSkipExercise?: () => void;
 }
 
 function formatTime(s: number): string {

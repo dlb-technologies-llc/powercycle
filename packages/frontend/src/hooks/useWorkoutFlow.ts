@@ -205,6 +205,34 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		}
 	}, [isLastSet, flatSets, currentIndex, currentSet]);
 
+	const skipExercise = useCallback(() => {
+		if (!currentSet) return null;
+		const exerciseName = currentSet.exerciseName;
+		const fromSetNumber = currentSet.setNumber;
+
+		// Find the index of the next set with a different exercise name
+		let nextDifferentIndex = flatSets.length;
+		for (let i = currentIndex; i < flatSets.length; i++) {
+			if (flatSets[i].exerciseName !== exerciseName) {
+				nextDifferentIndex = i;
+				break;
+			}
+		}
+
+		const count = nextDifferentIndex - currentIndex;
+
+		// Advance to the next exercise or complete
+		if (nextDifferentIndex >= flatSets.length) {
+			setCurrentIndex(flatSets.length - 1);
+			setPhase("complete");
+		} else {
+			setCurrentIndex(nextDifferentIndex);
+			setPhase("ready");
+		}
+
+		return { exerciseName, fromSetNumber, count };
+	}, [currentSet, currentIndex, flatSets]);
+
 	return {
 		phase,
 		currentSet,
@@ -220,5 +248,6 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 		startSet,
 		completeSet,
 		confirmAndNext,
+		skipExercise,
 	};
 }
