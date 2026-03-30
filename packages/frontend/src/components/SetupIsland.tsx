@@ -69,19 +69,21 @@ export default function SetupIsland() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-black mb-1">Set your maxes</h1>
-			<p className="text-sm text-gray-600 mb-8">
+			<h1 className="text-2xl font-bold text-foreground mb-1">
+				Set your maxes
+			</h1>
+			<p className="text-sm text-muted-foreground mb-8">
 				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-3">
-				<div className="inline-flex rounded-lg border border-gray-200 p-1 mb-4">
+				<div className="inline-flex rounded-lg border border-border p-1 mb-4">
 					<Button
 						type="button"
 						variant={unit === "lbs" ? "default" : "ghost"}
 						size="sm"
 						onClick={() => setUnit("lbs")}
 						className={cn(
-							unit !== "lbs" && "text-gray-400 hover:text-gray-600",
+							unit !== "lbs" && "text-muted-foreground hover:text-foreground",
 						)}
 					>
 						lbs
@@ -91,7 +93,9 @@ export default function SetupIsland() {
 						variant={unit === "kg" ? "default" : "ghost"}
 						size="sm"
 						onClick={() => setUnit("kg")}
-						className={cn(unit !== "kg" && "text-gray-400 hover:text-gray-600")}
+						className={cn(
+							unit !== "kg" && "text-muted-foreground hover:text-foreground",
+						)}
 					>
 						kg
 					</Button>
