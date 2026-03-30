@@ -62,6 +62,7 @@ export const WorkoutLive = Layer.succeed(WorkoutService)({
 					restDuration: input.restDuration,
 					isMainLift: input.isMainLift,
 					isAmrap: input.isAmrap,
+					skipped: false,
 					completedAt: new Date(),
 				}),
 		),

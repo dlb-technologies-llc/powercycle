@@ -32,3 +32,8 @@ export const startNextCycleAtom = ApiClient.mutation("cycles", "next");
  * Update a single 1RM for the current cycle.
  */
 export const update1rmAtom = ApiClient.mutation("cycles", "update1rm");
+
+/**
+ * End the current training cycle without starting a new one.
+ */
+export const endCycleAtom = ApiClient.mutation("cycles", "end");

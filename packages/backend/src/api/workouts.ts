@@ -1,5 +1,5 @@
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
-import { InternalError } from "@powercycle/shared/errors/index";
+import { InternalError, NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
@@ -236,6 +236,132 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						sets.push(WorkoutSet.toResponse(setEntity));
 					}
 					return sets;
+				}),
+			)
+			.handle("skipSets", (ctx) =>
+				Effect.gen(function* () {
+					const workoutRow = yield* findWorkoutById(db, ctx.params.id);
+					const workoutEntity = workoutRow
+						? yield* Workout.decodeRow(workoutRow)
+						: null;
+					const workout = yield* workoutService.validateWorkout(
+						workoutEntity,
+						ctx.params.id,
+					);
+
+					// Get cycle to generate the workout plan
+					const cycleRow = yield* findActiveCycle(db, workout.userId);
+					if (!cycleRow) {
+						return yield* Effect.fail(
+							new NotFoundError({
+								message: "No active cycle found",
+								resource: "cycle",
+							}),
+						);
+					}
+					const cycle = yield* Cycle.decodeRow(cycleRow);
+
+					const plan = generateWorkoutPlan(
+						{
+							squat: cycle.squat1rm,
+							bench: cycle.bench1rm,
+							deadlift: cycle.deadlift1rm,
+							ohp: cycle.ohp1rm,
+							unit: cycle.unit,
+						},
+						cycle.cycleNumber,
+						workout.round,
+						workout.day,
+					);
+
+					// Find the exercise in the plan to determine total sets
+					const allExercises = [
+						{
+							name: plan.mainLift,
+							sets: plan.mainLiftSets,
+							isMainLift: true,
+							category: null,
+						},
+						...(plan.variation
+							? [
+									{
+										name: plan.variation.defaultExercise,
+										sets: plan.variation.sets,
+										isMainLift: false,
+										category: plan.variation.category,
+									},
+								]
+							: []),
+						...plan.accessories.map((a) => ({
+							name: a.defaultExercise,
+							sets: a.sets,
+							isMainLift: false,
+							category: a.category,
+						})),
+					];
+
+					const exercise = allExercises.find(
+						(e) => e.name === ctx.payload.exerciseName,
+					);
+					if (!exercise) {
+						return yield* Effect.fail(
+							new NotFoundError({
+								message: `Exercise not found in plan: ${ctx.payload.exerciseName}`,
+								resource: "exercise",
+							}),
+						);
+					}
+
+					const totalSets = exercise.sets.length;
+					const skippedSets = [];
+
+					for (
+						let setNum = ctx.payload.fromSetNumber;
+						setNum <= totalSets;
+						setNum++
+					) {
+						const prescribedSet = exercise.sets[setNum - 1];
+						const prescribedWeight =
+							"weight" in prescribedSet ? prescribedSet.weight : null;
+						const prescribedReps =
+							"reps" in prescribedSet ? prescribedSet.reps : null;
+						const prescribedRpeMin =
+							"rpeMin" in prescribedSet ? prescribedSet.rpeMin : null;
+						const prescribedRpeMax =
+							"rpeMax" in prescribedSet ? prescribedSet.rpeMax : null;
+						const isAmrap =
+							"isAmrap" in prescribedSet ? prescribedSet.isAmrap : false;
+
+						const setEntity = new WorkoutSet({
+							id: crypto.randomUUID(),
+							workoutId: ctx.params.id,
+							exerciseName: ctx.payload.exerciseName,
+							category: exercise.category,
+							setNumber: setNum,
+							prescribedWeight,
+							actualWeight: null,
+							prescribedReps,
+							actualReps: null,
+							prescribedRpeMin,
+							prescribedRpeMax,
+							rpe: null,
+							isMainLift: exercise.isMainLift,
+							isAmrap,
+							setDuration: null,
+							restDuration: null,
+							skipped: true,
+							completedAt: new Date(),
+						});
+
+						const row = yield* insertWorkoutSet(db, {
+							...WorkoutSet.toDbInsert(setEntity),
+							completedAt: setEntity.completedAt,
+						});
+						const inserted = yield* WorkoutSet.decodeRow(row);
+						skippedSets.push(WorkoutSet.toResponse(inserted));
+					}
+
+					return skippedSets;
 				}),
 			);
 	}),

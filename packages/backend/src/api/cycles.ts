@@ -100,6 +100,25 @@ export const CyclesLive = HttpApiBuilder.group(
 					return Cycle.toResponse(cycle);
 				}),
 			)
+			.handle("end", (_ctx) =>
+				Effect.gen(function* () {
+					const userId = DEFAULT_USER_ID;
+					const row = yield* findActiveCycle(db, userId);
+					if (!row) {
+						return yield* Effect.fail(
+							new NotFoundError({
+								message: "No active cycle found",
+								resource: "cycle",
+							}),
+						);
+					}
+					const updated = yield* updateCycle(db, row.id, {
+						completedAt: new Date(),
+					});
+					const cycle = yield* Cycle.decodeRow(updated);
+					return Cycle.toResponse(cycle);
+				}),
+			)
 			.handle("update1rm", (ctx) =>
 				Effect.gen(function* () {
 					const userId = DEFAULT_USER_ID;

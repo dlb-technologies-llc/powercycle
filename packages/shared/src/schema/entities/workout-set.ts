@@ -20,6 +20,7 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 	isAmrap: Schema.Boolean,
 	setDuration: Schema.NullOr(Schema.Int),
 	restDuration: Schema.NullOr(Schema.Int),
+	skipped: Schema.Boolean,
 	completedAt: Schema.NullOr(Schema.Date),
 }) {
 	// Decode schema for Drizzle rows (string numerics → numbers)
@@ -40,6 +41,7 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 		isAmrap: Schema.Boolean,
 		setDuration: Schema.NullOr(Schema.Int),
 		restDuration: Schema.NullOr(Schema.Int),
+		skipped: Schema.Boolean,
 		completedAt: Schema.NullOr(Schema.Date),
 	});
 
@@ -73,6 +75,7 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 			isAmrap: set.isAmrap,
 			setDuration: set.setDuration,
 			restDuration: set.restDuration,
+			skipped: set.skipped,
 			completedAt: set.completedAt?.toISOString() ?? null,
 		};
 	}
@@ -97,6 +100,7 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 			isAmrap: set.isAmrap,
 			setDuration: set.setDuration,
 			restDuration: set.restDuration,
+			skipped: set.skipped,
 		};
 	}
 }

@@ -81,6 +81,42 @@ bun run test:unit
 - API client: `AtomHttpApi.Service` at `src/atoms/client.ts`
 - Tailwind 4 with `@tailwindcss/vite` plugin
 
+## Design Theme
+
+Nike-inspired light-mode brand. Clean, bold, minimal — NOT dark mode.
+
+**Colors:**
+- Background: white (#ffffff)
+- Text: black (#000000) primary, gray-600 (#4b5563) secondary
+- Cards: white, 1px solid #e5e7eb border
+- Inputs: white, #d1d5db border, black border on focus
+- Danger: red-600
+
+**Typography:** Inter (400/500/600/700) for all text. JetBrains Mono for numbers/weights.
+
+**Shared CSS classes** (defined in `packages/frontend/src/styles/global.css`):
+- `.btn-primary` — black bg, white text (Nike signature)
+- `.btn-secondary` — outlined, dark text
+- `.btn-danger` — red bg, white text
+- `.btn-ghost` — text-only
+- `.card` — white bg, gray border, rounded-xl
+- `.input` — bordered, compact (text-sm), black focus ring
+- `.badge` — small pill for metadata
+- `.label` — small gray label text
+
+**Rules:**
+- No dark mode classes (bg-neutral-950, bg-neutral-900, text-neutral-100, etc.)
+- No gradients, glow, glass-morphism, or indigo accent
+- Inputs must be compact — never text-xl or larger
+- Timer display is text-based (bold monospace) — no SVG circle/ring
+- Use shared CSS classes from global.css, not inline Tailwind strings for common patterns
+
+## Workout Data
+
+- `skipped` boolean on workout_sets — skipped sets are real data, not faked completions. Records that the user chose to skip (time constraints, etc.)
+- End cycle: `POST /api/cycles/current/end` — ends active cycle only (sets completedAt)
+- Start next: `POST /api/cycles/next` — ends current + creates new cycle with updated 1RMs
+
 ## Shared Schema Locations
 
 - **UUID**: `packages/shared/src/schema/common.ts` -- `Schema.String.check(Schema.isUUID())`; import from `../common.js`

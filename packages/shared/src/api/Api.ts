@@ -102,6 +102,15 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				InternalError.pipe(HttpApiSchema.status(500)),
 			],
 		}),
+	)
+	.add(
+		HttpApiEndpoint.post("end", "/api/cycles/current/end", {
+			success: CycleResponse,
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
 	) {}
 
 export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
@@ -162,6 +171,20 @@ export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
 		params: {
 			id: Schema.String,
 		},
+		success: Schema.Array(SetResponse),
+		error: [
+			NotFoundError.pipe(HttpApiSchema.status(404)),
+			InternalError.pipe(HttpApiSchema.status(500)),
+		],
+	}),
+	HttpApiEndpoint.post("skipSets", "/api/workouts/:id/skip-sets", {
+		params: {
+			id: Schema.String,
+		},
+		payload: Schema.Struct({
+			exerciseName: Schema.String,
+			fromSetNumber: Schema.Number,
+		}),
 		success: Schema.Array(SetResponse),
 		error: [
 			NotFoundError.pipe(HttpApiSchema.status(404)),
