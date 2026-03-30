@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 interface WorkoutProgressProps {
@@ -18,11 +19,7 @@ export function WorkoutProgress({
 				<span className="text-sm font-medium text-foreground">
 					Set {current} of {total}
 				</span>
-				{exerciseName && (
-					<span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-						{exerciseName}
-					</span>
-				)}
+				{exerciseName && <Badge variant="outline">{exerciseName}</Badge>}
 			</div>
 			<Progress value={pct} />
 		</div>

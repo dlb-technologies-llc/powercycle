@@ -46,7 +46,7 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 	return (
 		<div className="w-full max-w-md mx-auto mt-8">
 			<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-				<Card className="!p-0 overflow-hidden">
+				<Card className="p-0 overflow-hidden">
 					<CollapsibleTrigger className="w-full flex items-center justify-between px-6 py-4 text-foreground hover:bg-accent/50 transition-colors">
 						<span className="font-semibold">Weight management</span>
 						<span

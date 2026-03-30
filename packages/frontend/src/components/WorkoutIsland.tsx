@@ -230,7 +230,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		// Skip exercises that were marked in the overview
 		if (skippedExercises && skippedExercises.size > 0) {
 			// After starting, iterate through skipped exercises and fire skip API calls
-			for (const exerciseKey of skippedExercises) {
+			for (const _exerciseKey of skippedExercises) {
 				// The flow will handle advancing past these in the UI
 				// We need to fire the API call for each skipped exercise
 				const skipInfo = flow.skipExercise();

@@ -306,7 +306,7 @@ export function ActiveSetView({
 									inputMode="decimal"
 									value={weight}
 									onChange={(e) => setWeight(e.target.value)}
-									className={cn("font-mono text-xl")}
+									className="font-mono"
 									placeholder="Weight"
 								/>
 							</div>
@@ -317,7 +317,7 @@ export function ActiveSetView({
 									inputMode="numeric"
 									value={reps}
 									onChange={(e) => setReps(e.target.value)}
-									className={cn("font-mono text-xl")}
+									className="font-mono"
 									placeholder="Reps"
 								/>
 							</div>
@@ -334,7 +334,7 @@ export function ActiveSetView({
 										step={0.5}
 										value={rpe}
 										onChange={(e) => setRpe(e.target.value)}
-										className={cn("font-mono text-xl")}
+										className="font-mono"
 										placeholder="RPE"
 									/>
 									{rpeError && (

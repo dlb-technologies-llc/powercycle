@@ -26,7 +26,7 @@ export default function SetupIsland() {
 
 	const createCycle = useAtomSet(createCycleAtom, { mode: "promiseExit" });
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setError("");
 		const liftValues = {
@@ -120,7 +120,7 @@ export default function SetupIsland() {
 						</CardContent>
 					</Card>
 				))}
-				{error && <p className="text-red-600 text-sm">{error}</p>}
+				{error && <p className="text-destructive text-sm">{error}</p>}
 				<Button type="submit" disabled={isPending} className="w-full">
 					{isPending ? "Starting..." : "Start program"}
 				</Button>

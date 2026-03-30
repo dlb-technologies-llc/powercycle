@@ -43,7 +43,7 @@ function progressionColor(p: {
 	newMax: number;
 	progressed: boolean;
 }): string {
-	if (p.newMax > p.currentMax) return "text-green-600";
+	if (p.newMax > p.currentMax) return "text-emerald-600";
 	if (p.newMax < p.currentMax) return "text-destructive";
 	return "text-muted-foreground";
 }
@@ -229,7 +229,7 @@ export default function ProgressionIsland() {
 			) : (
 				<div className="space-y-4">
 					{LIFTS.filter(({ key }) => progression[key]).map(
-						({ key, label }, index, arr) => {
+						({ key, label }, index) => {
 							const p = progression[key];
 							return (
 								<div key={key}>
