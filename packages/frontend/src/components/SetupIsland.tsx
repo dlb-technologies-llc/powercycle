@@ -118,7 +118,7 @@ export default function SetupIsland() {
 					disabled={isPending}
 					className="w-full py-3 text-lg bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
 				>
-					{isPending ? "Starting..." : "Start Program"}
+					{isPending ? "Starting..." : "Start program"}
 				</button>
 			</form>
 		</div>

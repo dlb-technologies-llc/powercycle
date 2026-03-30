@@ -344,7 +344,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 				onClick={() => onStart(selections)}
 				className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full"
 			>
-				Start Workout
+				Start workout
 			</button>
 		</div>
 	);

@@ -190,7 +190,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 					href="/"
 					className="text-neutral-100 underline hover:text-neutral-300 transition-colors"
 				>
-					Back to Dashboard
+					Back to dashboard
 				</a>
 			</div>
 		);
@@ -327,8 +327,10 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	if (flow.phase === "complete") {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-				<div className="p-8 space-y-4">
-					<h1 className="text-4xl font-semibold">Workout complete</h1>
+				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-8 space-y-4">
+					<h1 className="text-4xl font-semibold text-neutral-100">
+						Workout complete
+					</h1>
 					<p className="text-neutral-500">All {flow.totalSets} sets finished</p>
 				</div>
 				<button
@@ -337,7 +339,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 					disabled={isFinishing}
 					className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full disabled:opacity-50"
 				>
-					{isFinishing ? "Finishing..." : "Finish Workout"}
+					{isFinishing ? "Finishing..." : "Finish workout"}
 				</button>
 			</div>
 		);

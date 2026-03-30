@@ -227,7 +227,7 @@ export default function ProgressionIsland() {
 									</p>
 								</div>
 								<div
-									className={`text-lg font-bold font-mono ${p.progressed ? "text-green-400" : "text-amber-400"}`}
+									className={`text-lg font-bold font-mono ${p.progressed ? "text-green-400" : "text-neutral-400"}`}
 								>
 									{p.progressed ? `+${p.newMax - p.currentMax}` : "Same"}
 								</div>
