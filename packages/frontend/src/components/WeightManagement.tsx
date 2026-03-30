@@ -3,6 +3,16 @@ import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { currentCycleAtom, update1rmAtom } from "../atoms/cycles";
 import {
 	deleteExerciseWeightAtom,
@@ -35,27 +45,28 @@ export default function WeightManagement({ cycle }: WeightManagementProps) {
 
 	return (
 		<div className="w-full max-w-md mx-auto mt-8">
-			<div className="card !p-0 overflow-hidden">
-				<button
-					type="button"
-					onClick={() => setIsOpen(!isOpen)}
-					className="w-full flex items-center justify-between px-6 py-4 text-black hover:bg-gray-50 transition-colors"
-				>
-					<span className="font-semibold">Weight management</span>
-					<span
-						className={`text-gray-400 transition-transform duration-200 inline-block ${isOpen ? "rotate-180" : ""}`}
-					>
-						&#x25BC;
-					</span>
-				</button>
+			<Collapsible open={isOpen} onOpenChange={setIsOpen}>
+				<Card className="p-0 overflow-hidden">
+					<CollapsibleTrigger className="w-full flex items-center justify-between px-6 py-4 text-foreground hover:bg-accent/50 transition-colors">
+						<span className="font-semibold">Weight management</span>
+						<span
+							className={cn(
+								"text-muted-foreground transition-transform duration-200 inline-block",
+								isOpen && "rotate-180",
+							)}
+						>
+							&#x25BC;
+						</span>
+					</CollapsibleTrigger>
 
-				{isOpen && (
-					<div className="px-6 pb-6 space-y-4">
-						<OneRmSection cycle={cycle} />
-						<SavedWeightsSection />
-					</div>
-				)}
-			</div>
+					<CollapsibleContent>
+						<CardContent className="space-y-4 pb-6">
+							<OneRmSection cycle={cycle} />
+							<SavedWeightsSection />
+						</CardContent>
+					</CollapsibleContent>
+				</Card>
+			</Collapsible>
 		</div>
 	);
 }
@@ -98,7 +109,7 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 
 	return (
 		<div>
-			<h3 className="label mb-3">Your 1RMs</h3>
+			<Label className="mb-3">Your 1RMs</Label>
 			<div className="space-y-2">
 				{LIFTS.map(({ key, label, field }) => {
 					const value = cycle[field];
@@ -107,48 +118,54 @@ function OneRmSection({ cycle }: { cycle: WeightManagementProps["cycle"] }) {
 					return (
 						<div
 							key={key}
-							className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-border last:border-0"
 						>
-							<span className="text-black text-sm">{label}</span>
+							<span className="text-foreground text-sm">{label}</span>
 							{isEditing ? (
 								<div className="flex items-center gap-2">
-									<input
+									<Input
 										type="number"
 										value={editValue}
 										onChange={(e) => setEditValue(e.target.value)}
-										className="input w-20 text-right font-mono"
+										className={cn("w-20 text-right font-mono")}
 										min={0}
 										step={0.5}
 									/>
-									<span className="text-gray-500 text-xs">{cycle.unit}</span>
-									<button
+									<span className="text-muted-foreground text-xs">
+										{cycle.unit}
+									</span>
+									<Button
 										type="button"
+										variant="secondary"
+										size="sm"
 										onClick={() => handleSave(key)}
 										disabled={isSaving}
-										className="btn-secondary !px-2 !py-1 !text-xs disabled:opacity-50"
 									>
 										{isSaving ? "..." : "Save"}
-									</button>
-									<button
+									</Button>
+									<Button
 										type="button"
+										variant="ghost"
+										size="sm"
 										onClick={() => setEditingLift(null)}
-										className="btn-ghost !px-2 !py-1 !text-xs"
 									>
 										Cancel
-									</button>
+									</Button>
 								</div>
 							) : (
 								<div className="flex items-center gap-2">
-									<span className="text-gray-600 text-sm font-mono font-bold">
+									<span className="text-muted-foreground text-sm font-mono font-bold">
 										{value != null ? `${value} ${cycle.unit}` : "Not set"}
 									</span>
-									<button
+									<Button
 										type="button"
+										variant="secondary"
+										size="sm"
 										onClick={() => handleEdit(key, value)}
-										className="btn-secondary !px-2 !py-1 !text-xs min-h-[48px] min-w-[48px]"
+										className="min-h-[48px] min-w-[48px]"
 									>
 										Edit
-									</button>
+									</Button>
 								</div>
 							)}
 						</div>
@@ -187,8 +204,8 @@ function SavedWeightsSection() {
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div>
-				<h3 className="label mb-3">Saved weights</h3>
-				<p className="text-gray-400 text-sm">Loading...</p>
+				<Label className="mb-3">Saved weights</Label>
+				<p className="text-muted-foreground text-sm">Loading...</p>
 			</div>
 		);
 	}
@@ -196,8 +213,10 @@ function SavedWeightsSection() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div>
-				<h3 className="label mb-3">Saved weights</h3>
-				<p className="text-gray-500 text-sm">Failed to load saved weights.</p>
+				<Label className="mb-3">Saved weights</Label>
+				<p className="text-muted-foreground text-sm">
+					Failed to load saved weights.
+				</p>
 			</div>
 		);
 	}
@@ -206,9 +225,9 @@ function SavedWeightsSection() {
 
 	return (
 		<div>
-			<h3 className="label mb-3">Saved weights</h3>
+			<Label className="mb-3">Saved weights</Label>
 			{weights.length === 0 ? (
-				<p className="text-gray-400 text-sm">
+				<p className="text-muted-foreground text-sm">
 					Weights will be saved as you complete workouts
 				</p>
 			) : (
@@ -216,21 +235,22 @@ function SavedWeightsSection() {
 					{weights.map((w) => (
 						<div
 							key={w.id}
-							className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0"
+							className="flex items-center justify-between py-2 border-b border-border last:border-0"
 						>
-							<span className="text-black text-sm">{w.exerciseName}</span>
+							<span className="text-foreground text-sm">{w.exerciseName}</span>
 							<div className="flex items-center gap-2">
-								<span className="text-gray-600 text-sm font-mono font-bold">
+								<span className="text-muted-foreground text-sm font-mono font-bold">
 									{w.weight} {w.unit}
 								</span>
-								<button
+								<Button
 									type="button"
+									variant="destructive"
+									size="icon-sm"
 									onClick={() => handleDelete(w.exerciseName)}
 									disabled={deletingName === w.exerciseName}
-									className="btn-ghost !text-red-600 hover:!text-red-700 hover:!bg-red-50 min-h-[48px] min-w-[48px] disabled:opacity-50"
 								>
 									{deletingName === w.exerciseName ? "..." : "\u00D7"}
-								</button>
+								</Button>
 							</div>
 						</div>
 					))}
