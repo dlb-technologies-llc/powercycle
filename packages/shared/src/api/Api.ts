@@ -113,85 +113,104 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 		}),
 	) {}
 
-export class WorkoutsGroup extends HttpApiGroup.make("workouts").add(
-	HttpApiEndpoint.get("history", "/api/workouts/history", {
-		success: Schema.Array(WorkoutWithSetsResponse),
-		error: [InternalError.pipe(HttpApiSchema.status(500))],
-	}),
-	HttpApiEndpoint.get("next", "/api/workouts/next", {
-		success: Schema.NullOr(WorkoutPlanResponse),
-		error: [InternalError.pipe(HttpApiSchema.status(500))],
-	}),
-	HttpApiEndpoint.post("start", "/api/workouts", {
-		payload: Schema.Struct({
-			cycleId: Schema.String,
-			round: Round,
-			day: TrainingDay,
+export class WorkoutsGroup extends HttpApiGroup.make("workouts")
+	.add(
+		HttpApiEndpoint.get("history", "/api/workouts/history", {
+			success: Schema.Array(WorkoutWithSetsResponse),
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
-		success: WorkoutResponse,
-		error: [InternalError.pipe(HttpApiSchema.status(500))],
-	}),
-	HttpApiEndpoint.post("logSet", "/api/workouts/:id/sets", {
-		params: {
-			id: Schema.String,
-		},
-		payload: Schema.Struct({
-			exerciseName: Schema.String,
-			setNumber: Schema.Number,
-			prescribedWeight: Schema.NullOr(Schema.Number),
-			actualWeight: Schema.NullOr(Schema.Number),
-			prescribedReps: Schema.NullOr(Schema.Number),
-			actualReps: Schema.NullOr(Schema.Number),
-			rpe: Schema.NullOr(RpeNumber),
-			prescribedRpeMin: Schema.NullOr(RpeNumber),
-			prescribedRpeMax: Schema.NullOr(RpeNumber),
-			isMainLift: Schema.Boolean,
-			isAmrap: Schema.Boolean,
-			setDuration: Schema.NullOr(Schema.Number),
-			restDuration: Schema.NullOr(Schema.Number),
-			category: Schema.NullOr(Schema.String),
+	)
+	.add(
+		HttpApiEndpoint.get("next", "/api/workouts/next", {
+			success: Schema.NullOr(WorkoutPlanResponse),
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
-		success: SetResponse,
-		error: [
-			NotFoundError.pipe(HttpApiSchema.status(404)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
-	}),
-	HttpApiEndpoint.post("complete", "/api/workouts/:id/complete", {
-		params: {
-			id: Schema.String,
-		},
-		success: WorkoutResponse,
-		error: [
-			NotFoundError.pipe(HttpApiSchema.status(404)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
-	}),
-	HttpApiEndpoint.get("sets", "/api/workouts/:id/sets", {
-		params: {
-			id: Schema.String,
-		},
-		success: Schema.Array(SetResponse),
-		error: [
-			NotFoundError.pipe(HttpApiSchema.status(404)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
-	}),
-	HttpApiEndpoint.post("skipSets", "/api/workouts/:id/skip-sets", {
-		params: {
-			id: Schema.String,
-		},
-		payload: Schema.Struct({
-			exerciseName: Schema.String,
-			fromSetNumber: Schema.Number,
+	)
+	.add(
+		HttpApiEndpoint.get("current", "/api/workouts/current", {
+			success: Schema.NullOr(WorkoutResponse),
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
-		success: Schema.Array(SetResponse),
-		error: [
-			NotFoundError.pipe(HttpApiSchema.status(404)),
-			InternalError.pipe(HttpApiSchema.status(500)),
-		],
-	}),
-) {}
+	)
+	.add(
+		HttpApiEndpoint.post("start", "/api/workouts", {
+			payload: Schema.Struct({
+				cycleId: Schema.String,
+				round: Round,
+				day: TrainingDay,
+			}),
+			success: WorkoutResponse,
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("logSet", "/api/workouts/:id/sets", {
+			params: {
+				id: Schema.String,
+			},
+			payload: Schema.Struct({
+				exerciseName: Schema.String,
+				setNumber: Schema.Number,
+				prescribedWeight: Schema.NullOr(Schema.Number),
+				actualWeight: Schema.NullOr(Schema.Number),
+				prescribedReps: Schema.NullOr(Schema.Number),
+				actualReps: Schema.NullOr(Schema.Number),
+				rpe: Schema.NullOr(RpeNumber),
+				prescribedRpeMin: Schema.NullOr(RpeNumber),
+				prescribedRpeMax: Schema.NullOr(RpeNumber),
+				isMainLift: Schema.Boolean,
+				isAmrap: Schema.Boolean,
+				setDuration: Schema.NullOr(Schema.Number),
+				restDuration: Schema.NullOr(Schema.Number),
+				category: Schema.NullOr(Schema.String),
+			}),
+			success: SetResponse,
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("complete", "/api/workouts/:id/complete", {
+			params: {
+				id: Schema.String,
+			},
+			success: WorkoutResponse,
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.get("sets", "/api/workouts/:id/sets", {
+			params: {
+				id: Schema.String,
+			},
+			success: Schema.Array(SetResponse),
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.post("skipSets", "/api/workouts/:id/skip-sets", {
+			params: {
+				id: Schema.String,
+			},
+			payload: Schema.Struct({
+				exerciseName: Schema.String,
+				fromSetNumber: Schema.Number,
+			}),
+			success: Schema.Array(SetResponse),
+			error: [
+				NotFoundError.pipe(HttpApiSchema.status(404)),
+				InternalError.pipe(HttpApiSchema.status(500)),
+			],
+		}),
+	) {}
 
 export class PreferencesGroup extends HttpApiGroup.make("preferences").add(
 	HttpApiEndpoint.get("getExercises", "/api/preferences/exercises", {

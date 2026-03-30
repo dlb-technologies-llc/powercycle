@@ -6,7 +6,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { currentCycleAtom, endCycleAtom } from "../atoms/cycles";
-import { startWorkoutAtom } from "../atoms/workouts";
+import {
+	completeWorkoutAtom,
+	currentWorkoutAtom,
+	startWorkoutAtom,
+} from "../atoms/workouts";
 import WeightManagement from "./WeightManagement";
 
 const ROUND_NAMES: Record<number, string> = {
@@ -20,15 +24,32 @@ export default function DashboardIsland() {
 	const [isStarting, setIsStarting] = useState(false);
 	const [endCycleConfirm, setEndCycleConfirm] = useState(false);
 	const [isEnding, setIsEnding] = useState(false);
+	const [endWorkoutConfirm, setEndWorkoutConfirm] = useState(false);
+	const [isEndingWorkout, setIsEndingWorkout] = useState(false);
 	const result = useAtomValue(currentCycleAtom);
+	const workoutResult = useAtomValue(currentWorkoutAtom);
 	const startWorkout = useAtomSet(startWorkoutAtom, {
 		mode: "promiseExit",
 	});
 	const endCycle = useAtomSet(endCycleAtom, {
 		mode: "promiseExit",
 	});
+	const completeWorkout = useAtomSet(completeWorkoutAtom, {
+		mode: "promiseExit",
+	});
 
-	if (AsyncResult.isInitial(result) || result.waiting) {
+	const currentWorkout = (() => {
+		if (AsyncResult.isInitial(workoutResult) || workoutResult.waiting)
+			return undefined;
+		if (AsyncResult.isFailure(workoutResult)) return null;
+		return workoutResult.value;
+	})();
+
+	if (
+		AsyncResult.isInitial(result) ||
+		result.waiting ||
+		currentWorkout === undefined
+	) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
 				<p className="text-muted-foreground">Loading...</p>
@@ -99,8 +120,39 @@ export default function DashboardIsland() {
 		});
 	};
 
+	const handleEndWorkout = async () => {
+		if (!currentWorkout) return;
+		setIsEndingWorkout(true);
+		const exit = await completeWorkout({ params: { id: currentWorkout.id } });
+		Exit.match(exit, {
+			onFailure: () => {
+				console.error("Failed to end workout");
+				setIsEndingWorkout(false);
+				setEndWorkoutConfirm(false);
+			},
+			onSuccess: () => {
+				window.location.reload();
+			},
+		});
+	};
+
 	const handleEndCycle = async () => {
 		setIsEnding(true);
+		if (currentWorkout) {
+			const workoutExit = await completeWorkout({
+				params: { id: currentWorkout.id },
+			});
+			const failed = Exit.match(workoutExit, {
+				onFailure: () => true,
+				onSuccess: () => false,
+			});
+			if (failed) {
+				console.error("Failed to end in-progress workout before ending cycle");
+				setIsEnding(false);
+				setEndCycleConfirm(false);
+				return;
+			}
+		}
 		const exit = await endCycle({});
 		Exit.match(exit, {
 			onFailure: () => {
@@ -128,14 +180,67 @@ export default function DashboardIsland() {
 					<p className="text-muted-foreground mb-8">
 						Day {cycle.currentDay} of 4
 					</p>
-					<Button
-						type="button"
-						onClick={handleStart}
-						disabled={isStarting}
-						className="w-full"
-					>
-						{isStarting ? "Starting..." : "Start workout"}
-					</Button>
+
+					{currentWorkout ? (
+						<>
+							<Button asChild className="w-full">
+								<a href={`/workout?id=${currentWorkout.id}`}>
+									Continue workout
+								</a>
+							</Button>
+
+							<div className="mt-6 pt-6 border-t border-border">
+								{endWorkoutConfirm ? (
+									<div>
+										<p className="text-sm text-muted-foreground mb-3">
+											End without finishing remaining sets?
+										</p>
+										<div className="flex gap-3">
+											<Button
+												type="button"
+												variant="secondary"
+												onClick={() => setEndWorkoutConfirm(false)}
+												disabled={isEndingWorkout}
+												className="flex-1"
+											>
+												Cancel
+											</Button>
+											<Button
+												type="button"
+												variant="destructive"
+												onClick={handleEndWorkout}
+												disabled={isEndingWorkout}
+												className="flex-1"
+											>
+												{isEndingWorkout ? "Ending..." : "Confirm"}
+											</Button>
+										</div>
+									</div>
+								) : (
+									<Button
+										type="button"
+										variant="ghost"
+										onClick={() => {
+											setEndWorkoutConfirm(true);
+											setEndCycleConfirm(false);
+										}}
+										className="w-full"
+									>
+										End workout
+									</Button>
+								)}
+							</div>
+						</>
+					) : (
+						<Button
+							type="button"
+							onClick={handleStart}
+							disabled={isStarting}
+							className="w-full"
+						>
+							{isStarting ? "Starting..." : "Start workout"}
+						</Button>
+					)}
 
 					<div className="mt-6 pt-6 border-t border-border">
 						{endCycleConfirm ? (
@@ -168,7 +273,10 @@ export default function DashboardIsland() {
 							<Button
 								type="button"
 								variant="ghost"
-								onClick={() => setEndCycleConfirm(true)}
+								onClick={() => {
+									setEndCycleConfirm(true);
+									setEndWorkoutConfirm(false);
+								}}
 								className="w-full"
 							>
 								End cycle

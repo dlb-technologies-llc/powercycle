@@ -3,12 +3,11 @@ import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { upsertExerciseWeightAtom } from "../atoms/exercise-weights";
 import {
 	completeWorkoutAtom,
+	currentWorkoutAtom,
 	logSetAtom,
 	nextWorkoutAtom,
 	skipSetsAtom,
@@ -17,6 +16,7 @@ import type { FlatSet } from "../hooks/useWorkoutFlow";
 import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { ActiveSetView } from "./ActiveSetView";
+import { WorkoutComplete } from "./WorkoutComplete";
 import { WorkoutOverview } from "./WorkoutOverview";
 
 type WorkoutPlanData = typeof WorkoutPlanResponse.Type;
@@ -81,6 +81,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const [isFinishing, setIsFinishing] = useState(false);
 
 	const result = useAtomValue(nextWorkoutAtom);
+	const workoutResult = useAtomValue(currentWorkoutAtom);
 	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
 	const completeWorkout = useAtomSet(completeWorkoutAtom, {
 		mode: "promiseExit",
@@ -94,6 +95,15 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (AsyncResult.isInitial(result) || result.waiting) return undefined;
 		if (AsyncResult.isFailure(result)) return undefined;
 		return result.value;
+	})();
+
+	const workoutStartedAt = (() => {
+		if (AsyncResult.isInitial(workoutResult) || workoutResult.waiting)
+			return null;
+		if (AsyncResult.isFailure(workoutResult)) return null;
+		const workout = workoutResult.value;
+		if (!workout || workout.id !== id) return null;
+		return workout.startedAt;
 	})();
 
 	const flow = useWorkoutFlow(plan ?? null);
@@ -366,27 +376,14 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 
 	if (flow.phase === "complete") {
 		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-				<Card className="p-8">
-					<CardContent className="space-y-4">
-						<h1 className="text-4xl font-semibold text-foreground">
-							Workout complete
-						</h1>
-						<p className="text-muted-foreground">
-							All {flow.totalSets} sets finished
-						</p>
-					</CardContent>
-				</Card>
-				<Button
-					type="button"
-					onClick={handleFinish}
-					disabled={isFinishing}
-					size="lg"
-					className="w-full min-h-20 text-xl"
-				>
-					{isFinishing ? "Finishing..." : "Finish workout"}
-				</Button>
-			</div>
+			<WorkoutComplete
+				setsCompleted={flow.progress.current}
+				totalSets={flow.totalSets}
+				mainLift={plan.mainLift}
+				startedAt={workoutStartedAt}
+				isFinishing={isFinishing}
+				onFinish={handleFinish}
+			/>
 		);
 	}
 
