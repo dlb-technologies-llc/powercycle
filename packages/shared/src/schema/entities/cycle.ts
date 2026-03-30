@@ -4,6 +4,14 @@ import { UUID } from "../common.js";
 import { Unit } from "../lifts.js";
 import { Round, TrainingDay } from "../program.js";
 
+// Date schema with constrained arbitrary to prevent invalid Date generation
+const SafeDate = Schema.Date.check(Schema.isDateValid()).check(
+	Schema.isBetweenDate({
+		minimum: new Date("2020-01-01T00:00:00.000Z"),
+		maximum: new Date("2030-12-31T23:59:59.999Z"),
+	}),
+);
+
 // The entity — single source of truth for Cycle domain type
 export class Cycle extends Schema.Class<Cycle>("Cycle")({
 	id: UUID,
@@ -16,8 +24,8 @@ export class Cycle extends Schema.Class<Cycle>("Cycle")({
 	unit: Unit,
 	currentRound: Round,
 	currentDay: TrainingDay,
-	startedAt: Schema.Date,
-	completedAt: Schema.NullOr(Schema.Date),
+	startedAt: SafeDate,
+	completedAt: Schema.NullOr(SafeDate),
 }) {
 	// Decode schema for Drizzle rows (string numerics → numbers)
 	static readonly DrizzleRow = Schema.Struct({

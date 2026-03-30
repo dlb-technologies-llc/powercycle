@@ -1,5 +1,8 @@
 import { useAtomRefresh, useAtomSet } from "@effect/atom-react";
-import type { MainLift } from "@powercycle/shared/schema/lifts";
+import {
+	LIFT_DISPLAY_NAMES,
+	type MainLift,
+} from "@powercycle/shared/schema/lifts";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
 import { useEffect, useState } from "react";
@@ -10,13 +13,6 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { update1rmAtom } from "../atoms/cycles";
 import { nextWorkoutAtom } from "../atoms/workouts";
-
-const LIFT_DISPLAY_NAMES: Record<MainLift, string> = {
-	squat: "Squat",
-	bench: "Bench Press",
-	deadlift: "Deadlift",
-	ohp: "Overhead Press",
-};
 
 const DAY_NAMES: Record<MainLift, string> = {
 	squat: "Squat Day",

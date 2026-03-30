@@ -5,6 +5,7 @@ import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
+import { LIFT_DISPLAY_NAMES } from "@powercycle/shared/schema/lifts";
 import type { ExerciseCategory } from "@powercycle/shared/schema/workout";
 import { and, eq } from "drizzle-orm";
 import { Effect, Schema } from "effect";
@@ -299,12 +300,6 @@ export const WorkoutsLive = HttpApiBuilder.group(
 					);
 
 					// Map main lift key to display name (frontend sends display names)
-					const LIFT_DISPLAY_NAMES: Record<string, string> = {
-						squat: "Squat",
-						bench: "Bench Press",
-						deadlift: "Deadlift",
-						ohp: "Overhead Press",
-					};
 					const mainLiftDisplayName =
 						LIFT_DISPLAY_NAMES[plan.mainLift] ?? plan.mainLift;
 

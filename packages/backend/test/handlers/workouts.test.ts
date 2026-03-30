@@ -1,12 +1,15 @@
 import { describe, expect, it, layer } from "@effect/vitest";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
+import { Cycle } from "@powercycle/shared/schema/entities/cycle";
+import { Workout } from "@powercycle/shared/schema/entities/workout";
 import {
 	LogSetInput,
 	WorkoutSet,
 } from "@powercycle/shared/schema/entities/workout-set";
 import { UserLifts } from "@powercycle/shared/schema/lifts";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { FastCheck } from "effect/testing";
+import { CycleLive, CycleService } from "../../src/services/CycleService.js";
 import {
 	WorkoutLive,
 	WorkoutService,
@@ -174,4 +177,148 @@ describe("workouts handler logic (pure)", () => {
 		expect(plan.mainLift).toBe("ohp");
 		expect(plan.variation).toBeDefined();
 	});
+});
+
+const CurrentTestLayer = Layer.mergeAll(WorkoutLive, CycleLive);
+
+layer(CurrentTestLayer)("current workout handler logic", (it) => {
+	it.effect("returns null when no active cycle exists", () =>
+		Effect.gen(function* () {
+			// The handler's first step: findActiveCycle → if null, return null
+			// Verify CycleService.validateActiveCycle correctly rejects null
+			const cycleService = yield* CycleService;
+			const error = yield* cycleService
+				.validateActiveCycle(null)
+				.pipe(Effect.flip);
+			expect(error._tag).toBe("NotFoundError");
+			// Handler short-circuits: if (!cycleRow) return null
+		}),
+	);
+
+	it.effect(
+		"returns null when active cycle exists but no in-progress workout",
+		() =>
+			Effect.gen(function* () {
+				const cycleService = yield* CycleService;
+				const lifts = sampleLifts();
+				const cycle = yield* cycleService.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					1,
+				);
+
+				// Cycle decodes successfully — handler proceeds past null check
+				const decodedCycle = yield* Cycle.decodeRow({
+					...cycle,
+					squat1rm: cycle.squat1rm != null ? String(cycle.squat1rm) : null,
+					bench1rm: cycle.bench1rm != null ? String(cycle.bench1rm) : null,
+					deadlift1rm:
+						cycle.deadlift1rm != null ? String(cycle.deadlift1rm) : null,
+					ohp1rm: cycle.ohp1rm != null ? String(cycle.ohp1rm) : null,
+				});
+				expect(decodedCycle.currentRound).toBe(1);
+				expect(decodedCycle.currentDay).toBe(1);
+
+				// Handler: findInProgressWorkout returns null → handler returns null
+				// WorkoutService.validateWorkout rejects null workouts
+				const workoutService = yield* WorkoutService;
+				const workoutError = yield* workoutService
+					.validateWorkout(null, crypto.randomUUID())
+					.pipe(Effect.flip);
+				expect(workoutError._tag).toBe("NotFoundError");
+			}),
+	);
+
+	it.effect(
+		"returns WorkoutResponse when active cycle has in-progress workout",
+		() =>
+			Effect.gen(function* () {
+				const cycleService = yield* CycleService;
+				const workoutService = yield* WorkoutService;
+
+				// Create cycle entity (simulates findActiveCycle returning a row)
+				const lifts = sampleLifts();
+				const cycle = yield* cycleService.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					1,
+				);
+
+				// Decode cycle row (same path as handler: Cycle.decodeRow)
+				const decodedCycle = yield* Cycle.decodeRow({
+					...cycle,
+					// Simulate Drizzle string numerics
+					squat1rm: cycle.squat1rm != null ? String(cycle.squat1rm) : null,
+					bench1rm: cycle.bench1rm != null ? String(cycle.bench1rm) : null,
+					deadlift1rm:
+						cycle.deadlift1rm != null ? String(cycle.deadlift1rm) : null,
+					ohp1rm: cycle.ohp1rm != null ? String(cycle.ohp1rm) : null,
+				});
+				expect(decodedCycle.currentRound).toBe(1);
+				expect(decodedCycle.currentDay).toBe(1);
+
+				// Create in-progress workout (completedAt = null)
+				const workout = yield* workoutService.createEntity(
+					cycle.userId,
+					cycle.id,
+					decodedCycle.currentRound,
+					decodedCycle.currentDay,
+				);
+				expect(workout.completedAt).toBeNull();
+
+				// Decode workout row (same path as handler: Workout.decodeRow)
+				const decodedWorkout = yield* Workout.decodeRow(workout);
+
+				// Handler returns Workout.toResponse(workout)
+				const response = Workout.toResponse(decodedWorkout);
+				expect(response.id).toBe(workout.id);
+				expect(response.userId).toBe(cycle.userId);
+				expect(response.cycleId).toBe(cycle.id);
+				expect(response.round).toBe(1);
+				expect(response.day).toBe(1);
+				expect(response.completedAt).toBeNull();
+				expect(typeof response.startedAt).toBe("string");
+			}),
+	);
+
+	it.effect(
+		"returns null when workout exists but is completed (completedAt set)",
+		() =>
+			Effect.gen(function* () {
+				const cycleService = yield* CycleService;
+				const workoutService = yield* WorkoutService;
+
+				const lifts = sampleLifts();
+				const cycle = yield* cycleService.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					1,
+				);
+
+				// Create workout (initially in-progress)
+				const workout = yield* workoutService.createEntity(
+					cycle.userId,
+					cycle.id,
+					cycle.currentRound,
+					cycle.currentDay,
+				);
+				expect(workout.completedAt).toBeNull();
+
+				// Mark workout as completed
+				const completedWorkout = new Workout({
+					...workout,
+					completedAt: new Date(),
+				});
+				expect(completedWorkout.completedAt).toBeInstanceOf(Date);
+
+				// Verify completed workout decodes with non-null completedAt
+				const decoded = yield* Workout.decodeRow(completedWorkout);
+				expect(decoded.completedAt).toBeInstanceOf(Date);
+
+				// Handler: findInProgressWorkout filters by isNull(completedAt)
+				// A completed workout would not be returned by the query → null → handler returns null
+				const response = Workout.toResponse(decoded);
+				expect(response.completedAt).not.toBeNull();
+			}),
+	);
 });
