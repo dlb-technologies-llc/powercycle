@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { upsertExerciseWeightAtom } from "../atoms/exercise-weights";
 import {
 	completeWorkoutAtom,
+	currentWorkoutAtom,
 	logSetAtom,
 	nextWorkoutAtom,
 	skipSetsAtom,
@@ -14,6 +15,7 @@ import type { FlatSet } from "../hooks/useWorkoutFlow";
 import { useWorkoutFlow } from "../hooks/useWorkoutFlow";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { ActiveSetView } from "./ActiveSetView";
+import { WorkoutComplete } from "./WorkoutComplete";
 import { WorkoutOverview } from "./WorkoutOverview";
 
 type WorkoutPlanData = typeof WorkoutPlanResponse.Type;
@@ -78,6 +80,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	const [isFinishing, setIsFinishing] = useState(false);
 
 	const result = useAtomValue(nextWorkoutAtom);
+	const workoutResult = useAtomValue(currentWorkoutAtom);
 	const logSet = useAtomSet(logSetAtom, { mode: "promiseExit" });
 	const completeWorkout = useAtomSet(completeWorkoutAtom, {
 		mode: "promiseExit",
@@ -91,6 +94,13 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (AsyncResult.isInitial(result) || result.waiting) return undefined;
 		if (AsyncResult.isFailure(result)) return undefined;
 		return result.value;
+	})();
+
+	const workoutStartedAt = (() => {
+		if (AsyncResult.isInitial(workoutResult) || workoutResult.waiting)
+			return null;
+		if (AsyncResult.isFailure(workoutResult)) return null;
+		return workoutResult.value?.startedAt ?? null;
 	})();
 
 	const flow = useWorkoutFlow(plan ?? null);
@@ -361,22 +371,14 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 
 	if (flow.phase === "complete") {
 		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
-				<div className="card p-8 space-y-4">
-					<h1 className="text-4xl font-semibold text-black">
-						Workout complete
-					</h1>
-					<p className="text-gray-600">All {flow.totalSets} sets finished</p>
-				</div>
-				<button
-					type="button"
-					onClick={handleFinish}
-					disabled={isFinishing}
-					className="btn-primary min-h-20 text-xl w-full disabled:opacity-50"
-				>
-					{isFinishing ? "Finishing..." : "Finish workout"}
-				</button>
-			</div>
+			<WorkoutComplete
+				setsCompleted={flow.progress.current}
+				totalSets={flow.totalSets}
+				mainLift={plan.mainLift}
+				startedAt={workoutStartedAt}
+				isFinishing={isFinishing}
+				onFinish={handleFinish}
+			/>
 		);
 	}
 
