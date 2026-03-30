@@ -210,15 +210,15 @@ export function ActiveSetView({
 		const totalSets = allSetsForExercise.length;
 
 		return (
-			<div className="flex flex-col items-center text-center space-y-6 min-h-[70vh] justify-center">
-				<div className="space-y-2">
-					<h2 className="text-xl font-semibold text-black">
+			<div className="flex flex-col items-center text-center min-h-[100dvh]">
+				<div className="space-y-1 pt-6">
+					<h2 className="text-lg font-semibold text-black">
 						{set.exerciseName}
 					</h2>
 					<p className="text-sm font-medium text-gray-500">
 						Set {currentSetNumber} of {totalSets}
 					</p>
-					<p className="font-mono text-lg text-gray-600">
+					<p className="font-mono text-base text-gray-600">
 						{set.isMainLift
 							? `${set.prescribed.weight ?? "—"} ${unit} × ${set.prescribed.reps ?? "—"}`
 							: `${set.prescribed.repMin ?? "—"}-${set.prescribed.repMax ?? "—"} reps @ RPE ${set.prescribed.rpeMin ?? "—"}-${set.prescribed.rpeMax ?? "—"}`}
@@ -228,9 +228,13 @@ export function ActiveSetView({
 					)}
 				</div>
 
-				<TimerDisplay seconds={setTimerSeconds} />
+				<div className="flex-1 flex items-center justify-center w-full">
+					<span className="font-mono text-7xl sm:text-8xl font-bold text-black">
+						{formatTime(setTimerSeconds)}
+					</span>
+				</div>
 
-				<div className="w-full mt-auto">
+				<div className="w-full mt-auto pb-6 px-4">
 					<button type="button" onClick={onDone} className="btn-primary w-full">
 						Done
 					</button>
