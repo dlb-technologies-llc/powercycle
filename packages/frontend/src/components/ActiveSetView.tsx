@@ -210,7 +210,7 @@ export function ActiveSetView({
 		const totalSets = allSetsForExercise.length;
 
 		return (
-			<div className="flex flex-col items-center text-center min-h-[100dvh]">
+			<div className="fixed inset-0 z-40 bg-white flex flex-col items-center text-center">
 				<div className="space-y-1 pt-6">
 					<h2 className="text-lg font-semibold text-black">
 						{set.exerciseName}
@@ -234,7 +234,7 @@ export function ActiveSetView({
 					</span>
 				</div>
 
-				<div className="w-full mt-auto pb-6 px-4">
+				<div className="w-full max-w-2xl px-6 pb-6">
 					<button type="button" onClick={onDone} className="btn-primary w-full">
 						Done
 					</button>
