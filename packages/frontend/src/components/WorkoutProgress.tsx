@@ -1,3 +1,6 @@
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
 interface WorkoutProgressProps {
 	current: number;
 	total: number;
@@ -13,17 +16,12 @@ export function WorkoutProgress({
 	return (
 		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<span className="text-sm font-medium text-black">
+				<span className="text-sm font-medium text-foreground">
 					Set {current} of {total}
 				</span>
-				{exerciseName && <span className="badge">{exerciseName}</span>}
+				{exerciseName && <Badge variant="outline">{exerciseName}</Badge>}
 			</div>
-			<div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-				<div
-					className="h-full bg-black rounded-full transition-all duration-300"
-					style={{ width: `${pct}%` }}
-				/>
-			</div>
+			<Progress value={pct} />
 		</div>
 	);
 }

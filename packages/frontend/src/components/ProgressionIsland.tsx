@@ -6,6 +6,12 @@ import type { MainLift } from "@powercycle/shared/schema/lifts";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { currentCycleAtom, startNextCycleAtom } from "../atoms/cycles";
 
 type CycleData = NonNullable<typeof NullableCycleResponse.Type>;
@@ -37,9 +43,9 @@ function progressionColor(p: {
 	newMax: number;
 	progressed: boolean;
 }): string {
-	if (p.newMax > p.currentMax) return "text-green-600";
-	if (p.newMax < p.currentMax) return "text-red-600";
-	return "text-gray-500";
+	if (p.newMax > p.currentMax) return "text-emerald-600";
+	if (p.newMax < p.currentMax) return "text-destructive";
+	return "text-muted-foreground";
 }
 
 function progressionLabel(p: {
@@ -73,7 +79,7 @@ export default function ProgressionIsland() {
 	if (AsyncResult.isInitial(result) || result.waiting) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-gray-600">Loading...</p>
+				<p className="text-muted-foreground">Loading...</p>
 			</div>
 		);
 	}
@@ -81,7 +87,7 @@ export default function ProgressionIsland() {
 	if (AsyncResult.isFailure(result)) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-red-600">Failed to load cycle data.</p>
+				<p className="text-destructive">Failed to load cycle data.</p>
 			</div>
 		);
 	}
@@ -91,7 +97,7 @@ export default function ProgressionIsland() {
 	if (!cycle) {
 		return (
 			<div className="flex items-center justify-center min-h-[60vh]">
-				<p className="text-gray-600">Loading...</p>
+				<p className="text-muted-foreground">Loading...</p>
 			</div>
 		);
 	}
@@ -149,104 +155,119 @@ export default function ProgressionIsland() {
 
 	return (
 		<div>
-			<h1 className="text-2xl font-bold text-black mb-2">Cycle complete</h1>
-			<p className="text-gray-600 mb-6">
+			<h1 className="text-2xl font-bold text-foreground mb-2">
+				Cycle complete
+			</h1>
+			<p className="text-muted-foreground mb-6">
 				Enter your Round 3 AMRAP results to calculate new maxes.
 			</p>
 
 			{!progression ? (
 				liftsWithData.length === 0 ? (
 					<div className="text-center">
-						<p className="text-gray-600">
+						<p className="text-muted-foreground">
 							No 1RMs recorded this cycle. Start a new cycle to begin tracking.
 						</p>
-						<a href="/" className="text-black underline mt-4 inline-block">
+						<a href="/" className="text-foreground underline mt-4 inline-block">
 							Back to dashboard
 						</a>
 					</div>
 				) : (
 					<div className="space-y-4">
 						{liftsWithData.map(({ key, label }) => (
-							<div key={key} className="card p-5">
-								<p className="text-sm font-medium text-black mb-1">{label}</p>
-								<p className="text-sm text-gray-600 mb-3">
-									Current 1RM:{" "}
-									<span className="font-mono">{get1rm(cycle, key)}</span>
-								</p>
-								<div className="grid grid-cols-2 gap-3">
-									<label className="block">
-										<span className="label mb-1">Weight @ 95%</span>
-										<input
-											type="number"
-											value={results[key].weight}
-											onChange={(e) =>
-												setResults((r) => ({
-													...r,
-													[key]: { ...r[key], weight: e.target.value },
-												}))
-											}
-											className="input w-full font-mono"
-										/>
-									</label>
-									<label className="block">
-										<span className="label mb-1">Reps (1+)</span>
-										<input
-											type="number"
-											value={results[key].reps}
-											onChange={(e) =>
-												setResults((r) => ({
-													...r,
-													[key]: { ...r[key], reps: e.target.value },
-												}))
-											}
-											className="input w-full font-mono"
-										/>
-									</label>
-								</div>
-							</div>
+							<Card key={key}>
+								<CardContent className="space-y-3">
+									<p className="text-sm font-medium text-foreground">{label}</p>
+									<p className="text-sm text-muted-foreground">
+										Current 1RM:{" "}
+										<span className="font-mono">{get1rm(cycle, key)}</span>
+									</p>
+									<div className="grid grid-cols-2 gap-3">
+										<div className="space-y-1">
+											<Label htmlFor={`${key}-weight`}>Weight @ 95%</Label>
+											<Input
+												id={`${key}-weight`}
+												type="number"
+												value={results[key].weight}
+												onChange={(e) =>
+													setResults((r) => ({
+														...r,
+														[key]: { ...r[key], weight: e.target.value },
+													}))
+												}
+												className={cn("font-mono")}
+											/>
+										</div>
+										<div className="space-y-1">
+											<Label htmlFor={`${key}-reps`}>Reps (1+)</Label>
+											<Input
+												id={`${key}-reps`}
+												type="number"
+												value={results[key].reps}
+												onChange={(e) =>
+													setResults((r) => ({
+														...r,
+														[key]: { ...r[key], reps: e.target.value },
+													}))
+												}
+												className={cn("font-mono")}
+											/>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
 						))}
-						<button
+						<Button
 							type="button"
 							onClick={handleCalculate}
-							className="btn-primary w-full min-h-16 text-lg"
+							className="w-full min-h-16 text-lg"
 						>
 							Calculate new maxes
-						</button>
+						</Button>
 					</div>
 				)
 			) : (
 				<div className="space-y-4">
-					{LIFTS.filter(({ key }) => progression[key]).map(({ key, label }) => {
-						const p = progression[key];
-						return (
-							<div
-								key={key}
-								className="card p-5 flex items-center justify-between"
-							>
-								<div>
-									<p className="text-sm font-medium text-black">{label}</p>
-									<p className="text-sm text-gray-600">
-										<span className="font-mono">{p.currentMax}</span>
-										{" → "}
-										<span className="font-mono">{p.newMax}</span>
-									</p>
+					{LIFTS.filter(({ key }) => progression[key]).map(
+						({ key, label }, index) => {
+							const p = progression[key];
+							return (
+								<div key={key}>
+									{index > 0 && <Separator className="mb-4" />}
+									<Card>
+										<CardContent className="flex items-center justify-between">
+											<div>
+												<p className="text-sm font-medium text-foreground">
+													{label}
+												</p>
+												<p className="text-sm text-muted-foreground">
+													<span className="font-mono">{p.currentMax}</span>
+													{" → "}
+													<span className="font-mono">{p.newMax}</span>
+												</p>
+											</div>
+											<div
+												className={cn(
+													"text-lg font-bold font-mono",
+													progressionColor(p),
+												)}
+											>
+												{progressionLabel(p)}
+											</div>
+										</CardContent>
+									</Card>
 								</div>
-								<div
-									className={`text-lg font-bold font-mono ${progressionColor(p)}`}
-								>
-									{progressionLabel(p)}
-								</div>
-							</div>
-						);
-					})}
-					<button
+							);
+						},
+					)}
+					<Button
 						type="button"
 						onClick={handleStartNext}
 						disabled={isStarting}
-						className="btn-primary w-full min-h-16 text-lg"
+						className="w-full min-h-16 text-lg"
 					>
 						{isStarting ? "Starting..." : "Start next cycle"}
-					</button>
+					</Button>
 				</div>
 			)}
 		</div>
