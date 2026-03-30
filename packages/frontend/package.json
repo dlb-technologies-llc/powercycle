@@ -11,9 +11,8 @@
 	"dependencies": {
 		"@astrojs/react": "^5.0.0",
 		"@effect/atom-react": "4.0.0-beta.40",
-		"@fontsource/dm-sans": "^5.2.8",
+		"@fontsource/inter": "^5.2.8",
 		"@fontsource/jetbrains-mono": "^5.2.8",
-		"@fontsource/rajdhani": "^5.2.7",
 		"@powercycle/shared": "workspace:*",
 		"@tailwindcss/vite": "^4.2.1",
 		"astro": "^6.0.3",

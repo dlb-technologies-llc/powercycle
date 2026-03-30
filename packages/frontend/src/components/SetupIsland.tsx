@@ -4,10 +4,10 @@ import { useState } from "react";
 import { createCycleAtom } from "../atoms/cycles";
 
 const lifts = [
-	{ label: "Squat", delay: 0 },
-	{ label: "Bench Press", delay: 100 },
-	{ label: "Deadlift", delay: 200 },
-	{ label: "Overhead Press", delay: 300 },
+	{ label: "Squat" },
+	{ label: "Bench Press" },
+	{ label: "Deadlift" },
+	{ label: "Overhead Press" },
 ] as const;
 
 export default function SetupIsland() {
@@ -64,21 +64,19 @@ export default function SetupIsland() {
 
 	return (
 		<div>
-			<h1 className="text-3xl font-[family-name:var(--font-heading)] font-bold uppercase tracking-wider gradient-text-cyan mb-2">
-				Set Your Maxes
+			<h1 className="text-2xl font-semibold text-neutral-100 mb-2">
+				Set your maxes
 			</h1>
-			<p className="text-zinc-400 mb-8">
+			<p className="text-neutral-400 mb-8">
 				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-4">
-				<div className="inline-flex rounded-full bg-zinc-800/50 border border-zinc-700/50 p-1 mb-6">
+				<div className="inline-flex bg-neutral-800 rounded-lg p-1 mb-6">
 					<button
 						type="button"
 						onClick={() => setUnit("lbs")}
-						className={`px-5 py-2 rounded-full font-medium transition-all duration-200 ${
-							unit === "lbs"
-								? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white"
-								: "bg-transparent text-zinc-500"
+						className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+							unit === "lbs" ? "bg-indigo-500 text-white" : "text-neutral-400"
 						}`}
 					>
 						lbs
@@ -86,23 +84,20 @@ export default function SetupIsland() {
 					<button
 						type="button"
 						onClick={() => setUnit("kg")}
-						className={`px-5 py-2 rounded-full font-medium transition-all duration-200 ${
-							unit === "kg"
-								? "bg-gradient-to-br from-cyan-500 to-blue-500 text-white"
-								: "bg-transparent text-zinc-500"
+						className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+							unit === "kg" ? "bg-indigo-500 text-white" : "text-neutral-400"
 						}`}
 					>
 						kg
 					</button>
 				</div>
-				{lifts.map(({ label, delay }, i) => (
+				{lifts.map(({ label }, i) => (
 					<div
 						key={label}
-						className="glass-card p-5 animate-fade-in"
-						style={{ animationDelay: `${delay}ms` }}
+						className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
 					>
 						<label className="block">
-							<span className="block text-sm font-[family-name:var(--font-heading)] uppercase tracking-wide text-zinc-400 mb-2">
+							<span className="block text-sm font-medium text-neutral-400 mb-2">
 								{label} ({unit})
 							</span>
 							<input
@@ -112,7 +107,7 @@ export default function SetupIsland() {
 								value={liftState[i].value}
 								onChange={(e) => liftState[i].setter(e.target.value)}
 								placeholder="—"
-								className="w-full px-4 py-4 text-2xl font-[family-name:var(--font-mono)] bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+								className="w-full px-4 py-3 text-lg font-mono bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
 							/>
 						</label>
 					</div>
@@ -121,9 +116,9 @@ export default function SetupIsland() {
 				<button
 					type="submit"
 					disabled={isPending}
-					className="w-full min-h-16 text-xl rounded-2xl btn-gradient-cyan disabled:opacity-50"
+					className="w-full py-3 text-lg bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
 				>
-					{isPending ? "Starting..." : "Start Program"}
+					{isPending ? "Starting..." : "Start program"}
 				</button>
 			</form>
 		</div>

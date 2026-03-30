@@ -14,7 +14,7 @@ export default function HistoryIsland() {
 	const result = useAtomValue(workoutHistoryAtom);
 
 	if (AsyncResult.isInitial(result) || result.waiting) {
-		return <p className="text-zinc-400">Loading history...</p>;
+		return <p className="text-neutral-400">Loading history...</p>;
 	}
 
 	if (AsyncResult.isFailure(result)) {
@@ -26,44 +26,43 @@ export default function HistoryIsland() {
 	if (workouts.length === 0) {
 		return (
 			<div>
-				<h1 className="text-2xl font-[family-name:var(--font-heading)] uppercase tracking-wider gradient-text-cyan mb-4">
-					Workout History
+				<h1 className="text-2xl font-semibold text-neutral-100 mb-4">
+					Workout history
 				</h1>
-				<p className="text-zinc-400">No completed workouts yet.</p>
+				<p className="text-neutral-400">No completed workouts yet.</p>
 			</div>
 		);
 	}
 
 	return (
 		<div>
-			<h1 className="text-2xl font-[family-name:var(--font-heading)] uppercase tracking-wider gradient-text-cyan mb-6">
-				Workout History
+			<h1 className="text-2xl font-semibold text-neutral-100 mb-6">
+				Workout history
 			</h1>
 			<div className="space-y-3">
-				{workouts.map((workout, index) => (
+				{workouts.map((workout) => (
 					<div
 						key={workout.id}
-						className="glass-card overflow-hidden animate-fade-in"
-						style={{ animationDelay: `${index * 80}ms` }}
+						className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden"
 					>
 						<button
 							type="button"
 							onClick={() =>
 								setExpandedId(expandedId === workout.id ? null : workout.id)
 							}
-							className="w-full p-4 flex items-center justify-between text-left"
+							className="w-full p-4 flex items-center justify-between text-left transition-colors hover:bg-neutral-800/50"
 						>
 							<div>
-								<p className="font-[family-name:var(--font-heading)] text-lg">
+								<p className="font-semibold text-lg text-neutral-100">
 									{getDayName(workout.day)} Day
 								</p>
-								<p className="text-sm text-zinc-500">
+								<p className="text-sm text-neutral-500">
 									Round {workout.round} —{" "}
 									{new Date(workout.startedAt).toLocaleDateString()}
 								</p>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="text-xs font-[family-name:var(--font-mono)] bg-zinc-800 rounded-full px-2 py-0.5 text-zinc-400">
+								<span className="bg-neutral-800 text-neutral-300 rounded-md px-2 py-0.5 text-xs font-mono">
 									{workout.sets?.length ?? 0} sets
 								</span>
 								<svg
@@ -72,7 +71,7 @@ export default function HistoryIsland() {
 									fill="currentColor"
 									aria-label="Toggle details"
 									role="img"
-									className={`w-5 h-5 text-zinc-500 transition-transform duration-300 ${expandedId === workout.id ? "rotate-180" : ""}`}
+									className={`w-5 h-5 text-neutral-500 transition-transform duration-300 ${expandedId === workout.id ? "rotate-180" : ""}`}
 								>
 									<path
 										fillRule="evenodd"
@@ -83,16 +82,16 @@ export default function HistoryIsland() {
 							</div>
 						</button>
 						{expandedId === workout.id && workout.sets && (
-							<div className="border-t border-zinc-800/50 p-4 space-y-2">
+							<div className="border-t border-neutral-800 p-4 space-y-2">
 								{workout.sets.map((set) => (
 									<div
 										key={`${set.exerciseName}-${String(set.setNumber)}`}
 										className="flex items-center justify-between text-sm"
 									>
-										<span className="text-zinc-300">
+										<span className="text-neutral-300">
 											{set.exerciseName} — Set {set.setNumber}
 										</span>
-										<span className="font-[family-name:var(--font-mono)] text-zinc-400">
+										<span className="font-mono text-neutral-400">
 											{set.actualWeight != null ? `${set.actualWeight} ` : ""}
 											{set.actualReps != null ? `x${set.actualReps}` : ""}
 											{set.rpe != null ? ` @ RPE ${set.rpe}` : ""}

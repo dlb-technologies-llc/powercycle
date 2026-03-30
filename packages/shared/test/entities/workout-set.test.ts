@@ -82,13 +82,17 @@ describe("WorkoutSet.decodeRow", () => {
 				rpe: base.rpe != null ? String(base.rpe) : null,
 			};
 
+			// String(-0) → "0" → Number("0") → +0, so the roundtrip normalizes -0
+			const normalize = (v: number | null) =>
+				v != null ? Number(String(v)) : null;
+
 			const set = yield* WorkoutSet.decodeRow(drizzleRow);
 			expect(set).toBeInstanceOf(WorkoutSet);
-			expect(set.prescribedWeight).toBe(base.prescribedWeight);
-			expect(set.actualWeight).toBe(base.actualWeight);
-			expect(set.prescribedRpeMin).toBe(base.prescribedRpeMin);
-			expect(set.prescribedRpeMax).toBe(base.prescribedRpeMax);
-			expect(set.rpe).toBe(base.rpe);
+			expect(set.prescribedWeight).toBe(normalize(base.prescribedWeight));
+			expect(set.actualWeight).toBe(normalize(base.actualWeight));
+			expect(set.prescribedRpeMin).toBe(normalize(base.prescribedRpeMin));
+			expect(set.prescribedRpeMax).toBe(normalize(base.prescribedRpeMax));
+			expect(set.rpe).toBe(normalize(base.rpe));
 		}),
 	);
 
