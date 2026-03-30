@@ -33,42 +33,22 @@ function formatTime(s: number): string {
 	return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function TimerRing({ seconds }: { seconds: number }) {
-	const circumference = 2 * Math.PI * 90;
-	const progress = (seconds % 60) / 60;
-	const dashOffset = circumference * (1 - progress);
-	// Disable CSS transition on 60s wrap to prevent ring animating backwards from full to empty
-	const isWrapFrame = seconds % 60 === 0 && seconds > 0;
+function TimerDisplay({ seconds, total }: { seconds: number; total?: number }) {
+	const progress = total && total > 0 ? Math.min(seconds / total, 1) : 0;
 	return (
-		<svg
-			className="absolute inset-0 w-full h-full -rotate-90"
-			viewBox="0 0 200 200"
-			role="img"
-			aria-label="Timer progress ring"
-		>
-			<circle
-				cx="100"
-				cy="100"
-				r="90"
-				fill="none"
-				stroke="rgba(63,63,70,0.3)"
-				strokeWidth="4"
-			/>
-			<circle
-				cx="100"
-				cy="100"
-				r="90"
-				fill="none"
-				stroke="#6366f1"
-				strokeWidth="4"
-				strokeDasharray={circumference}
-				strokeDashoffset={dashOffset}
-				strokeLinecap="round"
-				className={
-					isWrapFrame ? "" : "transition-all duration-1000 ease-linear"
-				}
-			/>
-		</svg>
+		<div className="flex flex-col items-center gap-2 w-full">
+			<span className="font-mono text-4xl font-bold text-black">
+				{formatTime(seconds)}
+			</span>
+			{total != null && total > 0 && (
+				<div className="w-full max-w-xs h-1 bg-gray-200 rounded-full overflow-hidden">
+					<div
+						className="h-full bg-black rounded-full transition-all duration-1000 ease-linear"
+						style={{ width: `${progress * 100}%` }}
+					/>
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -138,6 +118,7 @@ export function ActiveSetView({
 	onStartSet,
 	onDone,
 	onConfirmAndNext,
+	onSkipExercise,
 }: ActiveSetViewProps) {
 	const [weight, setWeight] = useState<string>(
 		getDefaultWeight(set, preferredWeight, lastCompletedSetData),
@@ -166,13 +147,11 @@ export function ActiveSetView({
 		return (
 			<div className="flex flex-col items-center text-center space-y-6">
 				{isExerciseTransition && (
-					<span className="text-sm font-medium text-neutral-400">Next up</span>
+					<span className="text-sm font-medium text-gray-500">Next up</span>
 				)}
-				<h2 className="text-xl font-semibold text-neutral-100">
-					{set.exerciseName}
-				</h2>
+				<h2 className="text-xl font-semibold text-black">{set.exerciseName}</h2>
 
-				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 w-full space-y-2">
+				<div className="card w-full space-y-2">
 					{allSetsForExercise.map((s, idx) => {
 						const isCurrent = idx === completedSetsForExercise;
 						return (
@@ -180,21 +159,19 @@ export function ActiveSetView({
 								key={s.setNumber}
 								className={`flex items-center justify-between text-sm py-1.5 px-3 rounded-lg ${
 									isCurrent
-										? "border-l-2 border-indigo-500 bg-indigo-500/5"
-										: "text-neutral-400"
+										? "border-l-2 border-black bg-gray-50"
+										: "text-gray-500"
 								}`}
 							>
 								<span
-									className={`font-mono ${isCurrent ? "text-neutral-100" : ""}`}
+									className={`font-mono ${isCurrent ? "text-black font-medium" : ""}`}
 								>
 									{s.isMainLift
 										? `Set ${s.setNumber}: ${s.prescribed.weight} ${unit} × ${s.prescribed.reps}${s.isAmrap ? "+" : ""}`
 										: `Set ${s.setNumber}: ${s.prescribed.repMin}-${s.prescribed.repMax} reps @ RPE ${s.prescribed.rpeMin}-${s.prescribed.rpeMax}`}
 								</span>
 								{s.isAmrap && (
-									<span className="bg-red-500/10 text-red-400 rounded-md px-2 py-0.5 text-xs font-medium">
-										AMRAP
-									</span>
+									<span className="badge bg-red-50 text-red-600">AMRAP</span>
 								)}
 							</div>
 						);
@@ -202,7 +179,7 @@ export function ActiveSetView({
 				</div>
 
 				{set.lastSession?.weight != null && (
-					<p className="text-indigo-400 font-mono text-sm">
+					<p className="text-gray-600 font-mono text-sm">
 						Last session: {set.lastSession.weight} {unit}
 					</p>
 				)}
@@ -210,10 +187,20 @@ export function ActiveSetView({
 				<button
 					type="button"
 					onClick={onStartSet}
-					className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full"
+					className="btn-primary w-full"
 				>
 					Start Set
 				</button>
+
+				{onSkipExercise && (
+					<button
+						type="button"
+						onClick={onSkipExercise}
+						className="btn-ghost w-full"
+					>
+						Skip remaining sets
+					</button>
+				)}
 			</div>
 		);
 	}
@@ -225,37 +212,26 @@ export function ActiveSetView({
 		return (
 			<div className="flex flex-col items-center text-center space-y-6 min-h-[70vh] justify-center">
 				<div className="space-y-2">
-					<h2 className="text-xl font-semibold text-neutral-100">
+					<h2 className="text-xl font-semibold text-black">
 						{set.exerciseName}
 					</h2>
-					<p className="text-sm font-medium text-neutral-400">
+					<p className="text-sm font-medium text-gray-500">
 						Set {currentSetNumber} of {totalSets}
 					</p>
-					<p className="font-mono text-lg text-neutral-300">
+					<p className="font-mono text-lg text-gray-600">
 						{set.isMainLift
 							? `${set.prescribed.weight ?? "—"} ${unit} × ${set.prescribed.reps ?? "—"}`
 							: `${set.prescribed.repMin ?? "—"}-${set.prescribed.repMax ?? "—"} reps @ RPE ${set.prescribed.rpeMin ?? "—"}-${set.prescribed.rpeMax ?? "—"}`}
 					</p>
 					{set.isAmrap && (
-						<span className="inline-block bg-red-500/10 text-red-400 rounded-md px-2 py-0.5 text-xs font-medium">
-							AMRAP
-						</span>
+						<span className="badge bg-red-50 text-red-600">AMRAP</span>
 					)}
 				</div>
 
-				<div className="relative w-56 h-56 sm:w-64 sm:h-64 lg:w-80 lg:h-80 flex items-center justify-center">
-					<TimerRing seconds={setTimerSeconds} />
-					<span className="font-mono text-6xl font-bold text-neutral-100">
-						{formatTime(setTimerSeconds)}
-					</span>
-				</div>
+				<TimerDisplay seconds={setTimerSeconds} />
 
 				<div className="w-full mt-auto">
-					<button
-						type="button"
-						onClick={onDone}
-						className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full"
-					>
+					<button type="button" onClick={onDone} className="btn-primary w-full">
 						Done
 					</button>
 				</div>
@@ -273,24 +249,24 @@ export function ActiveSetView({
 		return (
 			<div className="flex flex-col items-center space-y-6">
 				<div className="text-center space-y-2">
-					<h2 className="text-xl font-semibold text-neutral-100">
+					<h2 className="text-xl font-semibold text-black">
 						{set.exerciseName}
 					</h2>
-					<p className="text-sm font-medium text-neutral-400">
+					<p className="text-sm font-medium text-gray-500">
 						Set {currentSetNumber} of {allSetsForExercise.length}
 					</p>
 					{set.isMainLift ? (
-						<p className="font-mono text-sm text-neutral-400">
+						<p className="font-mono text-sm text-gray-500">
 							Prescribed: {set.prescribed.weight ?? "—"} {unit} ×{" "}
 							{set.prescribed.reps ?? "—"}
 						</p>
 					) : (
 						<div className="space-y-1">
-							<p className="text-sm text-neutral-400">
+							<p className="text-sm text-gray-500">
 								Record the weight you used. Adjust for your next set if needed.
 							</p>
 							{hasRpe && (
-								<p className="text-sm text-neutral-400">
+								<p className="text-sm text-gray-500">
 									Target RPE: {set.prescribed.rpeMin}-{set.prescribed.rpeMax}.
 									Felt easy? Consider increasing weight next set.
 								</p>
@@ -299,71 +275,66 @@ export function ActiveSetView({
 					)}
 				</div>
 
-				<div className="relative w-44 h-44 sm:w-52 sm:h-52 lg:w-64 lg:h-64 flex items-center justify-center">
-					<TimerRing seconds={restTimerSeconds} />
-					<span className="font-mono text-6xl font-bold text-neutral-100">
-						{formatTime(restTimerSeconds)}
-					</span>
-				</div>
+				<TimerDisplay seconds={restTimerSeconds} />
 
-				<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 w-full space-y-4">
-					<label className="block">
-						<span className="block text-sm text-neutral-400 mb-1 text-left">
-							Weight ({unit})
-						</span>
-						<input
-							type="number"
-							inputMode="decimal"
-							value={weight}
-							onChange={(e) => setWeight(e.target.value)}
-							className="w-full text-xl font-mono bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
-							placeholder="Weight"
-						/>
-					</label>
-					<label className="block">
-						<span className="block text-sm text-neutral-400 mb-1 text-left">
-							Reps
-						</span>
-						<input
-							type="number"
-							inputMode="numeric"
-							value={reps}
-							onChange={(e) => setReps(e.target.value)}
-							className="w-full text-xl font-mono bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
-							placeholder="Reps"
-						/>
-					</label>
-					{hasRpe && (
+				<div className="card w-full space-y-4">
+					<div className="grid grid-cols-3 gap-3">
 						<label className="block">
-							<span className="block text-sm text-neutral-400 mb-1 text-left">
-								RPE (target: {set.prescribed.rpeMin}-{set.prescribed.rpeMax})
-							</span>
+							<span className="label">Weight ({unit})</span>
+							<input
+								type="number"
+								inputMode="decimal"
+								value={weight}
+								onChange={(e) => setWeight(e.target.value)}
+								className="input w-full font-mono"
+								placeholder="Weight"
+							/>
+						</label>
+						<label className="block">
+							<span className="label">Reps</span>
 							<input
 								type="number"
 								inputMode="numeric"
-								min={1}
-								max={10}
-								step={0.5}
-								value={rpe}
-								onChange={(e) => setRpe(e.target.value)}
-								className="w-full text-xl font-mono bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none"
-								placeholder="RPE"
+								value={reps}
+								onChange={(e) => setReps(e.target.value)}
+								className="input w-full font-mono"
+								placeholder="Reps"
 							/>
-							{rpeError && (
-								<span className="text-red-400 text-xs mt-1 block">
-									{rpeError}
-								</span>
-							)}
 						</label>
-					)}
+						{hasRpe ? (
+							<label className="block">
+								<span className="label">
+									RPE ({set.prescribed.rpeMin}-{set.prescribed.rpeMax})
+								</span>
+								<input
+									type="number"
+									inputMode="numeric"
+									min={1}
+									max={10}
+									step={0.5}
+									value={rpe}
+									onChange={(e) => setRpe(e.target.value)}
+									className="input w-full font-mono"
+									placeholder="RPE"
+								/>
+								{rpeError && (
+									<span className="text-red-600 text-xs mt-1 block">
+										{rpeError}
+									</span>
+								)}
+							</label>
+						) : (
+							<div />
+						)}
+					</div>
 
 					{isLastSetOfAccessory && (
-						<label className="flex items-center gap-2 text-sm text-neutral-400 cursor-pointer">
+						<label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
 							<input
 								type="checkbox"
 								checked={saveWeight}
 								onChange={(e) => setSaveWeight(e.target.checked)}
-								className="rounded border-neutral-700 bg-neutral-800"
+								className="rounded border-gray-300"
 							/>
 							Save weight for next time?
 						</label>
@@ -378,7 +349,7 @@ export function ActiveSetView({
 					/>
 
 					{showUpNext && (
-						<p className="text-center text-sm text-neutral-500">
+						<p className="text-center text-sm text-gray-400">
 							Up next: {nextExerciseName}
 						</p>
 					)}
@@ -394,10 +365,20 @@ export function ActiveSetView({
 								saveWeight: isLastSetOfAccessory ? saveWeight : undefined,
 							})
 						}
-						className="bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg px-4 py-2.5 font-medium transition-colors min-h-20 text-xl w-full disabled:opacity-40"
+						className="btn-primary w-full"
 					>
 						{isLastSet ? "Finish" : "Next Set"}
 					</button>
+
+					{onSkipExercise && (
+						<button
+							type="button"
+							onClick={onSkipExercise}
+							className="btn-ghost w-full"
+						>
+							Skip remaining sets
+						</button>
+					)}
 				</div>
 			</div>
 		);
