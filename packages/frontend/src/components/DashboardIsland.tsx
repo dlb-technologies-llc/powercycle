@@ -11,7 +11,6 @@ import {
 	currentWorkoutAtom,
 	startWorkoutAtom,
 } from "../atoms/workouts";
-import WeightManagement from "./WeightManagement";
 
 const ROUND_NAMES: Record<number, string> = {
 	1: "Volume",
@@ -285,7 +284,6 @@ export default function DashboardIsland() {
 					</div>
 				</CardContent>
 			</Card>
-			<WeightManagement cycle={cycle} />
 		</div>
 	);
 }
