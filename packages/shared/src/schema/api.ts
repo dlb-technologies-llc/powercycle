@@ -73,6 +73,7 @@ export const ExerciseSlotSchema = Schema.Struct({
 	defaultExercise: Schema.String,
 	sets: Schema.Array(RpeSetSchema),
 	preferredWeight: Schema.NullOr(Schema.Number),
+	suggestedWeight: Schema.NullOr(Schema.Number),
 	lastSession: Schema.NullOr(LastSessionSchema),
 });
 

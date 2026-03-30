@@ -1,9 +1,11 @@
+import { estimateWeight } from "@powercycle/shared/engine/weight-estimates";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
 import { InternalError, NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
+import type { ExerciseCategory } from "@powercycle/shared/schema/workout";
 import { and, eq } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
@@ -129,18 +131,21 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						}
 					}
 
-					const addPreferredWeight = <T extends { defaultExercise: string }>(
+					const enrichSlot = <
+						T extends { defaultExercise: string; category: ExerciseCategory },
+					>(
 						slot: T,
 					) => ({
 						...slot,
 						preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
+						suggestedWeight: estimateWeight(slot.category, lifts),
 						lastSession: lastSessionMap.get(slot.defaultExercise) ?? null,
 					});
 
 					return {
 						...plan,
-						variation: addPreferredWeight(plan.variation),
-						accessories: plan.accessories.map(addPreferredWeight),
+						variation: enrichSlot(plan.variation),
+						accessories: plan.accessories.map(enrichSlot),
 					};
 				}),
 			)

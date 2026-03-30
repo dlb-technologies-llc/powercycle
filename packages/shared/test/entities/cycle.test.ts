@@ -139,7 +139,8 @@ describe("Cycle.toResponse", () => {
 	});
 
 	it("handles null completedAt", () => {
-		const cycle = new Cycle({ ...sample(), completedAt: null });
+		const startedAt = new Date("2024-01-01T00:00:00.000Z");
+		const cycle = new Cycle({ ...sample(), startedAt, completedAt: null });
 		const response = Cycle.toResponse(cycle);
 		expect(response.completedAt).toBeNull();
 	});

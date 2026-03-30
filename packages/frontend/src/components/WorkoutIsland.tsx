@@ -406,6 +406,7 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 				nextExerciseName={flow.nextExerciseName}
 				unit="lbs"
 				preferredWeight={flow.currentSet?.preferredWeight}
+				suggestedWeight={flow.currentSet?.suggestedWeight}
 				lastCompletedSetData={
 					completedSetsDataRef.current[currentSet.exerciseName]
 				}

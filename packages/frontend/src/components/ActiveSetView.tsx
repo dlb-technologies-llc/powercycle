@@ -20,6 +20,7 @@ interface ActiveSetViewProps {
 	nextExerciseName: string | null;
 	unit: string;
 	preferredWeight?: number;
+	suggestedWeight?: number;
 	lastCompletedSetData?: { weight: string; reps: string; rpe: string };
 	progress: { current: number; total: number };
 	onStartSet: () => void;
@@ -61,6 +62,7 @@ function TimerDisplay({ seconds, total }: { seconds: number; total?: number }) {
 function getDefaultWeight(
 	set: FlatSet,
 	preferredWeight?: number,
+	suggestedWeight?: number,
 	lastCompletedSetData?: { weight: string },
 ): string {
 	if (set.isMainLift && set.prescribed.weight != null) {
@@ -74,6 +76,9 @@ function getDefaultWeight(
 	}
 	if (preferredWeight != null) {
 		return String(preferredWeight);
+	}
+	if (suggestedWeight != null) {
+		return String(suggestedWeight);
 	}
 	return "";
 }
@@ -119,6 +124,7 @@ export function ActiveSetView({
 	nextExerciseName,
 	unit,
 	preferredWeight,
+	suggestedWeight,
 	lastCompletedSetData,
 	progress,
 	onStartSet,
@@ -127,7 +133,12 @@ export function ActiveSetView({
 	onSkipExercise,
 }: ActiveSetViewProps) {
 	const [weight, setWeight] = useState<string>(
-		getDefaultWeight(set, preferredWeight, lastCompletedSetData),
+		getDefaultWeight(
+			set,
+			preferredWeight,
+			suggestedWeight,
+			lastCompletedSetData,
+		),
 	);
 	const [reps, setReps] = useState<string>(
 		getDefaultReps(set, lastCompletedSetData),

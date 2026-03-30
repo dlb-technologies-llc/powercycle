@@ -19,6 +19,7 @@ export interface FlatSet {
 	isMainLift: boolean;
 	isAmrap: boolean;
 	preferredWeight?: number;
+	suggestedWeight?: number;
 	lastSession?: {
 		weight: number | null;
 		reps: number | null;
@@ -85,6 +86,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 				isMainLift: false,
 				isAmrap: false,
 				preferredWeight: plan.variation.preferredWeight ?? undefined,
+				suggestedWeight: plan.variation.suggestedWeight ?? undefined,
 				lastSession: plan.variation.lastSession ?? undefined,
 			});
 		}
@@ -107,6 +109,7 @@ export function useWorkoutFlow(plan: WorkoutPlan | null) {
 					isMainLift: false,
 					isAmrap: false,
 					preferredWeight: slot.preferredWeight ?? undefined,
+					suggestedWeight: slot.suggestedWeight ?? undefined,
 					lastSession: slot.lastSession ?? undefined,
 				});
 			}
