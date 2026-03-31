@@ -217,6 +217,47 @@ layer(CycleLive)("CycleService", (it) => {
 		}),
 	);
 
+	it.effect("buildLiftUpdate: squat produces squat1rm column", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const result = service.buildLiftUpdate("squat", 315);
+			expect(result).toEqual({ squat1rm: "315" });
+		}),
+	);
+
+	it.effect("buildLiftUpdate: bench produces bench1rm column", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const result = service.buildLiftUpdate("bench", 225);
+			expect(result).toEqual({ bench1rm: "225" });
+		}),
+	);
+
+	it.effect("buildLiftUpdate: deadlift produces deadlift1rm column", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const result = service.buildLiftUpdate("deadlift", 405);
+			expect(result).toEqual({ deadlift1rm: "405" });
+		}),
+	);
+
+	it.effect("buildLiftUpdate: ohp produces ohp1rm column", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const result = service.buildLiftUpdate("ohp", 135);
+			expect(result).toEqual({ ohp1rm: "135" });
+		}),
+	);
+
+	it.effect("buildLiftUpdate converts value to string", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const result = service.buildLiftUpdate("squat", 100);
+			expect(result.squat1rm).toBe("100");
+			expect(typeof result.squat1rm).toBe("string");
+		}),
+	);
+
 	it.effect.prop(
 		"createEntity always starts at round 1, day 1",
 		{

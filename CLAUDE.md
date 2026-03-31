@@ -52,7 +52,7 @@ bun run test:unit
 
 ## Testing
 
-- **Unit**: `@effect/vitest` with `it.effect()`, mock layers in `test/fixtures/`
+- **Unit**: `@effect/vitest` with `it.effect()`, pure service tests in `test/services/`
 - **E2E**: Playwright at `packages/frontend/tests/`
 - Preferred pattern: `layer(ServiceLive)("describe block", (it) => { it.effect(...) })` -- provides the layer once for the entire describe block
 - Legacy pattern: `Effect.gen(...).pipe(Effect.provide(ServiceLayer))` per test

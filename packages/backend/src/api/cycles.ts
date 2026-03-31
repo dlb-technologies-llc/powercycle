@@ -3,7 +3,6 @@ import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
-import type { NewCycle } from "../db/schema.js";
 import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	countCyclesByUserId,
@@ -131,14 +130,8 @@ export const CyclesLive = HttpApiBuilder.group(
 							}),
 						);
 					}
-					const LIFT_COLUMN_MAP = {
-						squat: "squat1rm",
-						bench: "bench1rm",
-						deadlift: "deadlift1rm",
-						ohp: "ohp1rm",
-					} as const satisfies Record<string, keyof NewCycle>;
-					const liftUpdate: Partial<NewCycle> = {};
-					liftUpdate[LIFT_COLUMN_MAP[ctx.payload.lift]] = String(
+					const liftUpdate = cycleService.buildLiftUpdate(
+						ctx.payload.lift,
 						ctx.payload.value,
 					);
 					const updated = yield* updateCycle(db, row.id, liftUpdate);

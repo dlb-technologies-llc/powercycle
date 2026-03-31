@@ -123,7 +123,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 	};
 
 	useEffect(() => {
-		fetch("/api/preferences/exercises")
+		fetch("/api/v1/preferences/exercises")
 			.then((res) => res.json())
 			.then((prefs: Array<{ slotKey: string; exerciseName: string }>) => {
 				if (prefs.length > 0) {
@@ -152,7 +152,7 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			localStorage.setItem(`exercise-pref-${storageKey}`, value);
 		}
 		// Persist to API (fire-and-forget)
-		fetch("/api/preferences/exercises", {
+		fetch("/api/v1/preferences/exercises", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ slotKey: key, exerciseName: value }),

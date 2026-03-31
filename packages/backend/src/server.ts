@@ -9,12 +9,14 @@ import { HealthLive } from "./api/health.js";
 import { PowerCycleApi } from "./api/index.js";
 import { PreferencesLive } from "./api/preferences.js";
 import { WorkoutsLive } from "./api/workouts.js";
+import { TelemetryDev, TelemetryLive } from "./lib/telemetry.js";
 import { ConfigLive } from "./services/ConfigService.js";
 import { CycleLive } from "./services/CycleService.js";
 import { DatabaseService } from "./services/DatabaseService.js";
 import { WorkoutLive } from "./services/WorkoutService.js";
 
 const PORT = Number(process.env.API_PORT) || 3000;
+const ENVIRONMENT = process.env.NODE_ENV;
 
 const allowedOrigins =
 	process.env.NODE_ENV === "production"
@@ -28,6 +30,8 @@ const DATABASE_URL =
 
 const configLayer = ConfigLive({
 	DATABASE_URL,
+	ENVIRONMENT: process.env.NODE_ENV,
+	OTEL_COLLECTOR_URL: process.env.OTEL_COLLECTOR_URL,
 });
 
 const ServiceLive = Layer.mergeAll(
@@ -42,12 +46,28 @@ const HandlerLive = Layer.mergeAll(
 	Layer.provide(WorkoutsLive, ServiceLive),
 	Layer.provide(PreferencesLive, ServiceLive),
 	Layer.provide(ExerciseWeightsLive, ServiceLive),
-	HealthLive,
+	Layer.provide(HealthLive, HttpRouter.disableLogger),
 );
 
 const ApiLive = HttpApiBuilder.layer(PowerCycleApi).pipe(
 	Layer.provide(HandlerLive),
 );
+
+// Format span names as "METHOD /path"
+const SpanNameLive = Layer.succeed(HttpMiddleware.SpanNameGenerator)(
+	(request) => `${request.method} ${request.url.split("?")[0]}`,
+);
+
+// Suppress tracer on health check
+const TracerDisabledLive = Layer.succeed(HttpMiddleware.TracerDisabledWhen)(
+	(req) => req.url === "/health",
+);
+
+// Select telemetry layer based on environment (production + staging get OTel)
+const telemetryLayer =
+	ENVIRONMENT === "production" || ENVIRONMENT === "staging"
+		? Layer.provide(TelemetryLive, configLayer)
+		: TelemetryDev;
 
 const ServerLive = HttpRouter.serve(ApiLive, {
 	middleware: HttpMiddleware.cors({
@@ -55,6 +75,11 @@ const ServerLive = HttpRouter.serve(ApiLive, {
 		allowedMethods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
 		credentials: true,
 	}),
-}).pipe(Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })));
+}).pipe(
+	Layer.provide(SpanNameLive),
+	Layer.provide(TracerDisabledLive),
+	Layer.provide(NodeHttpServer.layer(createServer, { port: PORT })),
+	Layer.provide(telemetryLayer),
+);
 
 Layer.launch(ServerLive).pipe(NodeRuntime.runMain);

@@ -1,14 +1,11 @@
-import { estimateWeight } from "@powercycle/shared/engine/weight-estimates";
 import { generateWorkoutPlan } from "@powercycle/shared/engine/workout";
 import { InternalError, NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
-import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { LIFT_DISPLAY_NAMES } from "@powercycle/shared/schema/lifts";
-import type { ExerciseCategory } from "@powercycle/shared/schema/workout";
 import { and, eq } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { workoutSets } from "../db/schema.js";
 import { DEFAULT_USER_ID } from "../lib/constants.js";
@@ -87,67 +84,19 @@ export const WorkoutsLive = HttpApiBuilder.group(
 						day,
 					);
 
-					// Fetch preferred weights and build lookup
+					// Fetch raw rows and delegate augmentation to service
 					const exerciseWeightRows = yield* findExerciseWeightsByUserId(
 						db,
 						userId,
 					);
-					const exerciseWeights = yield* Effect.forEach(
-						exerciseWeightRows,
-						(r) => ExerciseWeight.decodeRow(r),
-					);
-					const weightMap = new Map(
-						exerciseWeights.map((ew) => [ew.exerciseName, ew.weight]),
-					);
-
-					// Fetch last session data and build lookup
 					const lastSessionRows = yield* findLastSessionSets(db, userId);
-					const LastSessionRow = Schema.Struct({
-						exerciseName: Schema.String,
-						actualWeight: Schema.NullOr(Schema.NumberFromString),
-						actualReps: Schema.NullOr(Schema.Number),
-						rpe: Schema.NullOr(Schema.NumberFromString),
-					});
-					const lastSessionMap = new Map<
-						string,
-						{ weight: number | null; reps: number | null; rpe: number | null }
-					>();
-					for (const raw of lastSessionRows) {
-						if (!lastSessionMap.has(raw.exerciseName)) {
-							const decoded = yield* Schema.decodeUnknownEffect(LastSessionRow)(
-								raw,
-							).pipe(
-								Effect.mapError(
-									(e) =>
-										new InternalError({
-											message: `LastSession decode failed: ${e}`,
-										}),
-								),
-							);
-							lastSessionMap.set(decoded.exerciseName, {
-								weight: decoded.actualWeight,
-								reps: decoded.actualReps,
-								rpe: decoded.rpe,
-							});
-						}
-					}
 
-					const enrichSlot = <
-						T extends { defaultExercise: string; category: ExerciseCategory },
-					>(
-						slot: T,
-					) => ({
-						...slot,
-						preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
-						suggestedWeight: estimateWeight(slot.category, lifts),
-						lastSession: lastSessionMap.get(slot.defaultExercise) ?? null,
-					});
-
-					return {
-						...plan,
-						variation: enrichSlot(plan.variation),
-						accessories: plan.accessories.map(enrichSlot),
-					};
+					return yield* workoutService.augmentPlanWithWeights(
+						exerciseWeightRows,
+						lastSessionRows,
+						plan,
+						lifts,
+					);
 				}),
 			)
 			.handle("current", (_ctx) =>

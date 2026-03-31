@@ -38,6 +38,7 @@ services:
       - DATABASE_URL=postgresql://${DB_USER:-powercycle}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-powercycle}
       - API_PORT=3001
       - NODE_ENV=production
+      - OTEL_COLLECTOR_URL=${OTEL_COLLECTOR_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

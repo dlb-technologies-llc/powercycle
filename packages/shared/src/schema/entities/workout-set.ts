@@ -45,6 +45,25 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 		completedAt: Schema.NullOr(Schema.Date),
 	});
 
+	// Decode schema for last-session query rows (subset of DrizzleRow fields)
+	static readonly LastSessionRow = Schema.Struct({
+		exerciseName: Schema.String,
+		actualWeight: Schema.NullOr(Schema.NumberFromString),
+		actualReps: Schema.NullOr(Schema.Number),
+		rpe: Schema.NullOr(Schema.NumberFromString),
+	});
+
+	static decodeLastSessionRow(row: unknown) {
+		return Schema.decodeUnknownEffect(WorkoutSet.LastSessionRow)(row).pipe(
+			Effect.mapError(
+				(e) =>
+					new InternalError({
+						message: `LastSession decode failed: ${e}`,
+					}),
+			),
+		);
+	}
+
 	static decodeRow(row: unknown) {
 		return Schema.decodeUnknownEffect(WorkoutSet.DrizzleRow)(row).pipe(
 			Effect.map((data) => new WorkoutSet(data)),

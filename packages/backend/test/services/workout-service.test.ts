@@ -175,4 +175,241 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 				expect(w1.id).not.toBe(w2.id);
 			}),
 	);
+
+	it.effect(
+		"augmentPlanWithWeights enriches plan with matching weights and session data",
+		() =>
+			Effect.gen(function* () {
+				const service = yield* WorkoutService;
+
+				const plan = {
+					day: 1 as TrainingDay,
+					round: 1 as Round,
+					cycle: 1,
+					mainLift: "squat" as const,
+					mainLiftSets: [],
+					variation: {
+						category: "squat_variation" as const,
+						defaultExercise: "Front Squat",
+						sets: [],
+					},
+					accessories: [
+						{
+							category: "quad" as const,
+							defaultExercise: "Leg Extensions",
+							sets: [],
+						},
+					],
+				};
+
+				const exerciseWeightRows = [
+					{
+						id: crypto.randomUUID(),
+						userId: crypto.randomUUID(),
+						exerciseName: "Front Squat",
+						weight: "135",
+						unit: "lbs",
+						rpe: null,
+						updatedAt: new Date(),
+					},
+					{
+						id: crypto.randomUUID(),
+						userId: crypto.randomUUID(),
+						exerciseName: "Leg Extensions",
+						weight: "90",
+						unit: "lbs",
+						rpe: null,
+						updatedAt: new Date(),
+					},
+				];
+
+				const lastSessionRows = [
+					{
+						exerciseName: "Front Squat",
+						actualWeight: "130",
+						actualReps: 8,
+						rpe: "7",
+					},
+					{
+						exerciseName: "Leg Extensions",
+						actualWeight: "85",
+						actualReps: 12,
+						rpe: "6",
+					},
+				];
+
+				const lifts = {
+					squat: 315,
+					bench: 225,
+					deadlift: 405,
+					ohp: 135,
+					unit: "lbs" as const,
+				};
+
+				const result = yield* service.augmentPlanWithWeights(
+					exerciseWeightRows,
+					lastSessionRows,
+					plan,
+					lifts,
+				);
+
+				// Variation should be enriched
+				expect(result.variation.preferredWeight).toBe(135);
+				expect(result.variation.suggestedWeight).toBeTypeOf("number");
+				expect(result.variation.lastSession).toEqual({
+					weight: 130,
+					reps: 8,
+					rpe: 7,
+				});
+
+				// Accessory should be enriched
+				expect(result.accessories[0].preferredWeight).toBe(90);
+				expect(result.accessories[0].suggestedWeight).toBeTypeOf("number");
+				expect(result.accessories[0].lastSession).toEqual({
+					weight: 85,
+					reps: 12,
+					rpe: 6,
+				});
+
+				// Original plan fields preserved
+				expect(result.day).toBe(1);
+				expect(result.round).toBe(1);
+				expect(result.mainLift).toBe("squat");
+			}),
+	);
+
+	it.effect(
+		"augmentPlanWithWeights returns nulls when no weights or session data",
+		() =>
+			Effect.gen(function* () {
+				const service = yield* WorkoutService;
+
+				const plan = {
+					day: 2 as TrainingDay,
+					round: 2 as Round,
+					cycle: 1,
+					mainLift: "bench" as const,
+					mainLiftSets: [],
+					variation: {
+						category: "bench_variation" as const,
+						defaultExercise: "Incline Bench Press",
+						sets: [],
+					},
+					accessories: [
+						{
+							category: "tricep" as const,
+							defaultExercise: "Overhead Extension (French)",
+							sets: [],
+						},
+					],
+				};
+
+				const lifts = {
+					squat: 315,
+					bench: 225,
+					deadlift: 405,
+					ohp: 135,
+					unit: "lbs" as const,
+				};
+
+				const result = yield* service.augmentPlanWithWeights(
+					[],
+					[],
+					plan,
+					lifts,
+				);
+
+				expect(result.variation.preferredWeight).toBeNull();
+				expect(result.variation.lastSession).toBeNull();
+				expect(result.accessories[0].preferredWeight).toBeNull();
+				expect(result.accessories[0].lastSession).toBeNull();
+				// suggestedWeight should still compute from lifts
+				expect(result.variation.suggestedWeight).toBeTypeOf("number");
+			}),
+	);
+
+	it.effect("augmentPlanWithWeights handles partial session data", () =>
+		Effect.gen(function* () {
+			const service = yield* WorkoutService;
+
+			const plan = {
+				day: 3 as TrainingDay,
+				round: 1 as Round,
+				cycle: 1,
+				mainLift: "deadlift" as const,
+				mainLiftSets: [],
+				variation: {
+					category: "deadlift_variation" as const,
+					defaultExercise: "Romanian Deadlift",
+					sets: [],
+				},
+				accessories: [
+					{
+						category: "vertical_pull" as const,
+						defaultExercise: "Pull-Ups",
+						sets: [],
+					},
+					{
+						category: "bicep" as const,
+						defaultExercise: "Curls (DB/EZ/C)",
+						sets: [],
+					},
+				],
+			};
+
+			// Only session data for the variation, not accessories
+			const lastSessionRows = [
+				{
+					exerciseName: "Romanian Deadlift",
+					actualWeight: "185",
+					actualReps: 10,
+					rpe: "6",
+				},
+			];
+
+			// Only weight for one accessory
+			const exerciseWeightRows = [
+				{
+					id: crypto.randomUUID(),
+					userId: crypto.randomUUID(),
+					exerciseName: "Pull-Ups",
+					weight: "0",
+					unit: "lbs",
+					rpe: null,
+					updatedAt: new Date(),
+				},
+			];
+
+			const lifts = {
+				squat: 315,
+				bench: 225,
+				deadlift: 405,
+				ohp: 135,
+				unit: "lbs" as const,
+			};
+
+			const result = yield* service.augmentPlanWithWeights(
+				exerciseWeightRows,
+				lastSessionRows,
+				plan,
+				lifts,
+			);
+
+			// Variation: has session data, no preferred weight
+			expect(result.variation.preferredWeight).toBeNull();
+			expect(result.variation.lastSession).toEqual({
+				weight: 185,
+				reps: 10,
+				rpe: 6,
+			});
+
+			// First accessory: has preferred weight, no session data
+			expect(result.accessories[0].preferredWeight).toBe(0);
+			expect(result.accessories[0].lastSession).toBeNull();
+
+			// Second accessory: neither
+			expect(result.accessories[1].preferredWeight).toBeNull();
+			expect(result.accessories[1].lastSession).toBeNull();
+		}),
+	);
 });

@@ -67,7 +67,7 @@ type ApiRequest = {
  */
 async function setupWorkout(request: ApiRequest) {
 	// Step 1: Create a cycle with 1RM values
-	const cycleRes = await request.post(`/api/cycles`, {
+	const cycleRes = await request.post(`/api/v1/cycles`, {
 		data: {
 			squat: 300,
 			bench: 225,
@@ -80,13 +80,13 @@ async function setupWorkout(request: ApiRequest) {
 	const cycle = (await cycleRes.json()) as CycleResponse;
 
 	// Step 2: Fetch the workout plan
-	const planRes = await request.get(`/api/workouts/next`);
+	const planRes = await request.get(`/api/v1/workouts/next`);
 	expect(planRes.ok()).toBeTruthy();
 	const plan = (await planRes.json()) as WorkoutPlan;
 	expect(plan).not.toBeNull();
 
 	// Step 3: Start a workout
-	const workoutRes = await request.post(`/api/workouts`, {
+	const workoutRes = await request.post(`/api/v1/workouts`, {
 		data: {
 			cycleId: cycle.id,
 			round: plan.round,
@@ -394,7 +394,7 @@ test.describe("Workout Resume", () => {
 		for (let i = 0; i < 2; i++) {
 			const mainSet = workoutPlan.mainLiftSets[i];
 			if (!mainSet) break;
-			const logRes = await request.post(`/api/workouts/${workout.id}/sets`, {
+			const logRes = await request.post(`/api/v1/workouts/${workout.id}/sets`, {
 				data: {
 					exerciseName:
 						workoutPlan.mainLift === "squat"
