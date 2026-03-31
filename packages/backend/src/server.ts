@@ -28,6 +28,8 @@ const DATABASE_URL =
 
 const configLayer = ConfigLive({
 	DATABASE_URL,
+	ENVIRONMENT: process.env.NODE_ENV,
+	OTEL_COLLECTOR_URL: process.env.OTEL_COLLECTOR_URL,
 });
 
 const ServiceLive = Layer.mergeAll(

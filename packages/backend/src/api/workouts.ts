@@ -8,7 +8,7 @@ import { WorkoutSet } from "@powercycle/shared/schema/entities/workout-set";
 import { LIFT_DISPLAY_NAMES } from "@powercycle/shared/schema/lifts";
 import type { ExerciseCategory } from "@powercycle/shared/schema/workout";
 import { and, eq } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { workoutSets } from "../db/schema.js";
 import { DEFAULT_USER_ID } from "../lib/constants.js";
@@ -102,28 +102,13 @@ export const WorkoutsLive = HttpApiBuilder.group(
 
 					// Fetch last session data and build lookup
 					const lastSessionRows = yield* findLastSessionSets(db, userId);
-					const LastSessionRow = Schema.Struct({
-						exerciseName: Schema.String,
-						actualWeight: Schema.NullOr(Schema.NumberFromString),
-						actualReps: Schema.NullOr(Schema.Number),
-						rpe: Schema.NullOr(Schema.NumberFromString),
-					});
 					const lastSessionMap = new Map<
 						string,
 						{ weight: number | null; reps: number | null; rpe: number | null }
 					>();
 					for (const raw of lastSessionRows) {
 						if (!lastSessionMap.has(raw.exerciseName)) {
-							const decoded = yield* Schema.decodeUnknownEffect(LastSessionRow)(
-								raw,
-							).pipe(
-								Effect.mapError(
-									(e) =>
-										new InternalError({
-											message: `LastSession decode failed: ${e}`,
-										}),
-								),
-							);
+							const decoded = yield* WorkoutSet.decodeLastSessionRow(raw);
 							lastSessionMap.set(decoded.exerciseName, {
 								weight: decoded.actualWeight,
 								reps: decoded.actualReps,

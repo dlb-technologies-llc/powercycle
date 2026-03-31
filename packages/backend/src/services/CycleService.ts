@@ -1,8 +1,9 @@
 import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
-import type { UserLifts } from "@powercycle/shared/schema/lifts";
+import type { MainLift, UserLifts } from "@powercycle/shared/schema/lifts";
 import type { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Layer, ServiceMap } from "effect";
+import type { NewCycle } from "../db/schema.js";
 
 export class CycleService extends ServiceMap.Service<
 	CycleService,
@@ -17,6 +18,10 @@ export class CycleService extends ServiceMap.Service<
 		readonly validateActiveCycle: (
 			cycle: Cycle | null,
 		) => Effect.Effect<Cycle, NotFoundError>;
+		readonly buildLiftUpdate: (
+			lift: MainLift,
+			value: number,
+		) => Partial<NewCycle>;
 	}
 >()("@powercycle/CycleService") {}
 
@@ -86,6 +91,12 @@ export const CycleLive = Layer.succeed(CycleService)({
 						resource: "cycle",
 					}),
 				),
+
+	buildLiftUpdate: (lift, value) => {
+		const update: Partial<NewCycle> = {};
+		update[`${lift}1rm`] = String(value);
+		return update;
+	},
 });
 
 // Pure service — same impl for test

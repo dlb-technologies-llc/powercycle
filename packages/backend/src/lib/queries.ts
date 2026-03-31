@@ -1,5 +1,5 @@
 import { InternalError } from "@powercycle/shared/errors/index";
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import {
 	cycles,
@@ -126,9 +126,13 @@ export const findWorkoutHistory = (db: Database, userId: string) =>
 
 export const countCyclesByUserId = (db: Database, userId: string) =>
 	Effect.tryPromise({
-		try: () => db.select().from(cycles).where(eq(cycles.userId, userId)),
+		try: () =>
+			db
+				.select({ count: count() })
+				.from(cycles)
+				.where(eq(cycles.userId, userId)),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows.length));
+	}).pipe(Effect.map((rows) => rows[0]?.count ?? 0));
 
 export const findExercisePreferences = (db: Database, userId: string) =>
 	Effect.tryPromise({
