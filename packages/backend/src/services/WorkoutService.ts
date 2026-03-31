@@ -1,11 +1,42 @@
-import { NotFoundError } from "@powercycle/shared/errors/index";
+import { estimateWeight } from "@powercycle/shared/engine/weight-estimates";
+import {
+	type InternalError,
+	NotFoundError,
+} from "@powercycle/shared/errors/index";
+import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import {
 	type LogSetInput,
 	WorkoutSet,
 } from "@powercycle/shared/schema/entities/workout-set";
+import type { UserLifts } from "@powercycle/shared/schema/lifts";
 import type { Round, TrainingDay } from "@powercycle/shared/schema/program";
+import type {
+	ExerciseCategory,
+	ExerciseSlot,
+	WorkoutPlan,
+} from "@powercycle/shared/schema/workout";
 import { Effect, Layer, ServiceMap } from "effect";
+
+interface LastSessionData {
+	readonly weight: number | null;
+	readonly reps: number | null;
+	readonly rpe: number | null;
+}
+
+type EnrichedSlot<
+	T extends { defaultExercise: string; category: ExerciseCategory },
+> = T & {
+	readonly preferredWeight: number | null;
+	readonly suggestedWeight: number | null;
+	readonly lastSession: LastSessionData | null;
+};
+
+export interface AugmentedPlan
+	extends Omit<WorkoutPlan, "variation" | "accessories"> {
+	readonly variation: EnrichedSlot<ExerciseSlot>;
+	readonly accessories: ReadonlyArray<EnrichedSlot<ExerciseSlot>>;
+}
 
 export class WorkoutService extends ServiceMap.Service<
 	WorkoutService,
@@ -24,6 +55,12 @@ export class WorkoutService extends ServiceMap.Service<
 			workout: Workout | null,
 			workoutId: string,
 		) => Effect.Effect<Workout, NotFoundError>;
+		readonly augmentPlanWithWeights: (
+			exerciseWeightRows: ReadonlyArray<unknown>,
+			lastSessionRows: ReadonlyArray<unknown>,
+			plan: WorkoutPlan,
+			lifts: UserLifts,
+		) => Effect.Effect<AugmentedPlan, InternalError>;
 	}
 >()("@powercycle/WorkoutService") {}
 
@@ -76,6 +113,47 @@ export const WorkoutLive = Layer.succeed(WorkoutService)({
 						resource: "workout",
 					}),
 				),
+
+	augmentPlanWithWeights: (exerciseWeightRows, lastSessionRows, plan, lifts) =>
+		Effect.gen(function* () {
+			// Decode exercise weights and build lookup
+			const exerciseWeights = yield* Effect.forEach(exerciseWeightRows, (r) =>
+				ExerciseWeight.decodeRow(r),
+			);
+			const weightMap = new Map(
+				exerciseWeights.map((ew) => [ew.exerciseName, ew.weight]),
+			);
+
+			// Decode last session data and build lookup
+			const lastSessionMap = new Map<string, LastSessionData>();
+			for (const raw of lastSessionRows) {
+				const decoded = yield* WorkoutSet.decodeLastSessionRow(raw);
+				if (!lastSessionMap.has(decoded.exerciseName)) {
+					lastSessionMap.set(decoded.exerciseName, {
+						weight: decoded.actualWeight,
+						reps: decoded.actualReps,
+						rpe: decoded.rpe,
+					});
+				}
+			}
+
+			const enrichSlot = <
+				T extends { defaultExercise: string; category: ExerciseCategory },
+			>(
+				slot: T,
+			) => ({
+				...slot,
+				preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
+				suggestedWeight: estimateWeight(slot.category, lifts),
+				lastSession: lastSessionMap.get(slot.defaultExercise) ?? null,
+			});
+
+			return {
+				...plan,
+				variation: enrichSlot(plan.variation),
+				accessories: plan.accessories.map(enrichSlot),
+			};
+		}),
 });
 
 export const WorkoutTest = WorkoutLive;

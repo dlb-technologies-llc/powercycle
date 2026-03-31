@@ -21,8 +21,11 @@ const firstRow = <T>(rows: T[]) =>
 				new InternalError({ message: "Expected row from returning()" }),
 			);
 
-export const findActiveCycle = (db: Database, userId: string) =>
-	Effect.tryPromise({
+export const findActiveCycle = Effect.fn("queries.findActiveCycle")(function* (
+	db: Database,
+	userId: string,
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () =>
 			db
 				.select()
@@ -30,67 +33,86 @@ export const findActiveCycle = (db: Database, userId: string) =>
 				.where(and(eq(cycles.userId, userId), isNull(cycles.completedAt)))
 				.limit(1),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
+	});
+	return rows[0] ?? null;
+});
 
-export const insertCycle = (db: Database, data: NewCycle) =>
-	Effect.tryPromise({
+export const insertCycle = Effect.fn("queries.insertCycle")(function* (
+	db: Database,
+	data: NewCycle,
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () => db.insert(cycles).values(data).returning(),
 		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
+	});
+	return yield* firstRow(rows);
+});
 
-export const updateCycle = (
+export const updateCycle = Effect.fn("queries.updateCycle")(function* (
 	db: Database,
 	cycleId: string,
 	data: Partial<NewCycle>,
-) =>
-	Effect.tryPromise({
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () =>
 			db.update(cycles).set(data).where(eq(cycles.id, cycleId)).returning(),
 		catch: (error) => new InternalError({ message: `Update failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
+	});
+	return yield* firstRow(rows);
+});
 
-export const findInProgressWorkout = (
+export const findInProgressWorkout = Effect.fn("queries.findInProgressWorkout")(
+	function* (db: Database, cycleId: string, round: number, day: number) {
+		const rows = yield* Effect.tryPromise({
+			try: () =>
+				db
+					.select()
+					.from(workouts)
+					.where(
+						and(
+							eq(workouts.cycleId, cycleId),
+							eq(workouts.round, round),
+							eq(workouts.day, day),
+							isNull(workouts.completedAt),
+						),
+					)
+					.limit(1),
+			catch: (error) =>
+				new InternalError({ message: `Query failed: ${error}` }),
+		});
+		return rows[0] ?? null;
+	},
+);
+
+export const findWorkoutById = Effect.fn("queries.findWorkoutById")(function* (
 	db: Database,
-	cycleId: string,
-	round: number,
-	day: number,
-) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select()
-				.from(workouts)
-				.where(
-					and(
-						eq(workouts.cycleId, cycleId),
-						eq(workouts.round, round),
-						eq(workouts.day, day),
-						isNull(workouts.completedAt),
-					),
-				)
-				.limit(1),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
-
-export const findWorkoutById = (db: Database, workoutId: string) =>
-	Effect.tryPromise({
+	workoutId: string,
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () =>
 			db.select().from(workouts).where(eq(workouts.id, workoutId)).limit(1),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0] ?? null));
+	});
+	return rows[0] ?? null;
+});
 
-export const insertWorkout = (db: Database, data: NewWorkout) =>
-	Effect.tryPromise({
+export const insertWorkout = Effect.fn("queries.insertWorkout")(function* (
+	db: Database,
+	data: NewWorkout,
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () => db.insert(workouts).values(data).returning(),
 		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
+	});
+	return yield* firstRow(rows);
+});
 
-export const updateWorkout = (
+export const updateWorkout = Effect.fn("queries.updateWorkout")(function* (
 	db: Database,
 	workoutId: string,
 	data: Partial<NewWorkout>,
-) =>
-	Effect.tryPromise({
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () =>
 			db
 				.update(workouts)
@@ -98,44 +120,69 @@ export const updateWorkout = (
 				.where(eq(workouts.id, workoutId))
 				.returning(),
 		catch: (error) => new InternalError({ message: `Update failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
-
-export const insertWorkoutSet = (db: Database, data: NewWorkoutSet) =>
-	Effect.tryPromise({
-		try: () => db.insert(workoutSets).values(data).returning(),
-		catch: (error) => new InternalError({ message: `Insert failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
-
-export const findSetsByWorkoutId = (db: Database, workoutId: string) =>
-	Effect.tryPromise({
-		try: () =>
-			db.select().from(workoutSets).where(eq(workoutSets.workoutId, workoutId)),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	});
+	return yield* firstRow(rows);
+});
 
-export const findWorkoutHistory = (db: Database, userId: string) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select()
-				.from(workouts)
-				.where(eq(workouts.userId, userId))
-				.orderBy(desc(workouts.startedAt)),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	});
+export const insertWorkoutSet = Effect.fn("queries.insertWorkoutSet")(
+	function* (db: Database, data: NewWorkoutSet) {
+		const rows = yield* Effect.tryPromise({
+			try: () => db.insert(workoutSets).values(data).returning(),
+			catch: (error) =>
+				new InternalError({ message: `Insert failed: ${error}` }),
+		});
+		return yield* firstRow(rows);
+	},
+);
 
-export const countCyclesByUserId = (db: Database, userId: string) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select({ count: count() })
-				.from(cycles)
-				.where(eq(cycles.userId, userId)),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows[0]?.count ?? 0));
+export const findSetsByWorkoutId = Effect.fn("queries.findSetsByWorkoutId")(
+	function* (db: Database, workoutId: string) {
+		return yield* Effect.tryPromise({
+			try: () =>
+				db
+					.select()
+					.from(workoutSets)
+					.where(eq(workoutSets.workoutId, workoutId)),
+			catch: (error) =>
+				new InternalError({ message: `Query failed: ${error}` }),
+		});
+	},
+);
 
-export const findExercisePreferences = (db: Database, userId: string) =>
-	Effect.tryPromise({
+export const findWorkoutHistory = Effect.fn("queries.findWorkoutHistory")(
+	function* (db: Database, userId: string) {
+		return yield* Effect.tryPromise({
+			try: () =>
+				db
+					.select()
+					.from(workouts)
+					.where(eq(workouts.userId, userId))
+					.orderBy(desc(workouts.startedAt)),
+			catch: (error) =>
+				new InternalError({ message: `Query failed: ${error}` }),
+		});
+	},
+);
+
+export const countCyclesByUserId = Effect.fn("queries.countCyclesByUserId")(
+	function* (db: Database, userId: string) {
+		const rows = yield* Effect.tryPromise({
+			try: () =>
+				db
+					.select({ count: count() })
+					.from(cycles)
+					.where(eq(cycles.userId, userId)),
+			catch: (error) =>
+				new InternalError({ message: `Query failed: ${error}` }),
+		});
+		return rows[0]?.count ?? 0;
+	},
+);
+
+export const findExercisePreferences = Effect.fn(
+	"queries.findExercisePreferences",
+)(function* (db: Database, userId: string) {
+	return yield* Effect.tryPromise({
 		try: () =>
 			db
 				.select()
@@ -143,14 +190,17 @@ export const findExercisePreferences = (db: Database, userId: string) =>
 				.where(eq(exercisePreferences.userId, userId)),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	});
+});
 
-export const upsertExercisePreference = (
+export const upsertExercisePreference = Effect.fn(
+	"queries.upsertExercisePreference",
+)(function* (
 	db: Database,
 	userId: string,
 	slotKey: string,
 	exerciseName: string,
-) =>
-	Effect.tryPromise({
+) {
+	const rows = yield* Effect.tryPromise({
 		try: () =>
 			db
 				.insert(exercisePreferences)
@@ -161,10 +211,14 @@ export const upsertExercisePreference = (
 				})
 				.returning(),
 		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
+	});
+	return yield* firstRow(rows);
+});
 
-export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
-	Effect.tryPromise({
+export const findExerciseWeightsByUserId = Effect.fn(
+	"queries.findExerciseWeightsByUserId",
+)(function* (db: Database, userId: string) {
+	return yield* Effect.tryPromise({
 		try: () =>
 			db
 				.select()
@@ -172,61 +226,72 @@ export const findExerciseWeightsByUserId = (db: Database, userId: string) =>
 				.where(eq(exerciseWeights.userId, userId)),
 		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
 	});
+});
 
-export const upsertExerciseWeight = (db: Database, data: NewExerciseWeight) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.insert(exerciseWeights)
-				.values(data)
-				.onConflictDoUpdate({
-					target: [exerciseWeights.userId, exerciseWeights.exerciseName],
-					set: {
-						weight: data.weight,
-						unit: data.unit,
-						rpe: data.rpe,
-						updatedAt: new Date(),
-					},
-				})
-				.returning(),
-		catch: (error) => new InternalError({ message: `Upsert failed: ${error}` }),
-	}).pipe(Effect.flatMap(firstRow));
+export const upsertExerciseWeight = Effect.fn("queries.upsertExerciseWeight")(
+	function* (db: Database, data: NewExerciseWeight) {
+		const rows = yield* Effect.tryPromise({
+			try: () =>
+				db
+					.insert(exerciseWeights)
+					.values(data)
+					.onConflictDoUpdate({
+						target: [exerciseWeights.userId, exerciseWeights.exerciseName],
+						set: {
+							weight: data.weight,
+							unit: data.unit,
+							rpe: data.rpe,
+							updatedAt: new Date(),
+						},
+					})
+					.returning(),
+			catch: (error) =>
+				new InternalError({ message: `Upsert failed: ${error}` }),
+		});
+		return yield* firstRow(rows);
+	},
+);
 
-export const deleteExerciseWeight = (
-	db: Database,
-	userId: string,
-	exerciseName: string,
-) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.delete(exerciseWeights)
-				.where(
-					and(
-						eq(exerciseWeights.userId, userId),
-						eq(exerciseWeights.exerciseName, exerciseName),
-					),
-				)
-				.returning(),
-		catch: (error) => new InternalError({ message: `Delete failed: ${error}` }),
-	}).pipe(Effect.map((rows) => rows.length > 0));
+export const deleteExerciseWeight = Effect.fn("queries.deleteExerciseWeight")(
+	function* (db: Database, userId: string, exerciseName: string) {
+		const rows = yield* Effect.tryPromise({
+			try: () =>
+				db
+					.delete(exerciseWeights)
+					.where(
+						and(
+							eq(exerciseWeights.userId, userId),
+							eq(exerciseWeights.exerciseName, exerciseName),
+						),
+					)
+					.returning(),
+			catch: (error) =>
+				new InternalError({ message: `Delete failed: ${error}` }),
+		});
+		return rows.length > 0;
+	},
+);
 
-export const findLastSessionSets = (db: Database, userId: string) =>
-	Effect.tryPromise({
-		try: () =>
-			db
-				.select({
-					exerciseName: workoutSets.exerciseName,
-					actualWeight: workoutSets.actualWeight,
-					actualReps: workoutSets.actualReps,
-					rpe: workoutSets.rpe,
-					completedAt: workouts.completedAt,
-				})
-				.from(workoutSets)
-				.innerJoin(workouts, eq(workoutSets.workoutId, workouts.id))
-				.where(
-					and(eq(workouts.userId, userId), isNotNull(workouts.completedAt)),
-				)
-				.orderBy(desc(workouts.completedAt)),
-		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
-	});
+export const findLastSessionSets = Effect.fn("queries.findLastSessionSets")(
+	function* (db: Database, userId: string) {
+		return yield* Effect.tryPromise({
+			try: () =>
+				db
+					.select({
+						exerciseName: workoutSets.exerciseName,
+						actualWeight: workoutSets.actualWeight,
+						actualReps: workoutSets.actualReps,
+						rpe: workoutSets.rpe,
+						completedAt: workouts.completedAt,
+					})
+					.from(workoutSets)
+					.innerJoin(workouts, eq(workoutSets.workoutId, workouts.id))
+					.where(
+						and(eq(workouts.userId, userId), isNotNull(workouts.completedAt)),
+					)
+					.orderBy(desc(workouts.completedAt)),
+			catch: (error) =>
+				new InternalError({ message: `Query failed: ${error}` }),
+		});
+	},
+);
