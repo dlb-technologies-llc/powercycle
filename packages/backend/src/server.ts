@@ -63,9 +63,9 @@ const TracerDisabledLive = Layer.succeed(HttpMiddleware.TracerDisabledWhen)(
 	(req) => req.url === "/health",
 );
 
-// Select telemetry layer based on environment
+// Select telemetry layer based on environment (production + staging get OTel)
 const telemetryLayer =
-	ENVIRONMENT === "production"
+	ENVIRONMENT === "production" || ENVIRONMENT === "staging"
 		? Layer.provide(TelemetryLive, configLayer)
 		: TelemetryDev;
 
