@@ -141,12 +141,12 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		if (!id || !plan || resumeChecked) return;
 
 		Promise.all([
-			fetch(`/api/workouts/${id}/sets`).then(async (res) => {
+			fetch(`/api/v1/workouts/${id}/sets`).then(async (res) => {
 				if (!res.ok) throw new Error("Failed to fetch sets");
 				const data: unknown[] = await res.json();
 				return data;
 			}),
-			fetch("/api/preferences/exercises")
+			fetch("/api/v1/preferences/exercises")
 				.then(async (res) => {
 					if (!res.ok) return [];
 					const data: Array<{ slotKey: string; exerciseName: string }> =
