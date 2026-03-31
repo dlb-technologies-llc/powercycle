@@ -15,7 +15,10 @@ import {
 } from "@powercycle/shared/schema/entities/workout-set";
 import type { UserLifts } from "@powercycle/shared/schema/lifts";
 import type { Round, TrainingDay } from "@powercycle/shared/schema/program";
-import type { ExerciseSlot, WorkoutPlan } from "@powercycle/shared/schema/workout";
+import type {
+	ExerciseSlot,
+	WorkoutPlan,
+} from "@powercycle/shared/schema/workout";
 import { Effect, Layer, ServiceMap } from "effect";
 
 type AugmentedPlan = WorkoutPlanResponseType;
