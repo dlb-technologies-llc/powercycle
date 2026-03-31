@@ -67,6 +67,7 @@ export const LastSessionSchema = Schema.Struct({
 	reps: Schema.NullOr(Schema.Number),
 	rpe: Schema.NullOr(Schema.Number),
 });
+export type LastSession = typeof LastSessionSchema.Type;
 
 export const ExerciseSlotSchema = Schema.Struct({
 	category: Schema.String,
@@ -76,6 +77,7 @@ export const ExerciseSlotSchema = Schema.Struct({
 	suggestedWeight: Schema.NullOr(Schema.Number),
 	lastSession: Schema.NullOr(LastSessionSchema),
 });
+export type EnrichedSlot = typeof ExerciseSlotSchema.Type;
 
 export const WorkoutPlanResponse = Schema.Struct({
 	day: Schema.Number,
@@ -86,6 +88,7 @@ export const WorkoutPlanResponse = Schema.Struct({
 	variation: ExerciseSlotSchema,
 	accessories: Schema.Array(ExerciseSlotSchema),
 });
+export type WorkoutPlanResponseType = typeof WorkoutPlanResponse.Type;
 
 // --- Progression (computed result, no entity) ---
 

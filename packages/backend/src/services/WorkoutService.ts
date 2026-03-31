@@ -3,6 +3,10 @@ import {
 	type InternalError,
 	NotFoundError,
 } from "@powercycle/shared/errors/index";
+import type {
+	LastSession,
+	WorkoutPlanResponseType,
+} from "@powercycle/shared/schema/api";
 import { ExerciseWeight } from "@powercycle/shared/schema/entities/exercise-weight";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
 import {
@@ -11,32 +15,10 @@ import {
 } from "@powercycle/shared/schema/entities/workout-set";
 import type { UserLifts } from "@powercycle/shared/schema/lifts";
 import type { Round, TrainingDay } from "@powercycle/shared/schema/program";
-import type {
-	ExerciseCategory,
-	ExerciseSlot,
-	WorkoutPlan,
-} from "@powercycle/shared/schema/workout";
+import type { ExerciseSlot, WorkoutPlan } from "@powercycle/shared/schema/workout";
 import { Effect, Layer, ServiceMap } from "effect";
 
-interface LastSessionData {
-	readonly weight: number | null;
-	readonly reps: number | null;
-	readonly rpe: number | null;
-}
-
-type EnrichedSlot<
-	T extends { defaultExercise: string; category: ExerciseCategory },
-> = T & {
-	readonly preferredWeight: number | null;
-	readonly suggestedWeight: number | null;
-	readonly lastSession: LastSessionData | null;
-};
-
-export interface AugmentedPlan
-	extends Omit<WorkoutPlan, "variation" | "accessories"> {
-	readonly variation: EnrichedSlot<ExerciseSlot>;
-	readonly accessories: ReadonlyArray<EnrichedSlot<ExerciseSlot>>;
-}
+type AugmentedPlan = WorkoutPlanResponseType;
 
 export class WorkoutService extends ServiceMap.Service<
 	WorkoutService,
@@ -125,7 +107,7 @@ export const WorkoutLive = Layer.succeed(WorkoutService)({
 			);
 
 			// Decode last session data and build lookup
-			const lastSessionMap = new Map<string, LastSessionData>();
+			const lastSessionMap = new Map<string, LastSession>();
 			for (const raw of lastSessionRows) {
 				const decoded = yield* WorkoutSet.decodeLastSessionRow(raw);
 				if (!lastSessionMap.has(decoded.exerciseName)) {
@@ -137,11 +119,7 @@ export const WorkoutLive = Layer.succeed(WorkoutService)({
 				}
 			}
 
-			const enrichSlot = <
-				T extends { defaultExercise: string; category: ExerciseCategory },
-			>(
-				slot: T,
-			) => ({
+			const enrichSlot = (slot: ExerciseSlot) => ({
 				...slot,
 				preferredWeight: weightMap.get(slot.defaultExercise) ?? null,
 				suggestedWeight: estimateWeight(slot.category, lifts),
