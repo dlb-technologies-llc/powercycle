@@ -1,4 +1,5 @@
-import { expect, layer } from "@effect/vitest";
+import { describe, expect, it, layer } from "@effect/vitest";
+import { calculateProgression } from "@powercycle/shared/engine/progression";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { UserLifts } from "@powercycle/shared/schema/lifts";
 import { Round, TrainingDay } from "@powercycle/shared/schema/program";
@@ -259,6 +260,41 @@ layer(CycleLive)("CycleService", (it) => {
 		}),
 	);
 
+	it.effect("createEntity with fallback maxes preserves provided values", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			// Simulate: user provided squat/deadlift, handler fell back to previous for bench/ohp
+			const lifts = {
+				...sampleLifts(),
+				bench: 225, // "from previous cycle"
+				ohp: 135, // "from previous cycle"
+			};
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
+			expect(cycle.bench1rm).toBe(225);
+			expect(cycle.ohp1rm).toBe(135);
+			expect(cycle.cycleNumber).toBe(2);
+		}),
+	);
+
+	it.effect(
+		"createEntity stores null when no value provided and no fallback",
+		() =>
+			Effect.gen(function* () {
+				const service = yield* CycleService;
+				const lifts = sampleLiftsWithNulls(); // bench and ohp are null
+				const cycle = yield* service.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					2,
+				);
+				expect(cycle.bench1rm).toBeNull();
+				expect(cycle.ohp1rm).toBeNull();
+				// squat and deadlift should still have values
+				expect(cycle.squat1rm).toBe(lifts.squat);
+				expect(cycle.deadlift1rm).toBe(lifts.deadlift);
+			}),
+	);
+
 	it.effect.prop(
 		"createEntity always starts at round 1, day 1",
 		{
@@ -283,4 +319,20 @@ layer(CycleLive)("CycleService", (it) => {
 				expect(cycle.completedAt).toBeNull();
 			}),
 	);
+});
+
+describe("progression invariants", () => {
+	it("never decreases maxes", () => {
+		const result = calculateProgression(200, 5, 250);
+		// Even though calculated 1RM from 200x5 < 250, newMax should be >= currentMax
+		expect(result.newMax).toBeGreaterThanOrEqual(result.currentMax);
+		expect(result.progressed).toBe(false);
+	});
+
+	it("increases max when AMRAP result exceeds current", () => {
+		const result = calculateProgression(300, 5, 315);
+		// 300 * (1 + 5/30) = 350, which > 315
+		expect(result.newMax).toBeGreaterThan(result.currentMax);
+		expect(result.progressed).toBe(true);
+	});
 });
