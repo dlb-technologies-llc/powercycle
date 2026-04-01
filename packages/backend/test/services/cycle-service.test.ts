@@ -1,6 +1,7 @@
 import { expect, layer } from "@effect/vitest";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
 import { UserLifts } from "@powercycle/shared/schema/lifts";
+import { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Schema } from "effect";
 import { FastCheck } from "effect/testing";
 import { CycleLive, CycleService } from "../../src/services/CycleService.js";
@@ -99,7 +100,7 @@ layer(CycleLive)("CycleService", (it) => {
 			);
 			const cycle = new Cycle({
 				...base,
-				currentDay: 3 as never,
+				currentDay: Schema.decodeSync(TrainingDay)(3),
 			});
 			const advanced = yield* service.advancePosition(cycle);
 
@@ -118,8 +119,8 @@ layer(CycleLive)("CycleService", (it) => {
 			);
 			const cycle = new Cycle({
 				...base,
-				currentDay: 4 as never,
-				currentRound: 2 as never,
+				currentDay: Schema.decodeSync(TrainingDay)(4),
+				currentRound: Schema.decodeSync(Round)(2),
 			});
 			const advanced = yield* service.advancePosition(cycle);
 
@@ -138,8 +139,8 @@ layer(CycleLive)("CycleService", (it) => {
 			);
 			const cycle = new Cycle({
 				...base,
-				currentRound: 4 as never,
-				currentDay: 4 as never,
+				currentRound: Schema.decodeSync(Round)(4),
+				currentDay: Schema.decodeSync(TrainingDay)(4),
 			});
 			const advanced = yield* service.advancePosition(cycle);
 
