@@ -1,12 +1,14 @@
 import { calculateCycleProgression } from "@powercycle/shared";
 import { NotFoundError } from "@powercycle/shared/errors/index";
 import { Cycle } from "@powercycle/shared/schema/entities/cycle";
+import type { Unit } from "@powercycle/shared/schema/lifts";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { DEFAULT_USER_ID } from "../lib/constants.js";
 import {
 	countCyclesByUserId,
 	findActiveCycle,
+	findLatestCompletedCycleMaxes,
 	insertCycle,
 	updateCycle,
 } from "../lib/queries.js";
@@ -73,6 +75,20 @@ export const CyclesLive = HttpApiBuilder.group(
 					return calculateCycleProgression(ctx.payload, currentLifts);
 				}),
 			)
+			.handle("previousMaxes", (_ctx) =>
+				Effect.gen(function* () {
+					const userId = DEFAULT_USER_ID;
+					const row = yield* findLatestCompletedCycleMaxes(db, userId);
+					if (!row) return null;
+					return {
+						squat: row.squat1rm != null ? Number(row.squat1rm) : null,
+						bench: row.bench1rm != null ? Number(row.bench1rm) : null,
+						deadlift: row.deadlift1rm != null ? Number(row.deadlift1rm) : null,
+						ohp: row.ohp1rm != null ? Number(row.ohp1rm) : null,
+						unit: row.unit === "kg" ? "kg" : "lbs" satisfies Unit,
+					};
+				}),
+			)
 			.handle("next", (ctx) =>
 				Effect.gen(function* () {
 					const userId = DEFAULT_USER_ID;
@@ -82,14 +98,32 @@ export const CyclesLive = HttpApiBuilder.group(
 							completedAt: new Date(),
 						});
 					}
+					// Fall back to previous cycle maxes for any null lifts
+					const previousRow = yield* findLatestCompletedCycleMaxes(db, userId);
 					const cycleCount = yield* countCyclesByUserId(db, userId);
 					const entity = yield* cycleService.createEntity(
 						userId,
 						{
-							squat: ctx.payload.squat,
-							bench: ctx.payload.bench,
-							deadlift: ctx.payload.deadlift,
-							ohp: ctx.payload.ohp,
+							squat:
+								ctx.payload.squat ??
+								(previousRow?.squat1rm != null
+									? Number(previousRow.squat1rm)
+									: null),
+							bench:
+								ctx.payload.bench ??
+								(previousRow?.bench1rm != null
+									? Number(previousRow.bench1rm)
+									: null),
+							deadlift:
+								ctx.payload.deadlift ??
+								(previousRow?.deadlift1rm != null
+									? Number(previousRow.deadlift1rm)
+									: null),
+							ohp:
+								ctx.payload.ohp ??
+								(previousRow?.ohp1rm != null
+									? Number(previousRow.ohp1rm)
+									: null),
 							unit: ctx.payload.unit,
 						},
 						cycleCount + 1,
