@@ -1,7 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ApiClient } from "../atoms/client";
@@ -120,10 +120,14 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	} | null>(null);
 	const [resumeChecked, setResumeChecked] = useState(false);
 
-	// Query atoms for resume flow — sets query uses empty string when no ID (will fail gracefully)
+	// Query atoms for resume flow — skip HTTP request when no workout ID
+	const emptySetsAtom = useMemo(() => Atom.make(AsyncResult.success([])), []);
 	const setsQueryAtom = useMemo(
-		() => ApiClient.query("workouts", "sets", { params: { id: id ?? "" } }),
-		[id],
+		() =>
+			id
+				? ApiClient.query("workouts", "sets", { params: { id } })
+				: emptySetsAtom,
+		[id, emptySetsAtom],
 	);
 	const setsResult = useAtomValue(setsQueryAtom);
 	const prefsResult = useAtomValue(exercisePreferencesAtom);

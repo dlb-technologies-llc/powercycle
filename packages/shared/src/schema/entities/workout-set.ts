@@ -2,13 +2,25 @@ import { Effect, Schema } from "effect";
 import { InternalError } from "../../errors/index.js";
 import { UUID } from "../common.js";
 
+/** Set number within a workout (1-based). */
+export const SetNumber = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1));
+export type SetNumber = typeof SetNumber.Type;
+
+/** Non-negative rep count for prescribed/actual reps. */
+export const RepCount = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
+export type RepCount = typeof RepCount.Type;
+
+/** Duration in seconds (integer). */
+export const DurationSeconds = Schema.Int;
+export type DurationSeconds = typeof DurationSeconds.Type;
+
 // The entity — single source of truth for WorkoutSet domain type
 export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 	id: UUID,
 	workoutId: UUID,
 	exerciseName: Schema.String,
 	category: Schema.NullOr(Schema.String),
-	setNumber: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+	setNumber: SetNumber,
 	prescribedWeight: Schema.NullOr(Schema.Number),
 	actualWeight: Schema.NullOr(Schema.Number),
 	prescribedReps: Schema.NullOr(Schema.Int),
@@ -18,8 +30,8 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 	rpe: Schema.NullOr(Schema.Number),
 	isMainLift: Schema.Boolean,
 	isAmrap: Schema.Boolean,
-	setDuration: Schema.NullOr(Schema.Int),
-	restDuration: Schema.NullOr(Schema.Int),
+	setDuration: Schema.NullOr(DurationSeconds),
+	restDuration: Schema.NullOr(DurationSeconds),
 	skipped: Schema.Boolean,
 	completedAt: Schema.NullOr(Schema.Date),
 }) {
@@ -29,7 +41,7 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 		workoutId: UUID,
 		exerciseName: Schema.String,
 		category: Schema.NullOr(Schema.String),
-		setNumber: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+		setNumber: SetNumber,
 		prescribedWeight: Schema.NullOr(Schema.NumberFromString),
 		actualWeight: Schema.NullOr(Schema.NumberFromString),
 		prescribedReps: Schema.NullOr(Schema.Int),
@@ -39,8 +51,8 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 		rpe: Schema.NullOr(Schema.NumberFromString),
 		isMainLift: Schema.Boolean,
 		isAmrap: Schema.Boolean,
-		setDuration: Schema.NullOr(Schema.Int),
-		restDuration: Schema.NullOr(Schema.Int),
+		setDuration: Schema.NullOr(DurationSeconds),
+		restDuration: Schema.NullOr(DurationSeconds),
 		skipped: Schema.Boolean,
 		completedAt: Schema.NullOr(Schema.Date),
 	});
@@ -129,18 +141,16 @@ export class WorkoutSet extends Schema.Class<WorkoutSet>("WorkoutSet")({
 export const LogSetInput = Schema.Struct({
 	exerciseName: Schema.String,
 	category: Schema.NullOr(Schema.String),
-	setNumber: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
+	setNumber: SetNumber,
 	prescribedWeight: Schema.NullOr(Schema.Number),
 	actualWeight: Schema.NullOr(Schema.Number),
-	prescribedReps: Schema.NullOr(
-		Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-	),
-	actualReps: Schema.NullOr(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
+	prescribedReps: Schema.NullOr(RepCount),
+	actualReps: Schema.NullOr(RepCount),
 	prescribedRpeMin: Schema.NullOr(Schema.Number),
 	prescribedRpeMax: Schema.NullOr(Schema.Number),
 	rpe: Schema.NullOr(Schema.Number),
-	setDuration: Schema.NullOr(Schema.Int),
-	restDuration: Schema.NullOr(Schema.Int),
+	setDuration: Schema.NullOr(DurationSeconds),
+	restDuration: Schema.NullOr(DurationSeconds),
 	isMainLift: Schema.Boolean,
 	isAmrap: Schema.Boolean,
 });
