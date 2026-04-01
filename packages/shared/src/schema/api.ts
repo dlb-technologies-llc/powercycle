@@ -5,7 +5,7 @@ import { ExercisePreference } from "./entities/exercise-preference.js";
 import { ExerciseWeight } from "./entities/exercise-weight.js";
 import { Workout } from "./entities/workout.js";
 import { WorkoutSet } from "./entities/workout-set.js";
-import { MainLift } from "./lifts.js";
+import { MainLift, UserLifts } from "./lifts.js";
 import { PrescribedSet, RpeSet } from "./workout.js";
 
 // --- RPE validation ---
@@ -138,3 +138,11 @@ export const ExerciseWeightInput = Schema.Struct({
 	unit: Schema.String,
 	rpe: Schema.NullOr(RpeNumber),
 });
+
+// --- Previous Maxes ---
+
+export const PreviousMaxesResponse = UserLifts;
+
+export const NullablePreviousMaxesResponse = Schema.NullOr(
+	PreviousMaxesResponse,
+);

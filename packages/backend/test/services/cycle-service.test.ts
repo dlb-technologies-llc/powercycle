@@ -259,6 +259,40 @@ layer(CycleLive)("CycleService", (it) => {
 		}),
 	);
 
+	it.effect("createEntity stores mixed number and null lifts faithfully", () =>
+		Effect.gen(function* () {
+			const service = yield* CycleService;
+			const lifts = {
+				...sampleLifts(),
+				bench: 225,
+				ohp: 135,
+			};
+			const cycle = yield* service.createEntity(crypto.randomUUID(), lifts, 2);
+			expect(cycle.bench1rm).toBe(225);
+			expect(cycle.ohp1rm).toBe(135);
+			expect(cycle.cycleNumber).toBe(2);
+		}),
+	);
+
+	it.effect(
+		"createEntity stores null when no value provided and no fallback",
+		() =>
+			Effect.gen(function* () {
+				const service = yield* CycleService;
+				const lifts = sampleLiftsWithNulls(); // bench and ohp are null
+				const cycle = yield* service.createEntity(
+					crypto.randomUUID(),
+					lifts,
+					2,
+				);
+				expect(cycle.bench1rm).toBeNull();
+				expect(cycle.ohp1rm).toBeNull();
+				// squat and deadlift should still have values
+				expect(cycle.squat1rm).toBe(lifts.squat);
+				expect(cycle.deadlift1rm).toBe(lifts.deadlift);
+			}),
+	);
+
 	it.effect.prop(
 		"createEntity always starts at round 1, day 1",
 		{

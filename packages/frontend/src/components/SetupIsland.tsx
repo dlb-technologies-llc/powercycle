@@ -1,12 +1,13 @@
-import { useAtomSet } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit } from "effect";
-import { useState } from "react";
+import { AsyncResult } from "effect/unstable/reactivity";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { createCycleAtom } from "../atoms/cycles";
+import { createCycleAtom, previousMaxesAtom } from "../atoms/cycles";
 
 const lifts = [
 	{ label: "Squat" },
@@ -23,6 +24,22 @@ export default function SetupIsland() {
 	const [unit, setUnit] = useState<"lbs" | "kg">("lbs");
 	const [error, setError] = useState("");
 	const [isPending, setIsPending] = useState(false);
+
+	const previousMaxesResult = useAtomValue(previousMaxesAtom);
+	const [prefilled, setPrefilled] = useState(false);
+
+	useEffect(() => {
+		if (prefilled) return;
+		if (!AsyncResult.isSuccess(previousMaxesResult)) return;
+		const data = previousMaxesResult.value;
+		if (!data) return; // null = no previous cycles (first-time user)
+		setPrefilled(true);
+		if (data.squat != null) setSquat(String(data.squat));
+		if (data.bench != null) setBench(String(data.bench));
+		if (data.deadlift != null) setDeadlift(String(data.deadlift));
+		if (data.ohp != null) setOhp(String(data.ohp));
+		setUnit(data.unit);
+	}, [previousMaxesResult, prefilled]);
 
 	const createCycle = useAtomSet(createCycleAtom, { mode: "promiseExit" });
 
@@ -75,6 +92,11 @@ export default function SetupIsland() {
 			<p className="text-sm text-muted-foreground mb-8">
 				Enter any 1RMs you know — you'll be asked for others when needed.
 			</p>
+			{prefilled && (
+				<p className="text-xs text-muted-foreground mb-4">
+					Pre-filled from your last cycle. Edit any value to update.
+				</p>
+			)}
 			<form onSubmit={handleSubmit} className="space-y-3">
 				<div className="inline-flex rounded-lg border border-border p-1 mb-4">
 					<Button

@@ -272,6 +272,28 @@ export const deleteExerciseWeight = Effect.fn("queries.deleteExerciseWeight")(
 	},
 );
 
+export const findLatestCompletedCycleMaxes = Effect.fn(
+	"queries.findLatestCompletedCycleMaxes",
+)(function* (db: Database, userId: string) {
+	const rows = yield* Effect.tryPromise({
+		try: () =>
+			db
+				.select({
+					squat1rm: cycles.squat1rm,
+					bench1rm: cycles.bench1rm,
+					deadlift1rm: cycles.deadlift1rm,
+					ohp1rm: cycles.ohp1rm,
+					unit: cycles.unit,
+				})
+				.from(cycles)
+				.where(and(eq(cycles.userId, userId), isNotNull(cycles.completedAt)))
+				.orderBy(desc(cycles.completedAt))
+				.limit(1),
+		catch: (error) => new InternalError({ message: `Query failed: ${error}` }),
+	});
+	return rows[0] ?? null;
+});
+
 export const findLastSessionSets = Effect.fn("queries.findLastSessionSets")(
 	function* (db: Database, userId: string) {
 		return yield* Effect.tryPromise({

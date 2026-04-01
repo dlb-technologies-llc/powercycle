@@ -8,6 +8,12 @@ import { ApiClient } from "./client";
  */
 export const currentCycleAtom = ApiClient.query("cycles", "current", {});
 
+/**
+ * Query atom for the previous cycle's maxes (for pre-filling new cycle setup).
+ * Returns null if no completed cycles exist.
+ */
+export const previousMaxesAtom = ApiClient.query("cycles", "previousMaxes", {});
+
 // ── Mutation Atoms ──
 
 /**
