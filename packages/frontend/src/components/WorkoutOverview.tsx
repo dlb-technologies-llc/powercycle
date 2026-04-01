@@ -1,10 +1,11 @@
-import { useAtomRefresh, useAtomSet } from "@effect/atom-react";
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import {
 	LIFT_DISPLAY_NAMES,
 	type MainLift,
 } from "@powercycle/shared/schema/lifts";
 import { EXERCISE_OPTIONS } from "@powercycle/shared/schema/workout";
 import { Exit } from "effect";
+import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,10 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/NativeSelect";
 import { cn } from "@/lib/utils";
 import { update1rmAtom } from "../atoms/cycles";
+import {
+	exercisePreferencesAtom,
+	setExercisePreferenceAtom,
+} from "../atoms/preferences";
 import { nextWorkoutAtom } from "../atoms/workouts";
 
 const DAY_NAMES: Record<MainLift, string> = {
@@ -122,29 +127,27 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 		});
 	};
 
+	const prefsResult = useAtomValue(exercisePreferencesAtom);
+
 	useEffect(() => {
-		fetch("/api/v1/preferences/exercises")
-			.then((res) => res.json())
-			.then((prefs: Array<{ slotKey: string; exerciseName: string }>) => {
-				if (prefs.length > 0) {
-					const updates: Record<string, string> = {};
-					for (const p of prefs) {
-						updates[p.slotKey] = p.exerciseName;
-						// Sync API -> localStorage
-						if (typeof window !== "undefined") {
-							localStorage.setItem(
-								`exercise-pref-${p.slotKey}`,
-								p.exerciseName,
-							);
-						}
-					}
-					setSelections((prev) => ({ ...prev, ...updates }));
+		if (!AsyncResult.isSuccess(prefsResult)) return;
+		const prefs = prefsResult.value;
+		if (prefs.length > 0) {
+			const updates: Record<string, string> = {};
+			for (const p of prefs) {
+				updates[p.slotKey] = p.exerciseName;
+				// Sync API -> localStorage
+				if (typeof window !== "undefined") {
+					localStorage.setItem(`exercise-pref-${p.slotKey}`, p.exerciseName);
 				}
-			})
-			.catch(() => {
-				// Silently fall back to localStorage
-			});
-	}, []);
+			}
+			setSelections((prev) => ({ ...prev, ...updates }));
+		}
+	}, [prefsResult]);
+
+	const setExercisePref = useAtomSet(setExercisePreferenceAtom, {
+		mode: "promiseExit",
+	});
 
 	const updateSelection = (key: string, storageKey: string, value: string) => {
 		setSelections((prev) => ({ ...prev, [key]: value }));
@@ -152,10 +155,8 @@ export function WorkoutOverview({ plan, unit, onStart }: WorkoutOverviewProps) {
 			localStorage.setItem(`exercise-pref-${storageKey}`, value);
 		}
 		// Persist to API (fire-and-forget)
-		fetch("/api/v1/preferences/exercises", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ slotKey: key, exerciseName: value }),
+		setExercisePref({
+			payload: { slotKey: key, exerciseName: value },
 		}).catch(() => {
 			// Silently fall back to localStorage only
 		});

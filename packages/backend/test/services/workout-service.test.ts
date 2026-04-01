@@ -56,11 +56,11 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 				...sampleLogSetInput(),
 				exerciseName: "Squat",
 				category: "Lower",
-				setNumber: 1 as never,
+				setNumber: Schema.decodeSync(LogSetInput.fields.setNumber)(1),
 				prescribedWeight: 270,
 				actualWeight: 275,
-				prescribedReps: 5 as never,
-				actualReps: 6 as never,
+				prescribedReps: Schema.decodeSync(LogSetInput.fields.prescribedReps)(5),
+				actualReps: Schema.decodeSync(LogSetInput.fields.actualReps)(6),
 				prescribedRpeMin: 7,
 				prescribedRpeMax: 8,
 				rpe: 8,
@@ -123,8 +123,8 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 			const workoutId = crypto.randomUUID();
 			const input = {
 				...sampleLogSetInput(),
-				setDuration: 45 as never,
-				restDuration: 90 as never,
+				setDuration: Schema.decodeSync(LogSetInput.fields.setDuration)(45),
+				restDuration: Schema.decodeSync(LogSetInput.fields.restDuration)(90),
 			};
 			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.setDuration).toBe(45);
