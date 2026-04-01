@@ -1,6 +1,11 @@
 import { expect, layer } from "@effect/vitest";
 import { Workout } from "@powercycle/shared/schema/entities/workout";
-import { LogSetInput } from "@powercycle/shared/schema/entities/workout-set";
+import {
+	DurationSeconds,
+	LogSetInput,
+	RepCount,
+	SetNumber,
+} from "@powercycle/shared/schema/entities/workout-set";
 import { Round, TrainingDay } from "@powercycle/shared/schema/program";
 import { Effect, Schema } from "effect";
 import { FastCheck } from "effect/testing";
@@ -56,11 +61,11 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 				...sampleLogSetInput(),
 				exerciseName: "Squat",
 				category: "Lower",
-				setNumber: Schema.decodeSync(LogSetInput.fields.setNumber)(1),
+				setNumber: Schema.decodeSync(SetNumber)(1),
 				prescribedWeight: 270,
 				actualWeight: 275,
-				prescribedReps: Schema.decodeSync(LogSetInput.fields.prescribedReps)(5),
-				actualReps: Schema.decodeSync(LogSetInput.fields.actualReps)(6),
+				prescribedReps: Schema.decodeSync(RepCount)(5),
+				actualReps: Schema.decodeSync(RepCount)(6),
 				prescribedRpeMin: 7,
 				prescribedRpeMax: 8,
 				rpe: 8,
@@ -123,8 +128,8 @@ layer(WorkoutLive)("WorkoutService", (it) => {
 			const workoutId = crypto.randomUUID();
 			const input = {
 				...sampleLogSetInput(),
-				setDuration: Schema.decodeSync(LogSetInput.fields.setDuration)(45),
-				restDuration: Schema.decodeSync(LogSetInput.fields.restDuration)(90),
+				setDuration: Schema.decodeSync(DurationSeconds)(45),
+				restDuration: Schema.decodeSync(DurationSeconds)(90),
 			};
 			const set = yield* service.createSetEntity(workoutId, input);
 			expect(set.setDuration).toBe(45);
