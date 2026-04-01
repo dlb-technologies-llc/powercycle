@@ -27,7 +27,7 @@ const decodeMaxesRow = (row: {
 	bench: row.bench1rm != null ? Number(row.bench1rm) : null,
 	deadlift: row.deadlift1rm != null ? Number(row.deadlift1rm) : null,
 	ohp: row.ohp1rm != null ? Number(row.ohp1rm) : null,
-	unit: Schema.decodeSync(Unit)(row.unit),
+	unit: Schema.decodeUnknownSync(Unit)(row.unit),
 });
 
 export const CyclesLive = HttpApiBuilder.group(
