@@ -12,6 +12,7 @@ import {
 	ExerciseWeightInput,
 	ExerciseWeightResponse,
 	NullableCycleResponse,
+	NullablePreviousMaxesResponse,
 	ProgressionResponse,
 	RpeNumber,
 	SetResponse,
@@ -110,6 +111,12 @@ export class CyclesGroup extends HttpApiGroup.make("cycles")
 				NotFoundError.pipe(HttpApiSchema.status(404)),
 				InternalError.pipe(HttpApiSchema.status(500)),
 			],
+		}),
+	)
+	.add(
+		HttpApiEndpoint.get("previousMaxes", "/api/v1/cycles/previous-maxes", {
+			success: NullablePreviousMaxesResponse,
+			error: [InternalError.pipe(HttpApiSchema.status(500))],
 		}),
 	) {}
 
