@@ -2,9 +2,11 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { WorkoutPlanResponse } from "@powercycle/shared/schema/api";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { ApiClient } from "../atoms/client";
 import { upsertExerciseWeightAtom } from "../atoms/exercise-weights";
+import { exercisePreferencesAtom } from "../atoms/preferences";
 import {
 	completeWorkoutAtom,
 	currentWorkoutAtom,
@@ -118,6 +120,41 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 	} | null>(null);
 	const [resumeChecked, setResumeChecked] = useState(false);
 
+	// Query atoms for resume flow — sets query uses empty string when no ID (will fail gracefully)
+	const setsQueryAtom = useMemo(
+		() => ApiClient.query("workouts", "sets", { params: { id: id ?? "" } }),
+		[id],
+	);
+	const setsResult = useAtomValue(setsQueryAtom);
+	const prefsResult = useAtomValue(exercisePreferencesAtom);
+
+	// Resume flow: when both queries resolve, initialize at the correct position
+	useEffect(() => {
+		if (!id || !plan || resumeChecked) return;
+
+		// Wait until both results have resolved (not initial/loading)
+		const setsResolved =
+			!AsyncResult.isInitial(setsResult) && !setsResult.waiting;
+		const prefsResolved =
+			!AsyncResult.isInitial(prefsResult) && !prefsResult.waiting;
+		if (!setsResolved || !prefsResolved) return;
+
+		// Extract sets — on failure, treat as empty (skip resume)
+		const sets = AsyncResult.isSuccess(setsResult) ? setsResult.value : [];
+
+		// Extract prefs — on failure, treat as empty array
+		const prefs = AsyncResult.isSuccess(prefsResult) ? prefsResult.value : [];
+
+		if (sets.length > 0) {
+			const selections = buildSelectionsFromLocalStorage(plan);
+			for (const p of prefs) {
+				selections[p.slotKey] = p.exerciseName;
+			}
+			flow.initializeAt(sets.length, selections);
+		}
+		setResumeChecked(true);
+	}, [id, plan, resumeChecked, setsResult, prefsResult, flow.initializeAt]);
+
 	// Track previous phase to manage timer transitions
 	const prevPhaseRef = useRef(flow.phase);
 	useEffect(() => {
@@ -136,39 +173,6 @@ export default function WorkoutIsland({ workoutId }: WorkoutIslandProps) {
 		// Rest timer is stopped in handleDone to capture the rest duration
 		// before sending the pending set data to the API
 	}, [flow.phase, setTimer, restTimer]);
-
-	useEffect(() => {
-		if (!id || !plan || resumeChecked) return;
-
-		Promise.all([
-			fetch(`/api/v1/workouts/${id}/sets`).then(async (res) => {
-				if (!res.ok) throw new Error("Failed to fetch sets");
-				const data: unknown[] = await res.json();
-				return data;
-			}),
-			fetch("/api/v1/preferences/exercises")
-				.then(async (res) => {
-					if (!res.ok) return [];
-					const data: Array<{ slotKey: string; exerciseName: string }> =
-						await res.json();
-					return data;
-				})
-				.catch((): Array<{ slotKey: string; exerciseName: string }> => []),
-		])
-			.then(([sets, prefs]) => {
-				if (sets.length > 0) {
-					const selections = buildSelectionsFromLocalStorage(plan);
-					for (const p of prefs) {
-						selections[p.slotKey] = p.exerciseName;
-					}
-					flow.initializeAt(sets.length, selections);
-				}
-				setResumeChecked(true);
-			})
-			.catch(() => {
-				setResumeChecked(true);
-			});
-	}, [id, plan, resumeChecked, flow.initializeAt]);
 
 	if (!id) {
 		return (
